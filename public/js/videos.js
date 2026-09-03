@@ -1,0 +1,616 @@
+// ==========================================
+// MODULE: VIDEO CATALOG & STREAMING (videos.js)
+// Video feeds (Home, Recommended, History, Favorites), playback modal
+// ==========================================
+
+// ---------------- VIDEO RENDERING & INTERACTIONS ----------------
+
+function getPermissionBadgeMarkup(videoOrLevel) {
+  if (typeof videoOrLevel === 'object' && videoOrLevel !== null) {
+    const mode = (videoOrLevel.access_mode || 'public').toLowerCase();
+    if (mode === 'include') {
+      let count = 0;
+      try {
+        count = JSON.parse(videoOrLevel.allowed_user_ids || '[]').length;
+      } catch (e) {}
+      return `<span title="${videoOrLevel.access_grant_reason || 'Specific authorized personnel'}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+        <span class="material-symbols-outlined text-[12px]">group</span> 👥 Include (${count || 'Custom'})
+      </span>`;
+    } else if (mode === 'exclude') {
+      let count = 0;
+      try {
+        count = JSON.parse(videoOrLevel.excluded_user_ids || '[]').length;
+      } catch (e) {}
+      return `<span title="${videoOrLevel.access_grant_reason || 'Accessible to all company except excluded members'}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+        <span class="material-symbols-outlined text-[12px]">person_off</span> 🚫 Exclude (${count})
+      </span>`;
+    } else {
+      return `<span title="${videoOrLevel.access_grant_reason || 'Accessible to all employees'}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+        <span class="material-symbols-outlined text-[12px]">public</span> 🌐 Public
+      </span>`;
+    }
+  }
+
+  const level = String(videoOrLevel || '');
+  if (level === 'Highly Confidential') {
+    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+      <span class="material-symbols-outlined text-[12px]">group</span> 👥 Include (VIP)
+    </span>`;
+  } else if (level === 'Restricted') {
+    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+      <span class="material-symbols-outlined text-[12px]">person_off</span> 🚫 Exclude
+    </span>`;
+  } else {
+    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+      <span class="material-symbols-outlined text-[12px]">public</span> 🌐 Public
+    </span>`;
+  }
+}
+
+function renderHomeVideos() {
+  const allAcc = state.accessibleVideos;
+
+  // 1. Recommended (Top 4 based on views & relevance)
+  const recEl = document.getElementById('homeRecommendedGrid');
+  if (recEl) {
+    const recVideos = [...allAcc].sort((a, b) => b.views - a.views).slice(0, 4);
+    recEl.innerHTML = recVideos.length > 0 
+      ? recVideos.map(v => createVideoCardHtml(v)).join('')
+      : `<div class="col-span-full py-8 text-center text-xs text-gray-400">No recommended videos available under current permissions.</div>`;
+  }
+
+  // 2. Research & Whitepapers (Biotech) (Max 4)
+  const biotechEl = document.getElementById('homeBiotechGrid');
+  if (biotechEl) {
+    const biotechVideos = allAcc.filter(v => v.department === 'Biotech' || v.category.includes('Research') || (v.tags && v.tags.includes('biotech'))).slice(0, 4);
+    biotechEl.innerHTML = biotechVideos.length > 0
+      ? biotechVideos.map(v => createVideoCardHtml(v)).join('')
+      : `<div class="col-span-full py-8 text-center text-xs text-gray-400">No Biotech research videos available under current permissions.</div>`;
+  }
+
+  // 3. Field Trials & Reports (Max 4)
+  const trialsEl = document.getElementById('homeTrialsGrid');
+  if (trialsEl) {
+    const trialVideos = allAcc.filter(v => v.category.includes('Trial') || v.category.includes('Crop') || (v.tags && (v.tags.includes('drones') || v.tags.includes('swine') || v.tags.includes('nutrition')))).slice(0, 4);
+    const displayList = trialVideos.length > 0 ? trialVideos : allAcc.slice(2, 6);
+    trialsEl.innerHTML = displayList.slice(0, 4).map(v => createVideoCardHtml(v)).join('');
+  }
+
+  // 4. Training & Safety Protocols (Max 4)
+  const safetyEl = document.getElementById('homeSafetyGrid');
+  if (safetyEl) {
+    const safetyVideos = allAcc.filter(v => v.category.includes('Safety') || v.category.includes('Training') || (v.tags && (v.tags.includes('safety') || v.tags.includes('biosecurity') || v.tags.includes('qclab')))).slice(0, 4);
+    const displayList = safetyVideos.length > 0 ? safetyVideos : allAcc.slice(1, 5);
+    safetyEl.innerHTML = displayList.slice(0, 4).map(v => createVideoCardHtml(v)).join('');
+  }
+
+  // 5. Townhall & Executive Updates (Max 4)
+  const townhallsEl = document.getElementById('homeTownhallsGrid');
+  if (townhallsEl) {
+    const townhallVideos = allAcc.filter(v => v.category.includes('Townhall') || v.department === 'Executive' || (v.tags && (v.tags.includes('meeting') || v.tags.includes('confidential')))).slice(0, 4);
+    const displayList = townhallVideos.length > 0 ? townhallVideos : allAcc.slice(0, 4);
+    townhallsEl.innerHTML = displayList.slice(0, 4).map(v => createVideoCardHtml(v)).join('');
+  }
+
+  // 6. Production & Mill Operations (Max 4)
+  const operationsEl = document.getElementById('homeOperationsGrid');
+  if (operationsEl) {
+    const opVideos = allAcc.filter(v => v.department === 'Operations' || v.category.includes('Mill') || (v.tags && (v.tags.includes('scada') || v.tags.includes('rawmaterial')))).slice(0, 4);
+    const displayList = opVideos.length > 0 ? opVideos : allAcc.slice(3, 7);
+    operationsEl.innerHTML = displayList.slice(0, 4).map(v => createVideoCardHtml(v)).join('');
+  }
+}
+
+function renderBiotechVideos() {
+  // Aliased to renderHomeVideos
+  renderHomeVideos();
+}
+
+function renderRecommendedVideos() {
+  const container = document.getElementById('recommendedVideoGrid');
+  if (!container) return;
+
+  let list = state.accessibleVideos;
+  if (state.recommendedFilter === 'biotech') list = list.filter(v => v.department === 'Biotech');
+  if (state.recommendedFilter === 'safety') list = list.filter(v => v.tags.includes('safety') || v.tags.includes('protocols'));
+  if (state.recommendedFilter === 'automation') list = list.filter(v => v.tags.includes('automation') || v.tags.includes('silo'));
+  if (state.recommendedFilter === 'supply') list = list.filter(v => v.department === 'Raw Material');
+
+  if (list.length === 0) {
+    container.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-gray-400">No recommended items under this filter.</div>`;
+    return;
+  }
+
+  container.innerHTML = list.map(v => createVideoCardHtml(v)).join('');
+}
+
+function filterRecommendedCategory(cat) {
+  state.recommendedFilter = cat;
+  renderRecommendedVideos();
+}
+
+function renderContinueWatching() {
+  const container = document.getElementById('continueWatchingGrid');
+  if (!container) return;
+
+  const inProgress = state.accessibleVideos.slice(0, 3);
+  if (inProgress.length === 0) {
+    container.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-gray-400">No videos in progress.</div>`;
+    return;
+  }
+
+  container.innerHTML = inProgress.map((v, idx) => {
+    const mockProgress = [75, 45, 20][idx % 3];
+    return `
+      <div class="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col group cursor-pointer" onclick="openVideoPlayerModal(${v.id})">
+        <div class="relative aspect-video bg-slate-900 overflow-hidden">
+          <img src="${v.thumbnail_url}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+          <div class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <button class="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-lg">
+              <span class="material-symbols-outlined fill text-2xl">play_arrow</span>
+            </button>
+          </div>
+          <span class="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">${v.duration}</span>
+          <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-black/50">
+            <div class="h-full bg-primary-container" style="width: ${mockProgress}%"></div>
+          </div>
+        </div>
+        <div class="p-4 space-y-2 flex-1 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <span class="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">${v.department}</span>
+              <span class="text-[11px] text-gray-400 font-semibold">${mockProgress}% completed</span>
+            </div>
+            <h4 class="text-xs font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-2">${v.title}</h4>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-slate-100">
+            <span>Uploaded by ${v.uploaded_by}</span>
+            <button class="text-primary font-bold hover:underline flex items-center gap-0.5">Resume <span class="material-symbols-outlined text-xs">arrow_forward</span></button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderFavorites() {
+  const container = document.getElementById('favoritesVideoGrid');
+  const countBadge = document.getElementById('favCountBadge');
+  if (!container) return;
+
+  const favList = state.accessibleVideos.filter(v => v.is_favorite);
+  if (countBadge) countBadge.textContent = `${favList.length} Items`;
+
+  if (favList.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full py-12 text-center bg-white rounded-2xl border border-dashed border-gray-300 p-8">
+        <span class="material-symbols-outlined text-4xl text-rose-300 mb-2">favorite_border</span>
+        <h4 class="text-sm font-bold text-gray-700">No Favorites Saved Yet</h4>
+        <p class="text-xs text-gray-400 mt-1 max-w-md mx-auto">
+          Click the heart icon on any authorized video card to save it here for quick access.
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = favList.map(v => createVideoCardHtml(v)).join('');
+}
+
+function renderWatchHistory() {
+  const container = document.getElementById('watchHistoryContainer');
+  if (!container) return;
+
+  const historyList = state.accessibleVideos.slice(0, 5);
+  if (historyList.length === 0) {
+    container.innerHTML = `<div class="p-8 text-center text-xs text-gray-400">No watch history recorded.</div>`;
+    return;
+  }
+
+  container.innerHTML = historyList.map((v, idx) => {
+    const dates = ['Today at 10:45 AM', 'Yesterday at 15:20 PM', 'Aug 29, 2026', 'Aug 24, 2026', 'Aug 19, 2026'];
+    return `
+      <div class="p-4 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer group" onclick="openVideoPlayerModal(${v.id})">
+        <div class="flex items-center gap-3">
+          <div class="w-20 h-12 rounded bg-slate-900 overflow-hidden relative shrink-0">
+            <img src="${v.thumbnail_url}" class="w-full h-full object-cover">
+            <span class="absolute bottom-0.5 right-0.5 bg-black/80 text-white text-[8px] font-bold px-1 rounded">${v.duration}</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 mb-0.5">
+              <span class="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded">${v.department}</span>
+              ${getPermissionBadgeMarkup(v.permission_level)}
+            </div>
+            <h4 class="text-xs font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-1">${v.title}</h4>
+            <div class="text-[10px] text-gray-400">Watched on ${dates[idx % dates.length]}</div>
+          </div>
+        </div>
+        <button class="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-semibold text-gray-600 group-hover:border-primary group-hover:text-primary transition-colors flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">replay</span> Replay
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function clearWatchHistoryDemo() {
+  showToast('Watch history cleared for current simulation persona', 'info');
+}
+
+function renderEvents() {
+  const container = document.getElementById('eventsGrid');
+  if (!container) return;
+
+  container.innerHTML = state.events.map(e => `
+    <div class="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col justify-between">
+      <div class="aspect-video bg-slate-900 relative overflow-hidden">
+        <img src="${e.thumbnail}" class="w-full h-full object-cover">
+        <span class="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold bg-black/70 text-white backdrop-blur">${e.category}</span>
+        <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold ${e.status === 'Upcoming' ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white'}">${e.status}</span>
+      </div>
+      <div class="p-5 space-y-3 flex-1 flex flex-col justify-between">
+        <div>
+          <div class="text-[11px] font-semibold text-emerald-700 mb-1">${e.department} Special Event</div>
+          <h3 class="text-sm font-bold text-gray-900 leading-snug">${e.title}</h3>
+          <div class="space-y-1 mt-3 text-xs text-gray-500">
+            <div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">calendar_today</span> ${e.date}</div>
+            <div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">location_on</span> ${e.location}</div>
+            <div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">person</span> ${e.speaker}</div>
+          </div>
+        </div>
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+          ${e.status === 'Upcoming' ? `
+            <button onclick="showToast('RSVP Confirmed for ${e.title}', 'success')" class="w-full py-2 bg-primary text-white font-bold text-xs rounded-lg hover:bg-emerald-800 transition-colors">
+              RSVP for Live Stream
+            </button>
+          ` : `
+            <button onclick="openVideoPlayerModal(${e.videoId || 1})" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-gray-800 font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1">
+              <span class="material-symbols-outlined text-sm">play_circle</span> Watch Recording
+            </button>
+          `}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderCategoriesDirectory(filterTab = 'all') {
+  const container = document.getElementById('categoriesGrid');
+  if (!container) return;
+
+  let cats = [
+    { title: 'Research & Whitepapers', icon: 'menu_book', color: 'bg-emerald-50 text-emerald-700', count: '4 Assets', desc: 'Cellular growth formulas, genetics, and peer-reviewed feed essays.', type: 'academic' },
+    { title: 'Field Trials & Crop Reports', icon: 'analytics', color: 'bg-blue-50 text-blue-700', count: '3 Assets', desc: 'Drone surveys, multispectral yield metrics, and regional tests.', type: 'academic' },
+    { title: 'Training & Safety Protocols', icon: 'school', color: 'bg-amber-50 text-amber-700', count: '2 Assets', desc: 'Spectrometry calibration, biohazard control, and OSHA lab safety.', type: 'operations' },
+    { title: 'Townhall & Executive Briefs', icon: 'campaign', color: 'bg-purple-50 text-purple-700', count: '2 Assets', desc: 'Corporate direction, regional market expansion, and grain futures.', type: 'executive' },
+    { title: 'Mill & SCADA Operations', icon: 'precision_manufacturing', color: 'bg-rose-50 text-rose-700', count: '3 Assets', desc: 'Automated silo controls, conveyor lines, and smart batching.', type: 'operations' },
+    { title: 'Vendor Standards & Audits', icon: 'handshake', color: 'bg-teal-50 text-teal-700', count: '1 Asset', desc: 'Supplier quality certifications and raw ingredient assay criteria.', type: 'operations' },
+    { title: 'Corporate Events & Symposia', icon: 'event', color: 'bg-indigo-50 text-indigo-700', count: '4 Conferences', desc: 'Annual summits, keynote livestreams, and panel recordings.', type: 'events' },
+    { title: 'Meeting Recordings', icon: 'meeting_room', color: 'bg-fuchsia-50 text-fuchsia-700', count: '6 Townhalls', desc: 'Internal executive townhalls, technical synces, and team briefings.', type: 'meetings' }
+  ];
+
+  if (filterTab === 'academic') {
+    cats = cats.filter(c => c.type === 'academic');
+  }
+
+  container.innerHTML = cats.map(c => `
+    <div class="bg-white rounded-xl border border-outline-variant p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group" onclick="handleCategoryCardClick('${c.title}', '${c.type}')">
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="w-10 h-10 rounded-xl ${c.color} flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-xl">${c.icon}</span>
+          </div>
+          <span class="text-xs font-bold text-gray-400">${c.count}</span>
+        </div>
+        <div>
+          <h3 class="font-bold text-sm text-gray-900 group-hover:text-primary transition-colors">${c.title}</h3>
+          <p class="text-xs text-gray-500 mt-1 leading-relaxed">${c.desc}</p>
+        </div>
+      </div>
+      <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-xs text-primary font-bold">
+        <span>Browse Content</span>
+        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function handleCategoryCardClick(title, type) {
+  if (type === 'events') {
+    filterCategoriesTab('events');
+  } else if (type === 'meetings') {
+    filterCategoriesTab('meetings');
+  } else {
+    openCategoryDetail(title);
+  }
+}
+
+function filterCategoriesTab(tab) {
+  document.querySelectorAll('.cat-tab-btn').forEach(b => {
+    b.className = 'cat-tab-btn px-3 py-1.5 rounded-lg font-semibold text-gray-600 hover:text-gray-900';
+  });
+  const activeBtn = document.getElementById(`catTab-${tab}`);
+  if (activeBtn) activeBtn.className = 'cat-tab-btn px-3 py-1.5 rounded-lg font-bold bg-white text-primary shadow-xs';
+
+  const catGrid = document.getElementById('categoriesGrid');
+  const eventsContainer = document.getElementById('integratedEventsContainer');
+  const meetingsContainer = document.getElementById('integratedMeetingsContainer');
+
+  if (!catGrid || !eventsContainer || !meetingsContainer) return;
+
+  if (tab === 'all') {
+    catGrid.classList.remove('hidden');
+    eventsContainer.classList.add('hidden');
+    meetingsContainer.classList.add('hidden');
+    renderCategoriesDirectory('all');
+  } else if (tab === 'academic') {
+    catGrid.classList.remove('hidden');
+    eventsContainer.classList.add('hidden');
+    meetingsContainer.classList.add('hidden');
+    renderCategoriesDirectory('academic');
+  } else if (tab === 'events') {
+    catGrid.classList.add('hidden');
+    eventsContainer.classList.remove('hidden');
+    meetingsContainer.classList.add('hidden');
+    renderIntegratedEvents();
+  } else if (tab === 'meetings') {
+    catGrid.classList.add('hidden');
+    eventsContainer.classList.add('hidden');
+    meetingsContainer.classList.remove('hidden');
+    renderIntegratedMeetings();
+  }
+}
+
+function renderIntegratedEvents() {
+  const container = document.getElementById('integratedEventsGrid');
+  if (!container) return;
+
+  container.innerHTML = state.events.map(e => `
+    <div class="bg-white rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow group">
+      <div class="aspect-video w-full relative overflow-hidden bg-slate-900 cursor-pointer" onclick="openEventDetail(${e.id})">
+        <img src="${e.banner_url || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+        <div class="absolute top-3 left-3 flex items-center gap-1.5">
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${e.status === 'Live' ? 'bg-rose-600 text-white animate-pulse' : 'bg-primary text-white'}">${e.status || 'Upcoming'}</span>
+          ${getPermissionBadgeMarkup(e.clearance_level || 'Standard')}
+        </div>
+        <div class="absolute bottom-2.5 left-3 right-3 text-white">
+          <div class="text-[11px] font-mono flex items-center gap-1 opacity-90">
+            <span class="material-symbols-outlined text-xs">calendar_today</span>
+            <span>${e.date} • ${e.time || '09:00'}</span>
+          </div>
+        </div>
+      </div>
+      <div class="p-5 flex-1 flex flex-col justify-between space-y-3">
+        <div>
+          <h3 class="font-bold text-gray-900 text-sm group-hover:text-primary transition-colors cursor-pointer line-clamp-2" onclick="openEventDetail(${e.id})">
+            ${e.title}
+          </h3>
+          <p class="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">
+            ${e.description || 'Pioneering agricultural advancements, symposium breakouts, and technical keynotes.'}
+          </p>
+        </div>
+        <div class="pt-3 border-t border-outline-variant/60 flex items-center justify-between">
+          <div class="text-[11px] font-semibold text-gray-800">${e.speaker || 'Keynote Speaker'}</div>
+          <button onclick="openEventDetail(${e.id})" class="px-3 py-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1">
+            <span>View Details</span>
+            <span class="material-symbols-outlined text-xs">arrow_forward</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderIntegratedMeetings() {
+  const container = document.getElementById('integratedMeetingsGrid');
+  if (!container) return;
+
+  const meetingVideos = state.accessibleVideos.filter(v => {
+    return v.category.includes('Townhall') || v.category.includes('Meeting') || (v.tags && v.tags.includes('meeting')) || (v.title && v.title.toLowerCase().includes('townhall'));
+  });
+
+  const list = meetingVideos.length > 0 ? meetingVideos : state.accessibleVideos.slice(0, 6);
+  container.innerHTML = list.map(v => createVideoCardHtml(v)).join('');
+}
+
+function submitClearanceRequest() {
+  const level = document.getElementById('reqTargetLevel')?.value;
+  const dept = document.getElementById('reqTargetDept')?.value;
+  const reason = document.getElementById('reqReason')?.value.trim();
+
+  if (!reason) {
+    showToast('กรุณาระบุเหตุผลและความจำเป็นทางธุรกิจ', 'error');
+    return;
+  }
+
+  showToast(`ส่งคำร้องขอสิทธิ์ [${level} - แผนก ${dept}] ไปยัง IT Admin เรียบร้อยแล้ว`, 'success');
+  document.getElementById('reqReason').value = '';
+}
+
+function createVideoCardHtml(v) {
+  const favIcon = v.is_favorite ? 'favorite' : 'favorite_border';
+  const favClass = v.is_favorite ? 'text-rose-500 fill' : 'text-white hover:text-rose-400';
+  const progressPercent = v.watch_progress || 0;
+
+  return `
+    <div class="group bg-white rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col cursor-pointer" onclick="openVideoPlayerModal(${v.id})">
+      <!-- Thumbnail with Overlay -->
+      <div class="relative aspect-video w-full bg-slate-900 overflow-hidden">
+        <img src="${v.thumbnail_url || 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+        
+        <!-- Duration Badge -->
+        <span class="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
+          ${v.duration}
+        </span>
+
+        <!-- Favorite Button -->
+        <button onclick="event.stopPropagation(); toggleFavorite(${v.id})" class="absolute top-2 right-2 p-1.5 bg-black/40 hover:bg-black/70 rounded-full transition-colors ${favClass}">
+          <span class="material-symbols-outlined text-base">${favIcon}</span>
+        </button>
+
+        <!-- Watch Progress Bar -->
+        ${progressPercent > 0 ? `
+          <div class="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
+            <div class="h-full bg-primary-container" style="width: ${progressPercent}%"></div>
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Card Body -->
+      <div class="p-4 flex-1 flex flex-col justify-between space-y-2.5">
+        <div>
+          <div class="flex items-center justify-between gap-2 mb-1.5">
+            <span class="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">${v.department}</span>
+            ${getPermissionBadgeMarkup(v)}
+          </div>
+          <h4 class="text-xs font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+            ${v.title}
+          </h4>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-gray-400">
+          <span class="flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">visibility</span> ${v.views} views
+          </span>
+          <span class="truncate max-w-[120px]">${v.uploaded_by || 'Staff'}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ---------------- VIDEO PLAYER MODAL ----------------
+
+async function openVideoPlayerModal(videoId) {
+  try {
+    const res = await fetch(`/api/videos/${videoId}`);
+    const json = await res.json();
+    if (!json.success) {
+      showToast('Cannot load video: ' + json.message, 'error');
+      return;
+    }
+
+    const v = json.data;
+    state.activeVideo = v;
+
+    // Track view in backend
+    fetch(`/api/videos/${v.id}/watch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ progress: 65 })
+    });
+
+    document.getElementById('playerTitle').textContent = v.title;
+    document.getElementById('playerDesc').textContent = v.description || 'No detailed description available.';
+    document.getElementById('playerVidCode').textContent = v.video_id;
+    document.getElementById('playerDeptBadge').textContent = v.department;
+    document.getElementById('playerLevelBadge').outerHTML = getPermissionBadgeMarkup(v.permission_level);
+
+    // Tags
+    const tagsContainer = document.getElementById('playerTagsContainer');
+    if (tagsContainer && v.tags) {
+      const tagList = v.tags.split(',').map(t => t.trim());
+      tagsContainer.innerHTML = tagList.map(t => `<span class="text-[10px] font-medium bg-slate-100 text-gray-600 px-2 py-0.5 rounded">${t}</span>`).join('');
+    }
+
+    // Video Source
+    const player = document.getElementById('activeVideoPlayer');
+    player.src = v.video_url || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+    player.load();
+    player.play().catch(() => {});
+
+    // Favorite button state
+    const favBtn = document.getElementById('playerFavBtn');
+    if (favBtn) {
+      favBtn.innerHTML = v.is_favorite 
+        ? `<span class="material-symbols-outlined text-sm text-rose-500 fill">favorite</span><span class="text-rose-600 font-bold">Favorited</span>`
+        : `<span class="material-symbols-outlined text-sm">favorite_border</span><span>Favorite</span>`;
+    }
+
+    // Comments
+    renderComments(json.comments || []);
+
+    document.getElementById('videoPlayerModal').classList.remove('hidden');
+  } catch (err) {
+    showToast('Failed to open video player', 'error');
+  }
+}
+
+function closeVideoPlayerModal() {
+  const modal = document.getElementById('videoPlayerModal');
+  const player = document.getElementById('activeVideoPlayer');
+  if (player) {
+    player.pause();
+    player.src = '';
+  }
+  if (modal) modal.classList.add('hidden');
+}
+
+async function togglePlayerFavorite() {
+  if (!state.activeVideo) return;
+  await toggleFavorite(state.activeVideo.id);
+  state.activeVideo.is_favorite = !state.activeVideo.is_favorite;
+  const favBtn = document.getElementById('playerFavBtn');
+  if (favBtn) {
+    favBtn.innerHTML = state.activeVideo.is_favorite 
+      ? `<span class="material-symbols-outlined text-sm text-rose-500 fill">favorite</span><span class="text-rose-600 font-bold">Favorited</span>`
+      : `<span class="material-symbols-outlined text-sm">favorite_border</span><span>Favorite</span>`;
+  }
+}
+
+function renderComments(comments) {
+  const container = document.getElementById('commentsList');
+  if (!container) return;
+  if (comments.length === 0) {
+    container.innerHTML = `<p class="text-[11px] text-gray-400 italic">No comments posted yet. Start the discussion!</p>`;
+    return;
+  }
+  container.innerHTML = comments.map(c => `
+    <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-xs">
+      <div class="flex items-center justify-between mb-1">
+        <span class="font-bold text-gray-800">${c.user_name} <span class="text-[10px] font-normal text-gray-400">(${c.user_role})</span></span>
+        <span class="text-[10px] text-gray-400">${c.created_at || 'Recently'}</span>
+      </div>
+      <p class="text-gray-600 leading-snug">${c.comment}</p>
+    </div>
+  `).join('');
+}
+
+async function submitComment() {
+  const input = document.getElementById('newCommentInput');
+  const comment = input.value.trim();
+  if (!comment || !state.activeVideo) return;
+
+  try {
+    const res = await fetch(`/api/videos/${state.activeVideo.id}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comment })
+    });
+    const json = await res.json();
+    if (json.success) {
+      input.value = '';
+      showToast('Comment posted', 'success');
+      // Re-fetch video details to refresh comment thread
+      openVideoPlayerModal(state.activeVideo.id);
+    }
+  } catch (err) {
+    showToast('Failed to post comment', 'error');
+  }
+}
+
+async function toggleFavorite(videoId) {
+  try {
+    const res = await fetch(`/api/videos/${videoId}/favorite`, { method: 'POST' });
+    const json = await res.json();
+    if (json.success) {
+      await loadAccessibleVideos();
+      showToast(json.is_favorite ? 'Added to favorites' : 'Removed from favorites', 'info');
+    }
+  } catch (err) {
+    showToast('Failed to update favorite', 'error');
+  }
+}
+
+
