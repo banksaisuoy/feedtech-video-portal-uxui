@@ -537,6 +537,7 @@ function renderDepartmentHub(deptName) {
 
 function openProfileModal(tab = 'overview') {
   renderCurrentUserUI();
+  if (tab === 'help' || tab === 'profile') tab = 'overview';
   switchProfileTab(tab);
   const modal = document.getElementById('profileModal');
   if (modal) modal.classList.remove('hidden');
@@ -548,7 +549,7 @@ function closeProfileModal() {
 }
 
 function switchProfileTab(tabName) {
-  const tabs = ['overview', 'preferences', 'help'];
+  const tabs = ['overview', 'preferences'];
   tabs.forEach(t => {
     const btn = document.getElementById(`tabBtn-${t}`);
     const content = document.getElementById(`tabContent-${t}`);
@@ -578,7 +579,7 @@ function navigateView(viewName) {
     return;
   }
   if (viewName === 'support' || viewName === 'help') {
-    openProfileModal('help');
+    openProfileModal('overview');
     return;
   }
   if (viewName === 'profile') {
