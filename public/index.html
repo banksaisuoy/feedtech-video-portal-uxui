@@ -181,20 +181,9 @@
           </a>
           <a href="#" onclick="navigateView('categories'); return false;" id="nav-categories" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
             <span class="material-symbols-outlined text-xl">category</span>
-            <span>Knowledge Categories</span>
+            <span>Categories Hub</span>
           </a>
         </nav>
-
-        <div class="my-3 border-t border-outline-variant"></div>
-
-        <!-- CATEGORIES QUICK NAV LIST -->
-        <div class="px-3 py-1.5 flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase tracking-wider cursor-pointer" onclick="toggleDeptMenu()">
-          <span>Categories & Hubs</span>
-          <span id="deptChevron" class="material-symbols-outlined text-sm transition-transform">expand_more</span>
-        </div>
-        <div id="deptListContainer" class="space-y-0.5 mt-1 max-h-56 overflow-y-auto pr-1">
-          <!-- Populated dynamically via JS -->
-        </div>
       </div>
 
       <!-- ADMIN MANAGEMENT SECTION (Visible only for Admins) -->
@@ -756,12 +745,12 @@
         </div>
       </div>
 
-      <!-- 8. VIEW: CATEGORIES DIRECTORY (INTEGRATED CONTENT HUB) -->
+      <!-- 8. VIEW: CATEGORIES HUB (INTEGRATED CONTENT DIRECTORY) -->
       <div id="view-categories" class="view-content hidden space-y-6 max-w-7xl mx-auto">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 class="text-2xl font-black text-gray-900">Knowledge Categories Directory</h2>
-            <p class="text-xs text-gray-500 mt-1">Browse Feedtech video assets, corporate events, and recorded meetings organized by classification.</p>
+            <h2 class="text-2xl font-black text-gray-900">Categories Hub</h2>
+            <p class="text-xs text-gray-500 mt-1">ศูนย์รวมหมวดหมู่วิดีโอองค์ความรู้ งานสัมมนา และเทปการประชุม จัดกลุ่มอย่างเป็นระบบในที่เดียว</p>
           </div>
           <!-- Filter Tabs inside Categories Directory -->
           <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-outline-variant text-xs">
