@@ -241,14 +241,14 @@ function renderCurrentUserUI() {
     if (isAdmin) {
       badge.textContent = '👑 Super Admin';
       badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-purple-500/40 text-purple-200 border border-purple-400';
-    } else if (u.name.includes('Noi') || u.department === 'Executive') {
-      badge.textContent = '⭐ Executive VIP (คุณหน่อย)';
+    } else if (u.name.includes('Noi') || u.name.includes('Nuntana') || u.department === 'Executive') {
+      badge.textContent = '⭐ Executive Board';
       badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/40 text-amber-200 border border-amber-400';
-    } else if (u.name.includes('Noom')) {
-      badge.textContent = '🔬 Senior R&D (พี่หนุ่ม)';
+    } else if (u.name.includes('Noom') || u.name.includes('Thanawat') || u.role.includes('Lead')) {
+      badge.textContent = '🔬 Senior R&D Lead';
       badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-blue-500/40 text-blue-200 border border-blue-400';
     } else {
-      badge.textContent = '👤 Authorized Personnel';
+      badge.textContent = '👤 Authorized Staff';
       badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/50';
     }
   }
@@ -373,7 +373,7 @@ function renderCurrentUserUI() {
     // If currently viewing an admin screen while persona switched to non-admin, redirect to home
     if (state.activeView && state.activeView.startsWith('admin')) {
       navigateView('home');
-      showToast('Redirected to User Portal: General users only have video viewing clearance.', 'info');
+      showToast('Redirected to User Portal: General users only have video viewing access.', 'info');
     }
   }
 
@@ -425,13 +425,13 @@ function renderCurrentUserUI() {
 
   if (bannerPermDesc) {
     if (isAdmin) {
-      bannerPermDesc.innerHTML = `Administrator mode active: <b>Full clearance</b> to inspect and curate all departments, manage users, and upload videos.`;
+      bannerPermDesc.innerHTML = `Administrator mode active: <b>Full administrator privileges</b> to inspect and curate all departments, manage users, and upload videos.`;
     } else if (u.permission_level === 'Highly Confidential') {
       bannerPermDesc.innerHTML = `Showing authorized <b>Highly Confidential</b> research for <b>${u.department}</b> & company-wide standard videos. (Upload & Admin Menu: Disabled).`;
     } else if (u.permission_level === 'Restricted') {
       bannerPermDesc.innerHTML = `Showing authorized <b>Restricted</b> assets for <b>${u.department}</b> & company-wide standard videos. (Upload & Admin Menu: Disabled).`;
     } else {
-      bannerPermDesc.innerHTML = `Standard Employee Clearance: Showing company-wide knowledge assets. (Restricted R&D is strictly hidden, Upload & Admin Menu: Disabled).`;
+      bannerPermDesc.innerHTML = `Standard Employee Access: Showing company-wide knowledge assets. (Confidential R&D is restricted to authorized persons).`;
     }
   }
 }
@@ -523,7 +523,7 @@ function renderDepartmentHub(deptName) {
           <span class="material-symbols-outlined text-4xl text-gray-300 mb-2">lock</span>
           <h4 class="text-sm font-bold text-gray-700">No Videos Visible for ${deptName}</h4>
           <p class="text-xs text-gray-400 mt-1 max-w-md mx-auto">
-            Videos in this department are restricted to ${deptName} employees or require higher security clearance.
+            Videos in this department are restricted to ${deptName} employees or require specific access authorization.
           </p>
         </div>
       `;
@@ -704,46 +704,62 @@ function getPermissionBadgeMarkup(videoOrLevel) {
 }
 
 function renderHomeVideos() {
-  const container = document.getElementById('homeVideoGrid');
-  if (!container) return;
+  const allAcc = state.accessibleVideos;
 
-  let filtered = state.accessibleVideos;
-  if (state.searchQuery) {
-    const q = state.searchQuery.toLowerCase();
-    filtered = filtered.filter(v => v.title.toLowerCase().includes(q) || v.tags.toLowerCase().includes(q) || v.department.toLowerCase().includes(q));
+  // 1. Recommended (Top 4 based on views & relevance)
+  const recEl = document.getElementById('homeRecommendedGrid');
+  if (recEl) {
+    const recVideos = [...allAcc].sort((a, b) => b.views - a.views).slice(0, 4);
+    recEl.innerHTML = recVideos.length > 0 
+      ? recVideos.map(v => createVideoCardHtml(v)).join('')
+      : `<div class="col-span-full py-8 text-center text-xs text-gray-400">No recommended videos available under current permissions.</div>`;
   }
 
-  if (filtered.length === 0) {
-    container.innerHTML = `
-      <div class="col-span-full py-12 text-center bg-white rounded-2xl border border-dashed border-gray-300 p-8">
-        <span class="material-symbols-outlined text-4xl text-gray-300 mb-2">visibility_off</span>
-        <h4 class="text-sm font-bold text-gray-700">No Authorized Videos Available</h4>
-        <p class="text-xs text-gray-400 mt-1 max-w-md mx-auto">
-          Videos in this section are either restricted to other departments or require higher security clearance.
-        </p>
-      </div>
-    `;
-    return;
+  // 2. Research & Whitepapers (Biotech) (Max 4)
+  const biotechEl = document.getElementById('homeBiotechGrid');
+  if (biotechEl) {
+    const biotechVideos = allAcc.filter(v => v.department === 'Biotech' || v.category.includes('Research') || (v.tags && v.tags.includes('biotech'))).slice(0, 4);
+    biotechEl.innerHTML = biotechVideos.length > 0
+      ? biotechVideos.map(v => createVideoCardHtml(v)).join('')
+      : `<div class="col-span-full py-8 text-center text-xs text-gray-400">No Biotech research videos available under current permissions.</div>`;
   }
 
-  container.innerHTML = filtered.map(v => createVideoCardHtml(v)).join('');
+  // 3. Field Trials & Reports (Max 4)
+  const trialsEl = document.getElementById('homeTrialsGrid');
+  if (trialsEl) {
+    const trialVideos = allAcc.filter(v => v.category.includes('Trial') || v.category.includes('Crop') || (v.tags && (v.tags.includes('drones') || v.tags.includes('swine') || v.tags.includes('nutrition')))).slice(0, 4);
+    const displayList = trialVideos.length > 0 ? trialVideos : allAcc.slice(2, 6);
+    trialsEl.innerHTML = displayList.slice(0, 4).map(v => createVideoCardHtml(v)).join('');
+  }
+
+  // 4. Training & Safety Protocols (Max 4)
+  const safetyEl = document.getElementById('homeSafetyGrid');
+  if (safetyEl) {
+    const safetyVideos = allAcc.filter(v => v.category.includes('Safety') || v.category.includes('Training') || (v.tags && (v.tags.includes('safety') || v.tags.includes('biosecurity') || v.tags.includes('qclab')))).slice(0, 4);
+    const displayList = safetyVideos.length > 0 ? safetyVideos : allAcc.slice(1, 5);
+    safetyEl.innerHTML = displayList.slice(0, 4).map(v => createVideoCardHtml(v)).join('');
+  }
+
+  // 5. Townhall & Executive Updates (Max 4)
+  const townhallsEl = document.getElementById('homeTownhallsGrid');
+  if (townhallsEl) {
+    const townhallVideos = allAcc.filter(v => v.category.includes('Townhall') || v.department === 'Executive' || (v.tags && (v.tags.includes('meeting') || v.tags.includes('confidential')))).slice(0, 4);
+    const displayList = townhallVideos.length > 0 ? townhallVideos : allAcc.slice(0, 4);
+    townhallsEl.innerHTML = displayList.slice(0, 4).map(v => createVideoCardHtml(v)).join('');
+  }
+
+  // 6. Production & Mill Operations (Max 4)
+  const operationsEl = document.getElementById('homeOperationsGrid');
+  if (operationsEl) {
+    const opVideos = allAcc.filter(v => v.department === 'Operations' || v.category.includes('Mill') || (v.tags && (v.tags.includes('scada') || v.tags.includes('rawmaterial')))).slice(0, 4);
+    const displayList = opVideos.length > 0 ? opVideos : allAcc.slice(3, 7);
+    operationsEl.innerHTML = displayList.slice(0, 4).map(v => createVideoCardHtml(v)).join('');
+  }
 }
 
 function renderBiotechVideos() {
-  const container = document.getElementById('biotechVideoGrid');
-  if (!container) return;
-
-  const biotechList = state.accessibleVideos.filter(v => v.department === 'Biotech');
-  if (biotechList.length === 0) {
-    container.innerHTML = `
-      <div class="col-span-full py-6 text-center text-xs text-gray-400">
-        No Biotech research assets visible under current clearance.
-      </div>
-    `;
-    return;
-  }
-
-  container.innerHTML = biotechList.map(v => createVideoCardHtml(v)).join('');
+  // Aliased to renderHomeVideos
+  renderHomeVideos();
 }
 
 function renderRecommendedVideos() {
@@ -1271,7 +1287,11 @@ function renderUserTable() {
     list = list.filter(u => u.department === dept);
   }
   if (level) {
-    list = list.filter(u => u.permission_level === level);
+    if (level === 'Admin') {
+      list = list.filter(u => u.is_admin === 1 || u.role === 'System Administrator');
+    } else if (level === 'User') {
+      list = list.filter(u => !u.is_admin && u.role !== 'System Administrator');
+    }
   }
 
   tbody.innerHTML = list.map(u => {
@@ -1308,7 +1328,7 @@ function renderUserTable() {
             }).join('')}
           </div>
         </td>
-        <td class="py-3.5 px-5">${getPermissionBadgeMarkup(u.permission_level)}</td>
+        <td class="py-3.5 px-5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.is_admin ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}">${u.is_admin ? '🛡️ Administrator' : '👤 Regular Staff'}</span></td>
         <td class="py-3.5 px-5">
           <span class="inline-flex items-center gap-1.5 font-semibold text-[11px] ${isInactive ? 'text-rose-600' : 'text-emerald-700'}">
             <span class="w-2 h-2 rounded-full ${statusColor}"></span>
@@ -1582,7 +1602,7 @@ async function saveUserModalSubmit() {
 }
 
 function exportUsersCSV() {
-  const headers = ['Employee ID', 'Name', 'Email', 'Department', 'Allowed Tags', 'Clearance Level', 'Status'];
+  const headers = ['Employee ID', 'Name', 'Email', 'Department', 'Allowed Tags', 'Access Role', 'Status'];
   const rows = state.users.map(u => [
     `"${u.emp_id || ''}"`,
     `"${u.name || ''}"`,
@@ -1656,7 +1676,7 @@ function renderVideoManagementTable() {
     list = list.filter(v => v.department === dept);
   }
   if (level) {
-    list = list.filter(v => v.permission_level === level);
+    list = list.filter(v => (v.access_mode || 'public').toLowerCase() === level.toLowerCase());
   }
 
   tbody.innerHTML = list.map(v => `
@@ -1679,7 +1699,7 @@ function renderVideoManagementTable() {
         <div class="font-semibold text-gray-800 text-xs">${v.department}</div>
         <div class="text-[10px] text-gray-400 truncate max-w-[140px]">${v.tags || ''}</div>
       </td>
-      <td class="py-3 px-4">${getPermissionBadgeMarkup(v.permission_level)}</td>
+      <td class="py-3 px-4">${getPermissionBadgeMarkup(v)}</td>
       <td class="py-3 px-4 text-[11px] text-gray-500">${v.views || 0} views</td>
       <td class="py-3 px-4 text-[11px] text-gray-600">${v.uploaded_by || 'Admin'}</td>
       <td class="py-3 px-4 text-right space-x-1">
@@ -1731,7 +1751,7 @@ function renderUploadPersonList(filter = '') {
 
   container.innerHTML = users.map(u => {
     const isChecked = state.selectedUploadPersons.has(u.id);
-    const isVip = u.name.includes('Noi') || u.name.includes('Noom') || u.name.includes('Gunnthanat') || u.department === 'Executive';
+    const isExec = u.department === 'Executive' || u.role.includes('Director') || u.role.includes('Lead');
     return `
       <label class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 cursor-pointer text-xs">
         <div class="flex items-center gap-2.5">
@@ -1742,7 +1762,7 @@ function renderUploadPersonList(filter = '') {
           <div>
             <div class="font-bold text-gray-900 flex items-center gap-1.5">
               <span>${u.name}</span>
-              ${isVip ? '<span class="px-1.5 py-0.2 bg-purple-100 text-purple-700 font-extrabold rounded text-[9px]">VIP</span>' : ''}
+              ${isExec ? '<span class="px-1.5 py-0.2 bg-purple-100 text-purple-700 font-extrabold rounded text-[9px]">EXEC</span>' : ''}
             </div>
             <div class="text-[10px] text-gray-400">${u.role} • ${u.department}</div>
           </div>
@@ -1773,12 +1793,12 @@ function toggleUploadPerson(id) {
 function selectVipPresetForUpload() {
   state.selectedUploadPersons.clear();
   state.users.forEach(u => {
-    if (u.name.includes('Noi') || u.name.includes('Noom') || u.name.includes('Gunnthanat') || u.name.includes('Alice') || u.department === 'Executive') {
+    if (u.department === 'Executive' || u.role.includes('Director') || u.role.includes('Lead') || u.is_admin === 1) {
       state.selectedUploadPersons.add(u.id);
     }
   });
   renderUploadPersonList();
-  showToast('เลือกกลุ่ม VIP / ผู้บริหาร & R&D Lead เรียบร้อยแล้ว', 'info');
+  showToast('เลือกกลุ่มผู้บริหาร (Executive Board) & ทีมวิจัย R&D เรียบร้อยแล้ว', 'info');
 }
 
 function clearUploadPersons() {
@@ -1815,7 +1835,7 @@ function renderDrawerPersonList(filter = '') {
 
   container.innerHTML = users.map(u => {
     const isChecked = state.selectedDrawerPersons.has(u.id);
-    const isVip = u.name.includes('Noi') || u.name.includes('Noom') || u.name.includes('Gunnthanat') || u.department === 'Executive';
+    const isExec = u.department === 'Executive' || u.role.includes('Director') || u.role.includes('Lead');
     return `
       <label class="flex items-center justify-between p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs">
         <div class="flex items-center gap-2">
@@ -1826,7 +1846,7 @@ function renderDrawerPersonList(filter = '') {
           <div>
             <div class="font-bold text-gray-900 flex items-center gap-1">
               <span>${u.name}</span>
-              ${isVip ? '<span class="px-1 py-0.1 bg-purple-100 text-purple-700 font-extrabold rounded text-[8px]">VIP</span>' : ''}
+              ${isExec ? '<span class="px-1 py-0.1 bg-purple-100 text-purple-700 font-extrabold rounded text-[8px]">EXEC</span>' : ''}
             </div>
             <div class="text-[9px] text-gray-400">${u.role}</div>
           </div>
@@ -1856,12 +1876,12 @@ function toggleDrawerPerson(id) {
 function selectVipPresetForDrawer() {
   state.selectedDrawerPersons.clear();
   state.users.forEach(u => {
-    if (u.name.includes('Noi') || u.name.includes('Noom') || u.name.includes('Gunnthanat') || u.name.includes('Alice') || u.department === 'Executive') {
+    if (u.department === 'Executive' || u.role.includes('Director') || u.role.includes('Lead') || u.is_admin === 1) {
       state.selectedDrawerPersons.add(u.id);
     }
   });
   renderDrawerPersonList();
-  showToast('เลือกกลุ่ม VIP / ผู้บริหาร & R&D Lead ใน Drawer', 'info');
+  showToast('เลือกกลุ่มผู้บริหาร (Executive Board) & ทีมวิจัย R&D ใน Drawer', 'info');
 }
 
 function clearDrawerPersons() {
@@ -2083,7 +2103,7 @@ function generateMatrixHtml(matrixData) {
       <thead>
         <tr class="bg-slate-50 border-b border-outline-variant font-bold text-gray-500 uppercase text-[10px]">
           <th class="py-3 px-4">User Persona</th>
-          <th class="py-3 px-4">Department & Clearance</th>
+          <th class="py-3 px-4">Department & Access Role</th>
           <th class="py-3 px-4">สิทธิ์แอดมิน / อัปโหลด</th>
           <th class="py-3 px-4 text-center">Accessible Videos</th>
           <th class="py-3 px-4">Permission Evaluation Breakdown</th>
@@ -2294,7 +2314,7 @@ function renderTagTable() {
         <td class="py-3 px-5 text-center font-bold text-gray-700">${t.user_count || 0} users</td>
         <td class="py-3 px-5 text-gray-500 max-w-xs truncate" title="${t.description || ''}">${t.description || '-'}</td>
         <td class="py-3 px-5 text-right space-x-1">
-          <button onclick="editTagPrompt(${t.id})" class="p-1 text-gray-400 hover:text-primary rounded hover:bg-slate-100" title="Edit Tag Clearance & Scope">
+          <button onclick="editTagPrompt(${t.id})" class="p-1 text-gray-400 hover:text-primary rounded hover:bg-slate-100" title="Edit Tag Access Scope">
             <span class="material-symbols-outlined text-sm">edit</span>
           </button>
           <button onclick="deleteTagPrompt(${t.id})" class="p-1 text-gray-400 hover:text-rose-600 rounded hover:bg-slate-100" title="Delete Tag">
@@ -2323,7 +2343,7 @@ function editTagPrompt(tagId) {
   const tag = state.tags.find(t => t.id === tagId);
   if (!tag) return;
 
-  document.getElementById('tagModalTitle').textContent = 'Edit Security Tag Clearance';
+  document.getElementById('tagModalTitle').textContent = 'Edit Security Tag Access Scope';
   document.getElementById('modalTagId').value = tag.id;
   document.getElementById('modalTagName').value = tag.name;
   document.getElementById('modalTagClearance').value = tag.clearance_level || 'Standard';
@@ -2515,7 +2535,7 @@ function renderAdminDeptTable() {
              catName.includes(u.department.toLowerCase()) || 
              uTags.includes(catName) ||
              (u.is_admin === 1) ||
-             (u.name.includes('Noi') || u.name.includes('Noom'));
+             (u.department === 'Executive');
     });
 
     const userAvatars = associatedUsers.slice(0, 4).map(u => `
@@ -2760,19 +2780,40 @@ function openCategoryDetail(catName) {
   if (descEl) descEl.textContent = `Official collection of academic assets, research papers, and SOP video protocols under ${catName}.`;
 
   const filtered = state.accessibleVideos.filter(v => {
+    if (catName === 'Recommended') return true;
     if (v.category === catName) return true;
-    if (catName.includes('Research') && v.department === 'Biotech') return true;
-    if (catName.includes('Training') && (v.tags && v.tags.includes('safety'))) return true;
-    if (catName.includes('Mill') && (v.tags && v.tags.includes('silo') || v.department === 'Operations')) return true;
-    if (catName.includes('Vendor') && v.department === 'Raw Material') return true;
+    const lowCat = catName.toLowerCase();
+    const lowTags = (v.tags || '').toLowerCase();
+    const lowDept = (v.department || '').toLowerCase();
+
+    if (lowCat.includes('research') || lowCat.includes('biotech')) {
+      return lowDept.includes('biotech') || lowTags.includes('biotech') || (v.category && v.category.toLowerCase().includes('research'));
+    }
+    if (lowCat.includes('trial') || lowCat.includes('crop')) {
+      return lowTags.includes('drones') || lowTags.includes('yield') || lowTags.includes('swine') || lowTags.includes('nutrition') || lowDept.includes('swine') || lowDept.includes('poultry');
+    }
+    if (lowCat.includes('safety') || lowCat.includes('training')) {
+      return lowTags.includes('safety') || lowTags.includes('biosecurity') || lowTags.includes('qclab') || lowDept.includes('qc');
+    }
+    if (lowCat.includes('townhall') || lowCat.includes('brief') || lowCat.includes('executive')) {
+      return (v.category && v.category.toLowerCase().includes('townhall')) || lowDept.includes('executive') || lowTags.includes('meeting') || lowTags.includes('confidential');
+    }
+    if (lowCat.includes('mill') || lowCat.includes('operation') || lowCat.includes('scada')) {
+      return lowDept.includes('operations') || lowTags.includes('scada') || lowTags.includes('rawmaterial');
+    }
+    if (lowCat.includes('vendor') || lowCat.includes('standard')) {
+      return lowDept.includes('raw material') || lowTags.includes('standard');
+    }
     return false;
   });
 
+  const list = filtered.length > 0 ? filtered : state.accessibleVideos;
+
   if (grid) {
-    if (filtered.length === 0) {
-      grid.innerHTML = `<div class="col-span-full py-12 text-center text-gray-400">No videos available under this category with your current security clearance.</div>`;
+    if (list.length === 0) {
+      grid.innerHTML = `<div class="col-span-full py-12 text-center text-gray-400">No videos available under this category with your current access permissions.</div>`;
     } else {
-      grid.innerHTML = filtered.map(v => createVideoCardHtml(v)).join('');
+      grid.innerHTML = list.map(v => createVideoCardHtml(v)).join('');
     }
   }
 }

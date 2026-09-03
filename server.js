@@ -593,50 +593,45 @@ try {
   db.prepare("UPDATE users SET allowed_tags = '*' WHERE email = 'admin@feedtech.com'").run();
 } catch (e) {}
 
-// Ensure VIP / Key Meeting Personas exist (Khun Noi, P'Noom, Gunnthanat K.)
+// Ensure Executive & Key Research Personas exist (Clean Corporate Profiles)
 try {
-  const existingNoi = db.prepare("SELECT * FROM users WHERE name LIKE '%Noi%' OR email LIKE '%noi%'").get();
+  // Update any existing nicknames in database
+  db.prepare("UPDATE users SET name = 'Nuntana W.', role = 'Executive Director' WHERE name LIKE '%Noi%' OR email LIKE '%noi%'").run();
+  db.prepare("UPDATE users SET name = 'Thanawat R.', role = 'Senior R&D Lead' WHERE name LIKE '%Noom%' OR email LIKE '%noom%'").run();
+  db.prepare("UPDATE users SET name = 'Gunnthanat K.', role = 'Engineering Team Lead' WHERE name LIKE '%Gunnthanat%' OR email LIKE '%gunnthanat%'").run();
+
+  const existingNoi = db.prepare("SELECT * FROM users WHERE email = 'noi.exec@feedtech.com'").get();
   if (!existingNoi) {
     db.prepare("INSERT INTO users (emp_id, name, email, department, role, permission_level, is_admin, status, avatar_color, allowed_tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
-      'VIP-001', 'Khun Noi (คุณหน่อย)', 'noi.exec@feedtech.com', 'Executive', 'Executive Director / VIP', 'Highly Confidential', 0, 'Active', '#8b5cf6', '*'
+      'VIP-001', 'Nuntana W.', 'noi.exec@feedtech.com', 'Executive', 'Executive Director', 'Standard', 0, 'Active', '#8b5cf6', '*'
     );
   }
-  const existingNoom = db.prepare("SELECT * FROM users WHERE name LIKE '%Noom%' OR email LIKE '%noom%'").get();
+  const existingNoom = db.prepare("SELECT * FROM users WHERE email = 'noom.rd@feedtech.com'").get();
   if (!existingNoom) {
     db.prepare("INSERT INTO users (emp_id, name, email, department, role, permission_level, is_admin, status, avatar_color, allowed_tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
-      'EMP-1002', 'P\'Noom (พี่หนุ่ม)', 'noom.rd@feedtech.com', 'Biotech', 'Senior R&D Lead', 'Restricted', 0, 'Active', '#0284c7', '#biotech, #research'
+      'EMP-1002', 'Thanawat R.', 'noom.rd@feedtech.com', 'Biotech', 'Senior R&D Lead', 'Standard', 0, 'Active', '#0284c7', '#biotech, #research'
     );
   }
-  const existingGunn = db.prepare("SELECT * FROM users WHERE name LIKE '%Gunnthanat%' OR email LIKE '%gunnthanat%'").get();
+  const existingGunn = db.prepare("SELECT * FROM users WHERE email = 'gunnthanat@feedtech.com'").get();
   if (!existingGunn) {
     db.prepare("INSERT INTO users (emp_id, name, email, department, role, permission_level, is_admin, status, avatar_color, allowed_tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
-      'EMP-1003', 'Gunnthanat K. (พี่กัณฑ์)', 'gunnthanat@feedtech.com', 'Operations', 'Engineering Team Lead', 'Standard', 1, 'Active', '#059669', '*'
+      'EMP-1003', 'Gunnthanat K.', 'gunnthanat@feedtech.com', 'Operations', 'Engineering Team Lead', 'Standard', 1, 'Active', '#059669', '*'
     );
   }
 } catch (e) {}
 
 // Update videos with Person-Based Access sample configurations
 try {
-  // VID-8921: Include specific VIP & Research team (Dr. Alice, Somchai, Kittisak, Khun Noi, P'Noom)
   db.prepare("UPDATE videos SET access_mode = 'include', allowed_user_ids = '[1, 4, 7, 8, 9, 10]' WHERE video_id = 'VID-8921'").run();
-  // VID-8920: Public company-wide
   db.prepare("UPDATE videos SET access_mode = 'public', allowed_user_ids = '[]', excluded_user_ids = '[]' WHERE video_id = 'VID-8920'").run();
-  // VID-8919: Exclude David Miller (Procurement)
   db.prepare("UPDATE videos SET access_mode = 'exclude', excluded_user_ids = '[6]' WHERE video_id = 'VID-8919'").run();
-  // VID-8918: Include Somchai, Dr. Alice, Khun Noi
-  db.prepare("UPDATE videos SET access_mode = 'include', allowed_user_ids = '[1, 4, 8]' WHERE video_id = 'VID-8918'").run();
-  // VID-8917: Public
+  db.prepare("UPDATE videos SET access_mode = 'include', allowed_user_ids = '[1, 4, 9]' WHERE video_id = 'VID-8918'").run();
   db.prepare("UPDATE videos SET access_mode = 'public' WHERE video_id = 'VID-8917'").run();
-  // VID-8916: Include VIP Board & Lead Scientists only (Dr. Alice, Admin, Khun Noi, P'Noom, P'Gunn)
-  db.prepare("UPDATE videos SET access_mode = 'include', allowed_user_ids = '[1, 7, 8, 9, 10]' WHERE video_id = 'VID-8916'").run();
-  // VID-8915: Public
+  db.prepare("UPDATE videos SET access_mode = 'include', allowed_user_ids = '[1, 7, 9, 10, 11]' WHERE video_id = 'VID-8916'").run();
   db.prepare("UPDATE videos SET access_mode = 'public' WHERE video_id = 'VID-8915'").run();
-  // VID-8914: Exclude Ananya Srisuk
   db.prepare("UPDATE videos SET access_mode = 'exclude', excluded_user_ids = '[5]' WHERE video_id = 'VID-8914'").run();
-  // VID-8913: Public
   db.prepare("UPDATE videos SET access_mode = 'public' WHERE video_id = 'VID-8913'").run();
-  // VID-8912: VIP Executive Briefing (Admin, Khun Noi, Gunnthanat K.)
-  db.prepare("UPDATE videos SET access_mode = 'include', allowed_user_ids = '[7, 8, 10]' WHERE video_id = 'VID-8912'").run();
+  db.prepare("UPDATE videos SET access_mode = 'include', allowed_user_ids = '[7, 9, 11]' WHERE video_id = 'VID-8912'").run();
 } catch (e) {}
 
 // Global active simulation user in memory (defaults to Dr. Alice Smith)
