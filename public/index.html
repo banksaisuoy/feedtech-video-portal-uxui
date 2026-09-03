@@ -1161,7 +1161,78 @@
             </select>
           </div>
 
-          <!-- Person-Based Access Control (PBAC) Settings -->
+          <!-- Video Thumbnail Management (จัดการรูปหน้าปกวิดีโอ) -->
+          <div class="bg-slate-50 border border-outline-variant p-4 rounded-xl space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-base text-primary">image</span>
+                <span>Video Thumbnail Management (จัดการหน้าปกวิดีโอ)</span>
+              </label>
+              <span class="text-[11px] text-gray-400 font-mono">16:9 Aspect Ratio</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start">
+              <!-- Thumbnail Live Preview -->
+              <div class="sm:col-span-5 aspect-video w-full rounded-xl bg-slate-200 border border-outline-variant overflow-hidden relative shadow-xs group">
+                <img id="uploadThumbnailPreview" src="https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=800&q=80" onerror="this.onerror=null; this.src=generateFallbackThumbnail('Cover Preview', 'Biotech')" alt="Video Thumbnail Preview" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                <div class="absolute inset-0 bg-slate-950/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span class="text-white text-xs font-bold bg-black/60 px-2.5 py-1 rounded-md flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">visibility</span> Live Preview
+                  </span>
+                </div>
+                <div class="absolute bottom-2 right-2 bg-black/75 text-white text-[10px] font-mono font-bold px-1.5 py-0.5 rounded">
+                  16:9 Preview
+                </div>
+              </div>
+
+              <!-- Thumbnail Controls -->
+              <div class="sm:col-span-7 space-y-2.5 text-xs">
+                <div>
+                  <label class="block font-semibold text-gray-700 mb-1 text-[11px]">Thumbnail Image URL / ลิงก์รูปหน้าปก</label>
+                  <div class="flex gap-2">
+                    <input id="uploadThumbnailUrl" type="url" oninput="updateUploadThumbnailPreview(this.value)" placeholder="https://images.unsplash.com/... or paste image URL" value="https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=800&q=80" class="flex-1 px-3 py-1.5 border border-outline-variant rounded-lg bg-white outline-none focus:ring-2 focus:ring-primary text-xs font-mono text-gray-700">
+                    <button type="button" onclick="autoGenerateThumbnail()" class="px-3 py-1.5 bg-primary text-white font-bold rounded-lg hover:bg-emerald-800 transition-colors flex items-center gap-1 shrink-0 text-xs shadow-2xs" title="Auto-suggest based on selected department">
+                      <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                      <span>Auto</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- One-click Domain Presets Gallery -->
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[11px] font-bold text-gray-600">Quick Domain Presets (เลือกรูปตามสายงาน):</span>
+                  </div>
+                  <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5" id="uploadPresetThumbs">
+                    <button type="button" onclick="setUploadThumbnailPreset('Biotech')" class="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary focus:border-primary transition-all group" title="Biotech & Genetics">
+                      <img src="https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=300&q=80" onerror="this.onerror=null; this.src=generateFallbackThumbnail('Biotech', 'Biotech')" class="w-full h-full object-cover">
+                      <span class="absolute inset-x-0 bottom-0 bg-black/70 text-[9px] text-white text-center font-semibold py-0.5 truncate">Biotech</span>
+                    </button>
+                    <button type="button" onclick="setUploadThumbnailPreset('Swine')" class="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary focus:border-primary transition-all group" title="Swine & Nutrition">
+                      <img src="https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&w=300&q=80" onerror="this.onerror=null; this.src=generateFallbackThumbnail('Swine', 'Swine')" class="w-full h-full object-cover">
+                      <span class="absolute inset-x-0 bottom-0 bg-black/70 text-[9px] text-white text-center font-semibold py-0.5 truncate">Swine</span>
+                    </button>
+                    <button type="button" onclick="setUploadThumbnailPreset('QC-Lab')" class="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary focus:border-primary transition-all group" title="QC-Lab & Assay">
+                      <img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=300&q=80" onerror="this.onerror=null; this.src=generateFallbackThumbnail('QC-Lab', 'QC-Lab')" class="w-full h-full object-cover">
+                      <span class="absolute inset-x-0 bottom-0 bg-black/70 text-[9px] text-white text-center font-semibold py-0.5 truncate">QC-Lab</span>
+                    </button>
+                    <button type="button" onclick="setUploadThumbnailPreset('Operations')" class="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary focus:border-primary transition-all group" title="Operations & SCADA">
+                      <img src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=300&q=80" onerror="this.onerror=null; this.src=generateFallbackThumbnail('Operations', 'Operations')" class="w-full h-full object-cover">
+                      <span class="absolute inset-x-0 bottom-0 bg-black/70 text-[9px] text-white text-center font-semibold py-0.5 truncate">Operations</span>
+                    </button>
+                    <button type="button" onclick="setUploadThumbnailPreset('Poultry')" class="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary focus:border-primary transition-all group" title="Poultry & Layers">
+                      <img src="https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=300&q=80" onerror="this.onerror=null; this.src=generateFallbackThumbnail('Poultry', 'Poultry')" class="w-full h-full object-cover">
+                      <span class="absolute inset-x-0 bottom-0 bg-black/70 text-[9px] text-white text-center font-semibold py-0.5 truncate">Poultry</span>
+                    </button>
+                    <button type="button" onclick="setUploadThumbnailPreset('Executive')" class="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary focus:border-primary transition-all group" title="Townhall & Executive">
+                      <img src="https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=300&q=80" onerror="this.onerror=null; this.src=generateFallbackThumbnail('Executive', 'Executive')" class="w-full h-full object-cover">
+                      <span class="absolute inset-x-0 bottom-0 bg-black/70 text-[9px] text-white text-center font-semibold py-0.5 truncate">Executive</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="bg-slate-50 border border-outline-variant p-4 rounded-xl space-y-3">
             <div>
               <label class="block text-xs font-bold text-gray-800 mb-1.5 flex items-center gap-1.5">
@@ -1633,9 +1704,20 @@
       <input type="hidden" id="editDrawerVideoId">
       
       <!-- Video Preview & Thumbnail Box -->
-      <div class="w-full aspect-video rounded-xl bg-slate-900 overflow-hidden relative group">
-        <img id="editDrawerThumb" src="" class="w-full h-full object-cover">
-        <div class="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] px-2 py-0.5 rounded font-bold" id="editDrawerDuration">12:04</div>
+      <div class="space-y-2">
+        <div class="w-full aspect-video rounded-xl bg-slate-900 overflow-hidden relative group">
+          <img id="editDrawerThumb" src="" onerror="this.onerror=null; this.src=generateFallbackThumbnail('Video Cover', 'Biotech')" class="w-full h-full object-cover">
+          <div class="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] px-2 py-0.5 rounded font-bold" id="editDrawerDuration">12:04</div>
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-gray-700 mb-1 flex items-center justify-between">
+            <span>Thumbnail Image URL / ลิงก์หน้าปก</span>
+            <button type="button" onclick="autoGenerateDrawerThumbnail()" class="text-[10px] text-primary hover:underline font-bold flex items-center gap-0.5">
+              <span class="material-symbols-outlined text-xs">auto_awesome</span> Suggest Cover
+            </button>
+          </label>
+          <input id="editDrawerThumbUrl" type="url" oninput="document.getElementById('editDrawerThumb').src = this.value" placeholder="https://..." class="w-full px-3 py-1.5 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-mono text-gray-700">
+        </div>
       </div>
 
       <div>

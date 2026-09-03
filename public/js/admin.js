@@ -325,6 +325,9 @@ function openEditDrawer(videoId) {
 
   document.getElementById('editDrawerVideoId').value = v.id;
   document.getElementById('editDrawerThumb').src = v.thumbnail_url || 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=800';
+  if (document.getElementById('editDrawerThumbUrl')) {
+    document.getElementById('editDrawerThumbUrl').value = v.thumbnail_url || '';
+  }
   document.getElementById('editDrawerDuration').textContent = v.duration;
   document.getElementById('editDrawerTitle').value = v.title;
   document.getElementById('editDrawerDesc').value = v.description || '';
@@ -382,6 +385,7 @@ async function saveEditDrawerChanges() {
   const category = document.getElementById('editDrawerCategory')?.value || department;
   const tags = document.getElementById('editDrawerTags').value.trim();
   const is_hidden = document.getElementById('editDrawerIsHidden').checked ? 1 : 0;
+  const thumbnail_url = document.getElementById('editDrawerThumbUrl')?.value.trim() || undefined;
 
   let access_mode = 'public';
   const radios = document.getElementsByName('drawerAccessMode');
@@ -406,6 +410,7 @@ async function saveEditDrawerChanges() {
         department, 
         category,
         tags, 
+        thumbnail_url,
         is_hidden,
         access_mode,
         allowed_user_ids,
@@ -442,7 +447,98 @@ async function deleteVideoPrompt() {
   }
 }
 
-// ---------------- CLOUD UPLOAD HUB ----------------
+// ---------------- THUMBNAIL MANAGEMENT & CLOUD UPLOAD HUB ----------------
+
+const DOMAIN_THUMBNAIL_PRESETS = {
+  Biotech: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=800&q=80',
+  Swine: 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&w=800&q=80',
+  'QC-Lab': 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
+  Operations: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80',
+  Poultry: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=800&q=80',
+  Executive: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=800&q=80',
+  Default: 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=800&q=80'
+};
+
+window.generateFallbackThumbnail = function(title, dept) {
+  const colors = {
+    Biotech: ['#047857', '#10b981'],
+    Swine: ['#b45309', '#f59e0b'],
+    'QC-Lab': ['#4338ca', '#6366f1'],
+    Operations: ['#0f766e', '#14b8a6'],
+    Poultry: ['#c2410c', '#f97316'],
+    Executive: ['#1e293b', '#334155'],
+    Default: ['#065f46', '#059669']
+  };
+  const [c1, c2] = colors[dept] || colors.Default;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+    <defs>
+      <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c2}"/>
+      </linearGradient>
+    </defs>
+    <rect width="800" height="450" fill="url(#g)"/>
+    <circle cx="400" cy="200" r="60" fill="rgba(255,255,255,0.15)"/>
+    <polygon points="385,175 425,200 385,225" fill="#ffffff"/>
+    <text x="400" y="310" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="bold" text-anchor="middle">${title || dept || 'Feedtech Video'}</text>
+    <text x="400" y="345" fill="rgba(255,255,255,0.85)" font-family="system-ui, -apple-system, sans-serif" font-size="16" text-anchor="middle">Feedtech Enterprise Portal</text>
+  </svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+};
+
+window.updateUploadThumbnailPreview = function(url, dept) {
+  const img = document.getElementById('uploadThumbnailPreview');
+  if (img) {
+    img.onerror = function() {
+      this.onerror = null;
+      this.src = generateFallbackThumbnail('Video Cover', dept || 'Biotech');
+    };
+    if (url) img.src = url;
+  }
+};
+
+window.setUploadThumbnailPreset = function(presetKey) {
+  const url = DOMAIN_THUMBNAIL_PRESETS[presetKey] || DOMAIN_THUMBNAIL_PRESETS.Default;
+  const input = document.getElementById('uploadThumbnailUrl');
+  if (input) input.value = url;
+  updateUploadThumbnailPreview(url);
+  showToast(`Thumbnail set to [${presetKey}] preset`, 'info');
+};
+
+window.autoGenerateThumbnail = function() {
+  const dept = document.getElementById('uploadVideoDept')?.value || '';
+  const cat = document.getElementById('uploadVideoCategory')?.value || '';
+  
+  let key = 'Default';
+  if (/biotech|cellular|gene/i.test(dept) || /whitepaper/i.test(cat)) key = 'Biotech';
+  else if (/swine|pig|hog/i.test(dept)) key = 'Swine';
+  else if (/qc|lab|assay/i.test(dept) || /lab/i.test(cat)) key = 'QC-Lab';
+  else if (/poultry|avian|bird|broiler/i.test(dept)) key = 'Poultry';
+  else if (/operation|mill|production/i.test(dept) || /operation/i.test(cat)) key = 'Operations';
+  else if (/executive|townhall|symposia/i.test(dept) || /townhall|meeting/i.test(cat)) key = 'Executive';
+
+  setUploadThumbnailPreset(key);
+};
+
+window.autoGenerateDrawerThumbnail = function() {
+  const dept = document.getElementById('editDrawerDept')?.value || '';
+  const cat = document.getElementById('editDrawerCategory')?.value || '';
+  
+  let key = 'Default';
+  if (/biotech|cellular|gene/i.test(dept) || /whitepaper/i.test(cat)) key = 'Biotech';
+  else if (/swine|pig|hog/i.test(dept)) key = 'Swine';
+  else if (/qc|lab|assay/i.test(dept) || /lab/i.test(cat)) key = 'QC-Lab';
+  else if (/poultry|avian|bird|broiler/i.test(dept)) key = 'Poultry';
+  else if (/operation|mill|production/i.test(dept) || /operation/i.test(cat)) key = 'Operations';
+  else if (/executive|townhall|symposia/i.test(dept) || /townhall|meeting/i.test(cat)) key = 'Executive';
+
+  const url = DOMAIN_THUMBNAIL_PRESETS[key] || DOMAIN_THUMBNAIL_PRESETS.Default;
+  const input = document.getElementById('editDrawerThumbUrl');
+  const img = document.getElementById('editDrawerThumb');
+  if (input) input.value = url;
+  if (img) img.src = url;
+  showToast(`Suggested [${key}] thumbnail applied`, 'info');
+};
 
 async function submitUploadVideo() {
   const video_url = document.getElementById('uploadVideoUrl').value.trim();
@@ -452,6 +548,7 @@ async function submitUploadVideo() {
   const category = document.getElementById('uploadVideoCategory')?.value || 'Research & Whitepaper';
   const duration = document.getElementById('uploadVideoDuration')?.value?.trim() || '10:00';
   const tags = document.getElementById('uploadVideoTags').value.trim();
+  const thumbnail_url = document.getElementById('uploadThumbnailUrl')?.value.trim() || DOMAIN_THUMBNAIL_PRESETS.Default;
 
   let access_mode = 'public';
   const radios = document.getElementsByName('uploadAccessMode');
@@ -482,6 +579,7 @@ async function submitUploadVideo() {
         category,
         duration,
         tags,
+        thumbnail_url,
         video_url,
         access_mode,
         allowed_user_ids,
@@ -494,6 +592,8 @@ async function submitUploadVideo() {
       document.getElementById('uploadVideoUrl').value = '';
       document.getElementById('uploadVideoTitle').value = '';
       document.getElementById('uploadVideoDesc').value = '';
+      document.getElementById('uploadThumbnailUrl').value = DOMAIN_THUMBNAIL_PRESETS.Default;
+      updateUploadThumbnailPreview(DOMAIN_THUMBNAIL_PRESETS.Default);
       clearUploadPersons();
 
       await loadAllVideos();

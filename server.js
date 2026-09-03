@@ -1160,6 +1160,7 @@ app.put('/api/videos/:id', (req, res) => {
   const videoId = req.params.id;
   const { 
     title, description, department, category, permission_level, tags, 
+    thumbnail_url,
     is_hidden, allow_downloads, enable_comments,
     access_mode, allowed_user_ids, excluded_user_ids
   } = req.body;
@@ -1173,6 +1174,7 @@ app.put('/api/videos/:id', (req, res) => {
           category = COALESCE(?, category),
           permission_level = COALESCE(?, permission_level),
           tags = COALESCE(?, tags),
+          thumbnail_url = COALESCE(?, thumbnail_url),
           is_hidden = COALESCE(?, is_hidden),
           allow_downloads = COALESCE(?, allow_downloads),
           enable_comments = COALESCE(?, enable_comments),
@@ -1182,6 +1184,7 @@ app.put('/api/videos/:id', (req, res) => {
       WHERE id = ? OR video_id = ?
     `).run(
       title, description, department, category, permission_level, tags, 
+      thumbnail_url,
       is_hidden, allow_downloads, enable_comments,
       access_mode,
       allowed_user_ids !== undefined ? (typeof allowed_user_ids === 'string' ? allowed_user_ids : JSON.stringify(allowed_user_ids)) : null,
