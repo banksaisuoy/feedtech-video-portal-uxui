@@ -38,11 +38,10 @@ window.translations = {
     adminDashboard: 'Dashboard Overview',
     adminUsers: 'User Management',
     adminDepts: 'Manage Categories',
-    adminTags: 'Tags & Subcategories',
+    adminTags: 'Categories & Tags',
     adminVideos: 'Video Management',
-    adminUpload: 'Upload Hub (Link)',
-    adminMatrix: 'Access Control Matrix',
-    adminLogs: 'Audit Logs',
+    adminMatrix: 'Security & Audit Logs',
+    settings: 'Settings & Language',
     viewOnlyBadge: 'View-Only Mode (Non-Admin)',
     adminModeBadge: 'Administrator Privileges Active',
     uploadNoPerm: 'Video Upload: <b>View-Only (Non-Admin)</b>',
@@ -63,12 +62,10 @@ window.translations = {
     categories: 'ศูนย์รวมหมวดหมู่ (Categories Hub)',
     adminDashboard: 'แดชบอร์ดภาพรวม',
     adminUsers: 'จัดการผู้ใช้งาน',
-    adminDepts: 'จัดการหมวดหมู่',
-    adminTags: 'จัดการแท็กและหมวดย่อย',
-    adminVideos: 'จัดการวิดีโอ',
-    adminUpload: 'อัปโหลดวิดีโอ',
-    adminMatrix: 'ตารางสิทธิ์การเข้าถึง',
-    adminLogs: 'บันทึกประวัติระบบ',
+    adminTags: 'หมวดหมู่และแท็กย่อย',
+    adminVideos: 'จัดการคลังวิดีโอ',
+    adminMatrix: 'ความปลอดภัยและประวัติสิทธิ์',
+    settings: 'การตั้งค่าหน้าเว็บ & ภาษา',
     viewOnlyBadge: 'พนักงานทั่วไป (ดูได้อย่างเดียว)',
     adminModeBadge: 'สิทธิ์ผู้ดูแลระบบ (Admin Active)',
     uploadNoPerm: 'สิทธิ์อัปโหลดวิดีโอ: <b>ไม่มีสิทธิ์ (ดูได้อย่างเดียว)</b>',
@@ -93,10 +90,14 @@ window.setPortalLanguage = function(lang) {
   state.currentLanguage = lang;
   localStorage.setItem('feedtech_portal_lang', lang);
 
-  const navSelect = document.getElementById('navbarLangSelect');
-  if (navSelect) navSelect.value = lang;
   const prefSelect = document.getElementById('prefLanguageSelect');
   if (prefSelect) prefSelect.value = lang;
+
+  const langBadge = document.getElementById('sidebarLangBadge');
+  if (langBadge) langBadge.textContent = lang.toUpperCase();
+
+  const navSettingsText = document.getElementById('navSettingsText');
+  if (navSettingsText) navSettingsText.textContent = t('settings');
 
   const mapNav = {
     'nav-home': 'home',
@@ -105,12 +106,9 @@ window.setPortalLanguage = function(lang) {
     'nav-categories': 'categories',
     'nav-admin-dashboard': 'adminDashboard',
     'nav-admin-users': 'adminUsers',
-    'nav-admin-depts': 'adminDepts',
     'nav-admin-tags': 'adminTags',
     'nav-admin-videos': 'adminVideos',
-    'nav-admin-upload': 'adminUpload',
-    'nav-admin-matrix': 'adminMatrix',
-    'nav-admin-logs': 'adminLogs'
+    'nav-admin-matrix': 'adminMatrix'
   };
 
   Object.entries(mapNav).forEach(([id, tKey]) => {
