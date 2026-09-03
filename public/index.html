@@ -211,7 +211,7 @@
           </a>
           <a href="#" onclick="navigateView('admin-tags'); return false;" id="nav-admin-tags" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
             <span class="material-symbols-outlined text-xl">sell</span>
-            <span>Tag Management</span>
+            <span>Tags & Subcategories</span>
           </a>
           <a href="#" onclick="navigateView('admin-videos'); return false;" id="nav-admin-videos" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
             <span class="material-symbols-outlined text-xl">video_library</span>
@@ -1162,24 +1162,18 @@
             <textarea id="uploadVideoDesc" rows="3" placeholder="Summary of the video content, methodology, and key takeaways..." class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none resize-none"></textarea>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-gray-700 mb-1">Category <span class="text-rose-500">*</span></label>
-              <select id="uploadVideoCategory" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-semibold text-gray-900">
-                <option value="Research & Whitepaper">Research & Whitepaper</option>
-                <option value="Field Trials & Reports">Field Trials & Reports</option>
-                <option value="Training & Safety Protocols">Training & Safety Protocols</option>
-                <option value="Townhall & Executive Updates">Townhall & Executive Updates</option>
-                <option value="Lab Demos & Assay Procedures">Lab Demos & Assay Procedures</option>
-                <option value="Production & Mill Operations">Production & Mill Operations</option>
-                <option value="Corporate Events & Symposia">Corporate Events & Symposia</option>
-                <option value="Meeting Recordings">Meeting Recordings</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-gray-700 mb-1">Duration (MM:SS)</label>
-              <input id="uploadVideoDuration" type="text" value="15:30" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none">
-            </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">Knowledge Category / Domain <span class="text-rose-500">*</span></label>
+            <select id="uploadVideoCategory" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-semibold text-gray-900">
+              <option value="Research & Whitepaper">Research & Whitepaper</option>
+              <option value="Field Trials & Reports">Field Trials & Reports</option>
+              <option value="Training & Safety Protocols">Training & Safety Protocols</option>
+              <option value="Townhall & Executive Updates">Townhall & Executive Updates</option>
+              <option value="Lab Demos & Assay Procedures">Lab Demos & Assay Procedures</option>
+              <option value="Production & Mill Operations">Production & Mill Operations</option>
+              <option value="Corporate Events & Symposia">Corporate Events & Symposia</option>
+              <option value="Meeting Recordings">Meeting Recordings</option>
+            </select>
           </div>
 
           <!-- Person-Based Access Control (PBAC) Settings -->
@@ -1320,8 +1314,8 @@
       <div id="view-admin-tags" class="view-content hidden space-y-8 max-w-7xl mx-auto">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 class="text-2xl font-black text-gray-900">Tag & Category Management</h2>
-            <p class="text-xs text-gray-500 mt-1">Manage enterprise taxonomy, configure tag-based access control (TBAC), and govern access control rules.</p>
+            <h2 class="text-2xl font-black text-gray-900">Tags & Subcategories Management</h2>
+            <p class="text-xs text-gray-500 mt-1">Manage video search tags, assign tags to knowledge categories as subcategories, and configure tag-based access control (TBAC).</p>
           </div>
           <div class="flex items-center gap-2">
             <button onclick="openAddCategoryModal()" class="px-3.5 py-2 border border-outline-variant bg-white text-gray-700 text-xs font-semibold rounded-lg hover:bg-slate-50 flex items-center gap-1.5 shadow-sm">
@@ -1330,7 +1324,7 @@
             </button>
             <button onclick="openAddTagModal()" class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-emerald-800 flex items-center gap-1.5 shadow-sm">
               <span class="material-symbols-outlined text-sm">new_label</span>
-              <span>Add Security Tag</span>
+              <span>+ Add New Tag</span>
             </button>
           </div>
         </div>
@@ -1342,7 +1336,7 @@
               <span class="material-symbols-outlined text-2xl">sell</span>
             </div>
             <div>
-              <div class="text-[11px] text-gray-500 font-medium">Active Security Tags</div>
+              <div class="text-[11px] text-gray-500 font-medium">Active Search Tags</div>
               <div class="text-xl font-black text-gray-900" id="tagStatCount">14 Tags</div>
             </div>
           </div>
@@ -1366,22 +1360,52 @@
           </div>
         </div>
 
-        <!-- SECTION 1: TAG GOVERNANCE TABLE -->
+        <!-- Subcategories by Knowledge Domain (Visual Explorer) -->
+        <div class="bg-white p-5 rounded-xl border border-outline-variant shadow-sm space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 class="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-primary text-base">hub</span>
+                <span>Subcategories Grouped by Knowledge Category</span>
+              </h3>
+              <p class="text-[11px] text-gray-400">Click any subcategory tag to immediately search relevant videos across the portal.</p>
+            </div>
+            <button onclick="openAddTagModal()" class="px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 rounded-lg text-xs font-bold flex items-center gap-1 shrink-0 self-start sm:self-auto transition-colors">
+              <span class="material-symbols-outlined text-sm">add</span> Add Subcategory Tag
+            </button>
+          </div>
+          <div id="categorySubcategoryPillsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+            <!-- Dynamically populated via JS -->
+          </div>
+        </div>
+
+        <!-- SECTION 1: TAG GOVERNANCE & MANAGEMENT TABLE -->
         <div class="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden space-y-0">
           <div class="p-4 border-b border-outline-variant flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
             <div>
               <h3 class="text-sm font-bold text-gray-900 flex items-center gap-1.5">
                 <span class="material-symbols-outlined text-primary text-base">label</span>
-                Security Tags Directory & Scope Assignment
+                Search Tags Directory & Subcategory Assignment
               </h3>
-              <p class="text-[11px] text-gray-500">Tags determine video accessibility for users and categorize knowledge across business units.</p>
+              <p class="text-[11px] text-gray-500">Add or delete tags used for video searching and defining subcategories.</p>
             </div>
-            <div class="flex items-center gap-2">
-              <div class="relative w-64">
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="relative w-56">
                 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">search</span>
-                <input id="tagSearchInput" oninput="filterTagTable()" type="text" placeholder="Search tag name or description..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary outline-none">
+                <input id="tagSearchInput" oninput="filterTagTable()" type="text" placeholder="Search tag or subcategory..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary outline-none">
               </div>
-              <select id="tagClearanceFilter" onchange="filterTagTable()" class="px-2.5 py-1.5 text-xs border border-outline-variant rounded-lg bg-white outline-none">
+              <select id="tagCategoryFilter" onchange="filterTagTable()" class="px-2.5 py-1.5 text-xs border border-outline-variant rounded-lg bg-white outline-none font-medium text-gray-700">
+                <option value="">All Categories</option>
+                <option value="Biotech">Biotech</option>
+                <option value="Swine">Swine</option>
+                <option value="QC-Lab">QC-Lab</option>
+                <option value="Operations">Operations</option>
+                <option value="Poultry">Poultry</option>
+                <option value="Aquatic">Aquatic</option>
+                <option value="Executive">Executive</option>
+                <option value="General">General</option>
+              </select>
+              <select id="tagClearanceFilter" onchange="filterTagTable()" class="px-2.5 py-1.5 text-xs border border-outline-variant rounded-lg bg-white outline-none font-medium text-gray-700">
                 <option value="">All Access Scopes</option>
                 <option value="Standard">Public / General</option>
                 <option value="Restricted">Departmental</option>
@@ -1390,17 +1414,50 @@
             </div>
           </div>
 
+          <!-- Quick Add Tag Inline Bar -->
+          <div class="p-3 bg-emerald-50/70 border-b border-outline-variant flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="font-bold text-emerald-950 flex items-center gap-1">
+                <span class="material-symbols-outlined text-base text-primary">add_circle</span>
+                <span>Quick Add Tag:</span>
+              </span>
+              <input id="quickTagName" type="text" placeholder="#new-tag" class="px-2.5 py-1.5 bg-white border border-outline-variant rounded-lg font-mono font-bold text-xs outline-none focus:ring-2 focus:ring-primary w-36">
+              <select id="quickTagDept" class="px-2.5 py-1.5 bg-white border border-outline-variant rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-primary">
+                <option value="Biotech">Biotech</option>
+                <option value="Swine">Swine</option>
+                <option value="QC-Lab">QC-Lab</option>
+                <option value="Operations">Operations</option>
+                <option value="Poultry">Poultry</option>
+                <option value="Aquatic">Aquatic</option>
+                <option value="Executive">Executive</option>
+                <option value="General">General</option>
+              </select>
+              <select id="quickTagClearance" class="px-2.5 py-1.5 bg-white border border-outline-variant rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary">
+                <option value="Standard">Public Access</option>
+                <option value="Restricted">Restricted</option>
+                <option value="Highly Confidential">Highly Confidential</option>
+              </select>
+              <button onclick="handleQuickAddTag()" class="px-3.5 py-1.5 bg-primary text-white font-bold rounded-lg hover:bg-emerald-800 text-xs shadow-sm flex items-center gap-1 transition-colors">
+                <span class="material-symbols-outlined text-sm">add</span>
+                <span>+ Add Tag</span>
+              </button>
+            </div>
+            <div class="text-[11px] text-gray-500 italic">
+              Create search tags or subcategories on the fly
+            </div>
+          </div>
+
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
               <thead>
                 <tr class="bg-slate-50 text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-outline-variant">
                   <th class="py-3 px-5">Tag Name</th>
-                  <th class="py-3 px-5">Default Department</th>
+                  <th class="py-3 px-5">Parent Category (Subcategory Of)</th>
                   <th class="py-3 px-5">Access Scope</th>
-                  <th class="py-3 px-5 text-center">Tagged Videos</th>
+                  <th class="py-3 px-5 text-center">Tagged Videos (Search)</th>
                   <th class="py-3 px-5 text-center">Authorized Users</th>
                   <th class="py-3 px-5">Description</th>
-                  <th class="py-3 px-5 text-right">Actions</th>
+                  <th class="py-3 px-5 text-right">Actions (Edit / Delete)</th>
                 </tr>
               </thead>
               <tbody id="tagTableBody" class="divide-y divide-outline-variant text-xs text-gray-700">
@@ -1957,7 +2014,7 @@
   <div id="tagModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
       <div class="px-6 py-4 border-b border-outline-variant bg-slate-50 flex items-center justify-between">
-        <h3 id="tagModalTitle" class="text-base font-bold text-gray-900">Add New Security Tag</h3>
+        <h3 id="tagModalTitle" class="text-base font-bold text-gray-900">Add / Edit Tag & Subcategory</h3>
         <button onclick="closeTagModal()" class="text-gray-400 hover:text-gray-700"><span class="material-symbols-outlined">close</span></button>
       </div>
       <div class="p-6 space-y-4 text-xs">
@@ -1975,8 +2032,8 @@
           </select>
         </div>
         <div>
-          <label class="block font-bold text-gray-700 mb-1">Default Department Association</label>
-          <select id="modalTagDept" class="w-full px-3 py-2 border border-outline-variant rounded-lg outline-none focus:ring-2 focus:ring-primary">
+          <label class="block font-bold text-gray-700 mb-1">Parent Category / Subcategory Of (หมวดหมู่หลัก) <span class="text-rose-500">*</span></label>
+          <select id="modalTagDept" class="w-full px-3 py-2 border border-outline-variant rounded-lg outline-none focus:ring-2 focus:ring-primary font-semibold">
             <!-- Dynamic options -->
           </select>
         </div>

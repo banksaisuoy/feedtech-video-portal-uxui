@@ -68,7 +68,7 @@ const translations = {
     adminDashboard: 'Dashboard Overview',
     adminUsers: 'User Management',
     adminDepts: 'Manage Categories',
-    adminTags: 'Tag Management',
+    adminTags: 'Tags & Subcategories',
     adminVideos: 'Video Management',
     adminUpload: 'Upload Hub (Link)',
     adminMatrix: 'Access Control Matrix',
@@ -94,7 +94,7 @@ const translations = {
     adminDashboard: 'แดชบอร์ดภาพรวม',
     adminUsers: 'จัดการผู้ใช้งาน',
     adminDepts: 'จัดการหมวดหมู่',
-    adminTags: 'จัดการแท็กสิทธิ์',
+    adminTags: 'จัดการแท็กและหมวดย่อย',
     adminVideos: 'จัดการวิดีโอ',
     adminUpload: 'อัปโหลดวิดีโอ',
     adminMatrix: 'ตารางสิทธิ์การเข้าถึง',
@@ -2126,7 +2126,7 @@ async function submitUploadVideo() {
   const department = document.getElementById('uploadVideoDept').value;
   const description = document.getElementById('uploadVideoDesc').value.trim();
   const category = document.getElementById('uploadVideoCategory')?.value || 'Research & Whitepaper';
-  const duration = document.getElementById('uploadVideoDuration').value.trim() || '12:00';
+  const duration = document.getElementById('uploadVideoDuration')?.value?.trim() || '10:00';
   const tags = document.getElementById('uploadVideoTags').value.trim();
 
   let access_mode = 'public';
@@ -2359,6 +2359,7 @@ async function loadTags() {
       const countEl = document.getElementById('tagStatCount');
       if (countEl) countEl.textContent = `${state.tags.length} Tags`;
       renderTagTable();
+      renderCategorySubcategoryPills();
     }
   } catch (err) {
     console.error('Failed to load tags', err);
@@ -2380,21 +2381,130 @@ async function loadCategories() {
   }
 }
 
+
+function renderCategorySubcategoryPills() {
+  const container = document.getElementById('categorySubcategoryPillsContainer');
+  if (!container || !state.tags) return;
+
+  // Group tags by department/category
+  const groups = {};
+  state.tags.forEach(t => {
+    const dept = t.department || 'General';
+    if (!groups[dept]) groups[dept] = [];
+    groups[dept].push(t);
+  });
+
+  const deptIcons = {
+    'Biotech': 'biotech',
+    'Swine': 'pets',
+    'QC-Lab': 'science',
+    'Operations': 'precision_manufacturing',
+    'Poultry': 'egg',
+    'Aquatic': 'water_drop',
+    'Executive': 'corporate_fare',
+    'General': 'label'
+  };
+
+  const html = Object.entries(groups).map(([dept, tags]) => {
+    const icon = deptIcons[dept] || 'folder';
+    return `
+      <div class="p-3.5 bg-slate-50 border border-outline-variant rounded-xl flex flex-col justify-between hover:border-primary/40 transition-all shadow-xs">
+        <div>
+          <div class="flex items-center justify-between pb-2 border-b border-slate-200/60 mb-2">
+            <span class="font-bold text-gray-800 text-xs flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-primary text-sm">${icon}</span>
+              <span>${dept}</span>
+            </span>
+            <span class="text-[10px] bg-slate-200 text-gray-700 px-1.5 py-0.5 rounded font-bold">${tags.length} subcategories</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            ${tags.map(t => `
+              <button onclick="handleTagSearch('${t.name}')" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold bg-white text-gray-700 border border-outline-variant hover:bg-emerald-50 hover:text-primary hover:border-primary/30 transition-all shadow-2xs" title="Click to search videos tagged ${t.name}">
+                <span>${t.name}</span>
+                <span class="text-[9px] text-gray-400">(${t.video_count || 0})</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+        <div class="pt-2.5 mt-2 border-t border-slate-100 flex justify-end">
+          <button onclick="openAddTagForCategory('${dept}')" class="text-[10px] font-bold text-primary hover:underline flex items-center gap-0.5">
+            <span class="material-symbols-outlined text-xs">add</span> Add to ${dept}
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = html;
+}
+
+function openAddTagForCategory(deptName) {
+  openAddTagModal();
+  const deptSelect = document.getElementById('modalTagDept');
+  if (deptSelect) deptSelect.value = deptName;
+}
+
+async function handleQuickAddTag() {
+  const input = document.getElementById('quickTagName');
+  const deptSelect = document.getElementById('quickTagDept');
+  const clearSelect = document.getElementById('quickTagClearance');
+  if (!input) return;
+
+  let name = input.value.trim();
+  if (!name) {
+    showToast('Please specify tag name (e.g. #vaccine)', 'error');
+    input.focus();
+    return;
+  }
+  if (!name.startsWith('#')) {
+    name = '#' + name;
+  }
+
+  const department = deptSelect ? deptSelect.value : 'General';
+  const clearance_level = clearSelect ? clearSelect.value : 'Standard';
+
+  try {
+    const res = await fetch('/api/tags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        department,
+        clearance_level,
+        description: `Subcategory under ${department} for video categorization and search.`
+      })
+    });
+    const json = await res.json();
+    if (json.success) {
+      input.value = '';
+      await loadTags();
+      await loadAccessibleVideos();
+      showToast(`Tag ${name} added under ${department} successfully!`, 'success');
+    } else {
+      showToast('Error: ' + json.message, 'error');
+    }
+  } catch (err) {
+    showToast('Failed to add tag', 'error');
+  }
+}
+
 function renderTagTable() {
   const tbody = document.getElementById('tagTableBody');
   if (!tbody) return;
 
   const search = (document.getElementById('tagSearchInput')?.value || '').toLowerCase().trim();
   const clearanceFilter = document.getElementById('tagClearanceFilter')?.value || '';
+  const categoryFilter = document.getElementById('tagCategoryFilter')?.value || '';
 
   const filtered = state.tags.filter(t => {
-    const matchSearch = !search || t.name.toLowerCase().includes(search) || (t.description && t.description.toLowerCase().includes(search)) || t.department.toLowerCase().includes(search);
+    const matchSearch = !search || t.name.toLowerCase().includes(search) || (t.description && t.description.toLowerCase().includes(search)) || (t.department && t.department.toLowerCase().includes(search));
     const matchClearance = !clearanceFilter || t.clearance_level === clearanceFilter;
-    return matchSearch && matchClearance;
+    const matchCategory = !categoryFilter || t.department === categoryFilter;
+    return matchSearch && matchClearance && matchCategory;
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-gray-400 italic">No security tags match the selected criteria.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-gray-400 italic">No tags match the search or category filter.</td></tr>`;
     return;
   }
 
@@ -2406,24 +2516,31 @@ function renderTagTable() {
     return `
       <tr class="hover:bg-slate-50 transition-colors">
         <td class="py-3 px-5 font-mono font-bold">
-          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border ${tagBadgeColor}">
-            ${t.name}
+          <button onclick="handleTagSearch('${t.name}')" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs border ${tagBadgeColor} hover:scale-105 transition-transform" title="Click to search videos tagged ${t.name}">
+            <span class="material-symbols-outlined text-[13px]">sell</span>
+            <span>${t.name}</span>
+          </button>
+        </td>
+        <td class="py-3 px-5">
+          <span class="inline-flex items-center gap-1.5 font-bold text-gray-800 text-xs">
+            <span class="material-symbols-outlined text-sm text-primary">folder</span>
+            <span>${t.department}</span>
           </span>
         </td>
-        <td class="py-3 px-5 font-semibold text-gray-700">${t.department}</td>
         <td class="py-3 px-5">${getPermissionBadgeMarkup(t.clearance_level)}</td>
         <td class="py-3 px-5 text-center">
-          <button onclick="handleTagSearch('${t.name}')" class="font-bold text-primary hover:underline" title="Click to filter videos with this tag">
-            ${t.video_count || 0} videos
+          <button onclick="handleTagSearch('${t.name}')" class="inline-flex items-center gap-1 font-bold text-primary hover:underline" title="Search all videos with this tag">
+            <span class="material-symbols-outlined text-xs">search</span>
+            <span>${t.video_count || 0} videos</span>
           </button>
         </td>
         <td class="py-3 px-5 text-center font-bold text-gray-700">${t.user_count || 0} users</td>
         <td class="py-3 px-5 text-gray-500 max-w-xs truncate" title="${t.description || ''}">${t.description || '-'}</td>
         <td class="py-3 px-5 text-right space-x-1">
-          <button onclick="editTagPrompt(${t.id})" class="p-1 text-gray-400 hover:text-primary rounded hover:bg-slate-100" title="Edit Tag Access Scope">
+          <button onclick="editTagPrompt(${t.id})" class="p-1.5 text-gray-400 hover:text-primary rounded-md hover:bg-slate-100 transition-colors" title="Edit Tag">
             <span class="material-symbols-outlined text-sm">edit</span>
           </button>
-          <button onclick="deleteTagPrompt(${t.id})" class="p-1 text-gray-400 hover:text-rose-600 rounded hover:bg-slate-100" title="Delete Tag">
+          <button onclick="deleteTagPrompt(${t.id})" class="p-1.5 text-gray-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors" title="Delete Tag (${t.name})">
             <span class="material-symbols-outlined text-sm">delete</span>
           </button>
         </td>
@@ -2437,11 +2554,18 @@ function filterTagTable() {
 }
 
 function openAddTagModal() {
-  document.getElementById('tagModalTitle').textContent = 'Add New Security Tag';
+  document.getElementById('tagModalTitle').textContent = 'Add New Tag / Subcategory';
   document.getElementById('modalTagId').value = '';
   document.getElementById('modalTagName').value = '';
   document.getElementById('modalTagClearance').value = 'Standard';
   document.getElementById('modalTagDesc').value = '';
+
+  const deptSel = document.getElementById('modalTagDept');
+  if (deptSel) {
+    const cats = ['Biotech', 'Swine', 'QC-Lab', 'Operations', 'Poultry', 'Aquatic', 'Executive', 'General'];
+    deptSel.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+  }
+
   document.getElementById('tagModal').classList.remove('hidden');
 }
 
