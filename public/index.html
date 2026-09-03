@@ -162,10 +162,10 @@
   </header>
 
   <!-- BODY CONTENT AREA (SIDEBAR + MAIN) -->
-  <div class="flex flex-1 overflow-hidden relative">
+  <div class="flex flex-1 min-h-0 overflow-hidden relative">
     
     <!-- SIDEBAR NAVIGATION (ALL MENUS) -->
-    <aside class="w-[270px] bg-white border-r border-outline-variant flex flex-col shrink-0 overflow-y-auto scrollbar-hide py-4 px-3 select-none">
+    <aside class="w-[270px] h-full bg-white border-r border-outline-variant flex flex-col shrink-0 overflow-y-auto scrollbar-hide py-4 px-3 select-none">
       
       <!-- USER PORTAL SECTION -->
       <div id="sidebarUserSection">
@@ -877,6 +877,7 @@
         </div>
 
         <!-- Bento Grid Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- Monthly Video Consumption by Category Bar Chart (Col Span 2) -->
           <div class="lg:col-span-2 bg-white border border-outline-variant rounded-xl p-6 shadow-sm flex flex-col">
             <div class="flex justify-between items-center mb-6">
