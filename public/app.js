@@ -1,6 +1,7 @@
 // State Store
 const state = {
   currentUser: null,
+  currentLanguage: localStorage.getItem('feedtech_portal_lang') || 'en',
   users: [],
   departments: [],
   categories: [],
@@ -55,6 +56,110 @@ const state = {
 };
 
 // Initialization on DOM Load
+
+// ---------------- I18N / MULTILINGUAL SYSTEM ----------------
+
+const translations = {
+  en: {
+    home: 'Home',
+    history: 'History & Continue',
+    favorites: 'Favorites',
+    categories: 'Categories Hub',
+    adminDashboard: 'Dashboard Overview',
+    adminUsers: 'User Management',
+    adminDepts: 'Manage Categories',
+    adminTags: 'Tag Management',
+    adminVideos: 'Video Management',
+    adminUpload: 'Upload Hub (Link)',
+    adminMatrix: 'Access Control Matrix',
+    adminLogs: 'Audit Logs',
+    viewOnlyBadge: 'View-Only Mode (Non-Admin)',
+    adminModeBadge: 'Administrator Privileges Active',
+    uploadNoPerm: 'Video Upload: <b>View-Only (Non-Admin)</b>',
+    uploadPerm: 'Video Upload: <b>Enabled (Admin)</b>',
+    adminHidden: 'Admin Console: <b>Hidden (Admins Only)</b>',
+    adminActive: 'Admin Console: <b>Active (Admin Console)</b>',
+    accessDenied: 'Access denied: Management console is restricted to administrators',
+    regularStaffToast: 'Regular employees have view-only access.',
+    publicBadge: '🌐 Public Access',
+    includeBadge: '👥 Include Whitelist',
+    excludeBadge: '🚫 Exclude Blacklist',
+    langSwitched: 'Switched interface language to English'
+  },
+  th: {
+    home: 'หน้าหลัก',
+    history: 'ประวัติการรับชม',
+    favorites: 'วิดีโอที่บันทึกไว้',
+    categories: 'ศูนย์รวมหมวดหมู่ (Categories Hub)',
+    adminDashboard: 'แดชบอร์ดภาพรวม',
+    adminUsers: 'จัดการผู้ใช้งาน',
+    adminDepts: 'จัดการหมวดหมู่',
+    adminTags: 'จัดการแท็กสิทธิ์',
+    adminVideos: 'จัดการวิดีโอ',
+    adminUpload: 'อัปโหลดวิดีโอ',
+    adminMatrix: 'ตารางสิทธิ์การเข้าถึง',
+    adminLogs: 'บันทึกประวัติระบบ',
+    viewOnlyBadge: 'พนักงานทั่วไป (ดูได้อย่างเดียว)',
+    adminModeBadge: 'สิทธิ์ผู้ดูแลระบบ (Admin Active)',
+    uploadNoPerm: 'สิทธิ์อัปโหลดวิดีโอ: <b>ไม่มีสิทธิ์ (ดูได้อย่างเดียว)</b>',
+    uploadPerm: 'สิทธิ์อัปโหลดวิดีโอ: <b>มีสิทธิ์อัปโหลด (Admin)</b>',
+    adminHidden: 'เมนูแอดมิน: <b>ซ่อนไว้ (สำหรับแอดมินเท่านั้น)</b>',
+    adminActive: 'เมนูแอดมิน: <b>เปิดใช้งาน (Admin Console)</b>',
+    accessDenied: '⛔ การเข้าถึงถูกปฏิเสธ: เมนูการจัดการและอัปโหลดสำหรับแอดมินเท่านั้น',
+    regularStaffToast: 'พนักงานทั่วไปดูได้อย่างเดียว ไม่มีสิทธิ์เข้าถึงหน้าแอดมิน',
+    publicBadge: '🌐 สาธารณะ (Public)',
+    includeBadge: '👥 กำหนดเฉพาะบุคคล (Include)',
+    excludeBadge: '🚫 ยกเว้นบุคคล (Exclude)',
+    langSwitched: 'เปลี่ยนภาษาหน้าเว็บเป็นภาษาไทยเรียบร้อยแล้ว'
+  }
+};
+
+function t(key) {
+  const lang = state.currentLanguage || 'en';
+  return translations[lang]?.[key] || translations['en']?.[key] || key;
+}
+
+function setPortalLanguage(lang) {
+  state.currentLanguage = lang;
+  localStorage.setItem('feedtech_portal_lang', lang);
+
+  // Sync selectors
+  const navSelect = document.getElementById('navbarLangSelect');
+  if (navSelect) navSelect.value = lang;
+  const prefSelect = document.getElementById('prefLanguageSelect');
+  if (prefSelect) prefSelect.value = lang;
+
+  // Update Sidebar links
+  const mapNav = {
+    'nav-home': 'home',
+    'nav-history': 'history',
+    'nav-favorites': 'favorites',
+    'nav-categories': 'categories',
+    'nav-admin-dashboard': 'adminDashboard',
+    'nav-admin-users': 'adminUsers',
+    'nav-admin-depts': 'adminDepts',
+    'nav-admin-tags': 'adminTags',
+    'nav-admin-videos': 'adminVideos',
+    'nav-admin-upload': 'adminUpload',
+    'nav-admin-matrix': 'adminMatrix',
+    'nav-admin-logs': 'adminLogs'
+  };
+
+  Object.entries(mapNav).forEach(([id, tKey]) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const span = el.querySelector('span:last-child');
+      if (span) span.textContent = t(tKey);
+    }
+  });
+
+  if (state.currentUser) {
+    renderCurrentUserUI();
+  }
+
+  showToast(t('langSwitched'), 'success');
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   await loadDepartments();
   await loadCategories();
@@ -254,7 +359,7 @@ function renderCurrentUserUI() {
   }
 
   if (deptText) {
-    deptText.textContent = `Dept: ${u.department} | Role: ${u.role} | สิทธิ์: PBAC (Include / Exclude)`;
+    deptText.textContent = `Dept: ${u.department} | Role: ${u.role} | Access: PBAC (Include / Exclude)`;
   }
 
   // Top navbar profile
@@ -324,7 +429,7 @@ function renderCurrentUserUI() {
   }
   if (profileTagsDetail) {
     profileTagsDetail.innerHTML = rawTags.map(t => `
-      <button onclick="closeProfileModal(); handleTagSearch('${t}');" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold ${t === '*' ? 'bg-purple-100 text-purple-800 border border-purple-200 hover:bg-purple-200' : (t.includes('confidential') ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100' : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200')} transition-colors" title="คลิกเพื่อกรองวิดีโอตามแท็กนี้">
+      <button onclick="closeProfileModal(); handleTagSearch('${t}');" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold ${t === '*' ? 'bg-purple-100 text-purple-800 border border-purple-200 hover:bg-purple-200' : (t.includes('confidential') ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100' : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200')} transition-colors" title="Click to filter videos by this tag">
         <span>${t}</span>
         <span class="material-symbols-outlined text-xs opacity-60">search</span>
       </button>
@@ -335,7 +440,7 @@ function renderCurrentUserUI() {
   const bannerTagsContainer = document.getElementById('bannerUserTagsContainer');
   if (bannerTagsContainer) {
     bannerTagsContainer.innerHTML = rawTags.map(t => `
-      <button onclick="handleTagSearch('${t}'); return false;" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors shadow-xs" title="คลิกเพื่อค้นหาวิดีโอตามแท็กนี้">
+      <button onclick="handleTagSearch('${t}'); return false;" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors shadow-xs" title="Click to search videos by this tag">
         <span>${t}</span>
         <span class="material-symbols-outlined text-[10px] opacity-60">search</span>
       </button>
@@ -403,23 +508,23 @@ function renderCurrentUserUI() {
       bannerAdminBadge.innerHTML = `<span class="material-symbols-outlined text-[12px]">admin_panel_settings</span> Administrator Access (Full Rights)`;
     } else {
       bannerAdminBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1';
-      bannerAdminBadge.innerHTML = `<span class="material-symbols-outlined text-[12px]">visibility</span> พนักงานทั่วไป (ดูได้อย่างเดียว)`;
+      bannerAdminBadge.innerHTML = `<span class="material-symbols-outlined text-[12px]">visibility</span> ${t('viewOnlyBadge')}`;
     }
   }
 
   if (bannerUploadStatus) {
     if (isAdmin) {
-      bannerUploadStatus.innerHTML = `<span class="material-symbols-outlined text-xs text-emerald-600">check_circle</span> สิทธิ์อัปโหลดวิดีโอ: <b class="text-emerald-700">มีสิทธิ์อัปโหลด (Admin)</b>`;
+      bannerUploadStatus.innerHTML = `<span class="material-symbols-outlined text-xs text-emerald-600">check_circle</span> ${t('uploadPerm')}`;
     } else {
-      bannerUploadStatus.innerHTML = `<span class="material-symbols-outlined text-xs text-rose-500">block</span> สิทธิ์อัปโหลดวิดีโอ: <b class="text-rose-700">ไม่มีสิทธิ์ (ดูได้อย่างเดียว)</b>`;
+      bannerUploadStatus.innerHTML = `<span class="material-symbols-outlined text-xs text-rose-500">block</span> ${t('uploadNoPerm')}`;
     }
   }
 
   if (bannerAdminMenuStatus) {
     if (isAdmin) {
-      bannerAdminMenuStatus.innerHTML = `<span class="material-symbols-outlined text-xs text-emerald-600">check_circle</span> เมนูแอดมิน: <b class="text-emerald-700">เปิดใช้งาน (Admin Console)</b>`;
+      bannerAdminMenuStatus.innerHTML = `<span class="material-symbols-outlined text-xs text-emerald-600">check_circle</span> ${t('adminActive')}`;
     } else {
-      bannerAdminMenuStatus.innerHTML = `<span class="material-symbols-outlined text-xs text-rose-500">lock</span> เมนูแอดมิน: <b class="text-rose-700">ซ่อนไว้ (สำหรับแอดมินเท่านั้น)</b>`;
+      bannerAdminMenuStatus.innerHTML = `<span class="material-symbols-outlined text-xs text-rose-500">lock</span> ${t('adminHidden')}`;
     }
   }
 
@@ -589,7 +694,7 @@ function navigateView(viewName) {
 
   // Security Gate: Non-admins cannot open admin views
   if (viewName.startsWith('admin') && !isAdmin) {
-    showToast('⛔ การเข้าถึงถูกปฏิเสธ: เมนูการจัดการและอัปโหลดสำหรับแอดมินเท่านั้น', 'error');
+    showToast(t('accessDenied'), 'error');
     navigateView('home');
     return;
   }
@@ -647,7 +752,7 @@ function togglePortalAdminMode() {
   const isAdmin = u && (u.is_admin === 1 || u.role === 'System Administrator' || u.department === 'Executive');
 
   if (!isAdmin) {
-    showToast('พนักงานทั่วไปดูได้อย่างเดียว ไม่มีสิทธิ์เข้าถึงหน้าแอดมิน', 'error');
+    showToast(t('regularStaffToast'), 'error');
     return;
   }
 
@@ -670,19 +775,19 @@ function getPermissionBadgeMarkup(videoOrLevel) {
       try {
         count = JSON.parse(videoOrLevel.allowed_user_ids || '[]').length;
       } catch (e) {}
-      return `<span title="${videoOrLevel.access_grant_reason || 'สิทธิ์เฉพาะบุคคลที่ได้รับอนุญาต'}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
-        <span class="material-symbols-outlined text-[12px]">group</span> 👥 Include (${count || 'รายคน'})
+      return `<span title="${videoOrLevel.access_grant_reason || 'Specific authorized personnel'}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+        <span class="material-symbols-outlined text-[12px]">group</span> 👥 Include (${count || 'Custom'})
       </span>`;
     } else if (mode === 'exclude') {
       let count = 0;
       try {
         count = JSON.parse(videoOrLevel.excluded_user_ids || '[]').length;
       } catch (e) {}
-      return `<span title="${videoOrLevel.access_grant_reason || 'เข้าถึงได้ทุกคน ยกเว้นรายชื่อนี้'}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+      return `<span title="${videoOrLevel.access_grant_reason || 'Accessible to all company except excluded members'}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
         <span class="material-symbols-outlined text-[12px]">person_off</span> 🚫 Exclude (${count})
       </span>`;
     } else {
-      return `<span title="${videoOrLevel.access_grant_reason || 'พนักงานทุกคนดูได้'}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+      return `<span title="${videoOrLevel.access_grant_reason || 'Accessible to all employees'}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
         <span class="material-symbols-outlined text-[12px]">public</span> 🌐 Public
       </span>`;
     }
@@ -1400,7 +1505,7 @@ function renderTagPicker(containerId, hiddenInputId, isUserModal = false) {
       html += `
         <button type="button" onclick="toggleTagInPicker('*', '${hiddenInputId}', '${containerId}', true)" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-purple-600 text-white shadow-sm border border-purple-700">
           <span class="material-symbols-outlined text-xs">check_circle</span>
-          <span>* (All Access - สิทธิ์ดูได้ทุกแท็ก)</span>
+          <span>* (All Access - Full Company Permissions)</span>
         </button>
       `;
     } else {
@@ -1733,8 +1838,8 @@ function toggleUploadAccessModeUI(mode) {
     const title = document.getElementById('uploadPersonBoxTitle');
     if (title) {
       title.textContent = mode === 'include' 
-        ? '👥 เลือกรายชื่อผู้มีสิทธิ์เข้าถึง (Include Whitelist):' 
-        : '🚫 เลือกรายชื่อผู้ที่ถูกยกเว้นการเข้าถึง (Exclude Blacklist):';
+        ? '👥 Select Authorized Members (Include Whitelist):' 
+        : '🚫 Select Excluded Members (Exclude Blacklist):';
     }
     renderUploadPersonList();
   }
@@ -1774,7 +1879,7 @@ function renderUploadPersonList(filter = '') {
   }).join('');
 
   const countText = document.getElementById('uploadSelectedPersonsCountText');
-  if (countText) countText.textContent = `เลือกแล้ว: ${state.selectedUploadPersons.size} ท่าน`;
+  if (countText) countText.textContent = `Selected: ${state.selectedUploadPersons.size} persons`;
 }
 
 function filterUploadPersonList(q) {
@@ -1788,7 +1893,7 @@ function toggleUploadPerson(id) {
     state.selectedUploadPersons.add(id);
   }
   const countText = document.getElementById('uploadSelectedPersonsCountText');
-  if (countText) countText.textContent = `เลือกแล้ว: ${state.selectedUploadPersons.size} ท่าน`;
+  if (countText) countText.textContent = `Selected: ${state.selectedUploadPersons.size} persons`;
 }
 
 function selectVipPresetForUpload() {
@@ -1799,7 +1904,7 @@ function selectVipPresetForUpload() {
     }
   });
   renderUploadPersonList();
-  showToast('เลือกกลุ่มผู้บริหาร (Executive Board) & ทีมวิจัย R&D เรียบร้อยแล้ว', 'info');
+  showToast('Executive Board & R&D Lead members selected', 'info');
 }
 
 function clearUploadPersons() {
@@ -1817,8 +1922,8 @@ function toggleDrawerAccessModeUI(mode) {
     const title = document.getElementById('drawerPersonBoxTitle');
     if (title) {
       title.textContent = mode === 'include'
-        ? '👥 จัดการรายชื่อผู้มีสิทธิ์เข้าถึง (Include Whitelist):'
-        : '🚫 จัดการรายชื่อผู้ที่ถูกยกเว้น (Exclude Blacklist):';
+        ? '👥 Manage Whitelisted Members (Include):'
+        : '🚫 Manage Excluded Members (Exclude):';
     }
     renderDrawerPersonList();
   }
@@ -1857,7 +1962,7 @@ function renderDrawerPersonList(filter = '') {
   }).join('');
 
   const countText = document.getElementById('drawerSelectedPersonsCountText');
-  if (countText) countText.textContent = `เลือกแล้ว: ${state.selectedDrawerPersons.size} ท่าน`;
+  if (countText) countText.textContent = `Selected: ${state.selectedDrawerPersons.size} persons`;
 }
 
 function filterDrawerPersonList(q) {
@@ -1871,7 +1976,7 @@ function toggleDrawerPerson(id) {
     state.selectedDrawerPersons.add(id);
   }
   const countText = document.getElementById('drawerSelectedPersonsCountText');
-  if (countText) countText.textContent = `เลือกแล้ว: ${state.selectedDrawerPersons.size} ท่าน`;
+  if (countText) countText.textContent = `Selected: ${state.selectedDrawerPersons.size} persons`;
 }
 
 function selectVipPresetForDrawer() {
@@ -1882,7 +1987,7 @@ function selectVipPresetForDrawer() {
     }
   });
   renderDrawerPersonList();
-  showToast('เลือกกลุ่มผู้บริหาร (Executive Board) & ทีมวิจัย R&D ใน Drawer', 'info');
+  showToast('Executive Board & R&D Lead members selected in drawer', 'info');
 }
 
 function clearDrawerPersons() {
@@ -1988,7 +2093,7 @@ async function saveEditDrawerChanges() {
       closeEditDrawer();
       await loadAllVideos();
       await loadAccessibleVideos();
-      showToast(`บันทึกสิทธิ์วิดีโอเรียบร้อย (${access_mode.toUpperCase()})`, 'success');
+      showToast(`Video access permissions saved (${access_mode.toUpperCase()})`, 'success');
     }
   } catch (err) {
     showToast('Failed to save changes', 'error');
@@ -2070,7 +2175,7 @@ async function submitUploadVideo() {
       await loadAllVideos();
       await loadAccessibleVideos();
       navigateView('admin-videos');
-      showToast(`อัปโหลดวิดีโอและกำหนดสิทธิ์ (${access_mode.toUpperCase()}) สำเร็จแล้ว!`, 'success');
+      showToast(`Video uploaded with ${access_mode.toUpperCase()} permissions!`, 'success');
     } else {
       showToast(json.message || 'Upload failed', 'error');
     }
@@ -2105,7 +2210,7 @@ function generateMatrixHtml(matrixData) {
         <tr class="bg-slate-50 border-b border-outline-variant font-bold text-gray-500 uppercase text-[10px]">
           <th class="py-3 px-4">User Persona</th>
           <th class="py-3 px-4">Department & Access Role</th>
-          <th class="py-3 px-4">สิทธิ์แอดมิน / อัปโหลด</th>
+          <th class="py-3 px-4">Role / Permissions</th>
           <th class="py-3 px-4 text-center">Accessible Videos</th>
           <th class="py-3 px-4">Permission Evaluation Breakdown</th>
         </tr>
@@ -2132,11 +2237,11 @@ function generateMatrixHtml(matrixData) {
               <td class="py-3 px-4">
                 ${isAdmin ? `
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
-                    <span class="material-symbols-outlined text-xs">admin_panel_settings</span> แอดมิน (อัปโหลดและจัดการได้)
+                    <span class="material-symbols-outlined text-xs">admin_panel_settings</span> Administrator (Full Access)
                   </span>
                 ` : `
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                    <span class="material-symbols-outlined text-xs">visibility</span> พนักงานทั่วไป (ดูได้อย่างเดียว)
+                    <span class="material-symbols-outlined text-xs">visibility</span> Staff (View Only)
                   </span>
                 `}
               </td>
@@ -2624,18 +2729,18 @@ async function openCategoryDrilldown(catName = 'All') {
         tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-gray-400">No videos found in this category.</td></tr>`;
       } else {
         tbody.innerHTML = videos.map(v => {
-          let modeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">🌐 Public (ทุกคนดูได้)</span>';
+          let modeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">🌐 Public (All)</span>';
           if (v.access_mode === 'include') {
             const names = (v.allowed_names || []).join(', ') || 'Listed users';
             modeBadge = `<div>
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">👥 Include (${v.allowed_names?.length || 0} ท่าน)</span>
-              <div class="text-[10px] text-gray-500 mt-0.5 truncate max-w-xs" title="${names}">อนุญาต: ${names}</div>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">👥 Include (${v.allowed_names?.length || 0} persons)</span>
+              <div class="text-[10px] text-gray-500 mt-0.5 truncate max-w-xs" title="${names}">Allowed: ${names}</div>
             </div>`;
           } else if (v.access_mode === 'exclude') {
             const names = (v.excluded_names || []).join(', ') || 'Listed users';
             modeBadge = `<div>
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">🚫 Exclude (${v.excluded_names?.length || 0} ท่าน)</span>
-              <div class="text-[10px] text-gray-500 mt-0.5 truncate max-w-xs" title="${names}">ยกเว้น: ${names}</div>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">🚫 Exclude (${v.excluded_names?.length || 0} persons)</span>
+              <div class="text-[10px] text-gray-500 mt-0.5 truncate max-w-xs" title="${names}">Excluded: ${names}</div>
             </div>`;
           }
 
