@@ -238,18 +238,23 @@ function renderCurrentUserUI() {
   if (sel) sel.value = u.id;
 
   if (badge) {
-    badge.textContent = u.permission_level;
-    if (u.permission_level === 'Highly Confidential') {
-      badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-rose-500/30 text-rose-300 border border-rose-500/50';
-    } else if (u.permission_level === 'Restricted') {
-      badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/30 text-amber-300 border border-amber-500/50';
+    if (isAdmin) {
+      badge.textContent = '👑 Super Admin';
+      badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-purple-500/40 text-purple-200 border border-purple-400';
+    } else if (u.name.includes('Noi') || u.department === 'Executive') {
+      badge.textContent = '⭐ Executive VIP (คุณหน่อย)';
+      badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/40 text-amber-200 border border-amber-400';
+    } else if (u.name.includes('Noom')) {
+      badge.textContent = '🔬 Senior R&D (พี่หนุ่ม)';
+      badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-blue-500/40 text-blue-200 border border-blue-400';
     } else {
+      badge.textContent = '👤 Authorized Personnel';
       badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/50';
     }
   }
 
   if (deptText) {
-    deptText.textContent = `Dept: ${u.department} | Tags: ${u.allowed_tags || '#general'} | ${isAdmin ? '🛡️ Admin' : '👤 View-Only'}`;
+    deptText.textContent = `Dept: ${u.department} | Role: ${u.role} | สิทธิ์: PBAC (Include / Exclude)`;
   }
 
   // Top navbar profile
@@ -656,18 +661,44 @@ function togglePortalAdminMode() {
 
 // ---------------- VIDEO RENDERING & INTERACTIONS ----------------
 
-function getPermissionBadgeMarkup(level) {
+function getPermissionBadgeMarkup(videoOrLevel) {
+  if (typeof videoOrLevel === 'object' && videoOrLevel !== null) {
+    const mode = (videoOrLevel.access_mode || 'public').toLowerCase();
+    if (mode === 'include') {
+      let count = 0;
+      try {
+        count = JSON.parse(videoOrLevel.allowed_user_ids || '[]').length;
+      } catch (e) {}
+      return `<span title="${videoOrLevel.access_grant_reason || 'สิทธิ์เฉพาะบุคคลที่ได้รับอนุญาต'}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+        <span class="material-symbols-outlined text-[12px]">group</span> 👥 Include (${count || 'รายคน'})
+      </span>`;
+    } else if (mode === 'exclude') {
+      let count = 0;
+      try {
+        count = JSON.parse(videoOrLevel.excluded_user_ids || '[]').length;
+      } catch (e) {}
+      return `<span title="${videoOrLevel.access_grant_reason || 'เข้าถึงได้ทุกคน ยกเว้นรายชื่อนี้'}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+        <span class="material-symbols-outlined text-[12px]">person_off</span> 🚫 Exclude (${count})
+      </span>`;
+    } else {
+      return `<span title="${videoOrLevel.access_grant_reason || 'พนักงานทุกคนดูได้'}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+        <span class="material-symbols-outlined text-[12px]">public</span> 🌐 Public
+      </span>`;
+    }
+  }
+
+  const level = String(videoOrLevel || '');
   if (level === 'Highly Confidential') {
-    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
-      <span class="material-symbols-outlined text-[12px]">lock</span> Highly Confidential
+    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+      <span class="material-symbols-outlined text-[12px]">group</span> 👥 Include (VIP)
     </span>`;
   } else if (level === 'Restricted') {
     return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-      <span class="material-symbols-outlined text-[12px]">gpp_maybe</span> Restricted
+      <span class="material-symbols-outlined text-[12px]">person_off</span> 🚫 Exclude
     </span>`;
   } else {
     return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-      <span class="material-symbols-outlined text-[12px]">public</span> Standard
+      <span class="material-symbols-outlined text-[12px]">public</span> 🌐 Public
     </span>`;
   }
 }
@@ -883,21 +914,27 @@ function renderEvents() {
   `).join('');
 }
 
-function renderCategoriesDirectory() {
+function renderCategoriesDirectory(filterTab = 'all') {
   const container = document.getElementById('categoriesGrid');
   if (!container) return;
 
-  const cats = [
-    { title: 'Research & Whitepapers', icon: 'menu_book', color: 'bg-emerald-50 text-emerald-700', count: '4 Assets', desc: 'Cellular growth formulas, genetics, and peer-reviewed feed essays.' },
-    { title: 'Field Trials & Crop Reports', icon: 'analytics', color: 'bg-blue-50 text-blue-700', count: '3 Assets', desc: 'Drone surveys, multispectral yield metrics, and regional tests.' },
-    { title: 'Training & Safety Protocols', icon: 'school', color: 'bg-amber-50 text-amber-700', count: '2 Assets', desc: 'Spectrometry calibration, biohazard control, and OSHA lab safety.' },
-    { title: 'Townhall & Executive Briefs', icon: 'campaign', color: 'bg-purple-50 text-purple-700', count: '2 Assets', desc: 'Corporate direction, regional market expansion, and grain futures.' },
-    { title: 'Mill & SCADA Operations', icon: 'precision_manufacturing', color: 'bg-rose-50 text-rose-700', count: '3 Assets', desc: 'Automated silo controls, conveyor lines, and smart batching.' },
-    { title: 'Vendor Standards & Audits', icon: 'handshake', color: 'bg-teal-50 text-teal-700', count: '1 Asset', desc: 'Supplier quality certifications and raw ingredient assay criteria.' }
+  let cats = [
+    { title: 'Research & Whitepapers', icon: 'menu_book', color: 'bg-emerald-50 text-emerald-700', count: '4 Assets', desc: 'Cellular growth formulas, genetics, and peer-reviewed feed essays.', type: 'academic' },
+    { title: 'Field Trials & Crop Reports', icon: 'analytics', color: 'bg-blue-50 text-blue-700', count: '3 Assets', desc: 'Drone surveys, multispectral yield metrics, and regional tests.', type: 'academic' },
+    { title: 'Training & Safety Protocols', icon: 'school', color: 'bg-amber-50 text-amber-700', count: '2 Assets', desc: 'Spectrometry calibration, biohazard control, and OSHA lab safety.', type: 'operations' },
+    { title: 'Townhall & Executive Briefs', icon: 'campaign', color: 'bg-purple-50 text-purple-700', count: '2 Assets', desc: 'Corporate direction, regional market expansion, and grain futures.', type: 'executive' },
+    { title: 'Mill & SCADA Operations', icon: 'precision_manufacturing', color: 'bg-rose-50 text-rose-700', count: '3 Assets', desc: 'Automated silo controls, conveyor lines, and smart batching.', type: 'operations' },
+    { title: 'Vendor Standards & Audits', icon: 'handshake', color: 'bg-teal-50 text-teal-700', count: '1 Asset', desc: 'Supplier quality certifications and raw ingredient assay criteria.', type: 'operations' },
+    { title: 'Corporate Events & Symposia', icon: 'event', color: 'bg-indigo-50 text-indigo-700', count: '4 Conferences', desc: 'Annual summits, keynote livestreams, and panel recordings.', type: 'events' },
+    { title: 'Meeting Recordings', icon: 'meeting_room', color: 'bg-fuchsia-50 text-fuchsia-700', count: '6 Townhalls', desc: 'Internal executive townhalls, technical synces, and team briefings.', type: 'meetings' }
   ];
 
+  if (filterTab === 'academic') {
+    cats = cats.filter(c => c.type === 'academic');
+  }
+
   container.innerHTML = cats.map(c => `
-    <div class="bg-white rounded-xl border border-outline-variant p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group" onclick="openCategoryDetail('${c.title}')">
+    <div class="bg-white rounded-xl border border-outline-variant p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group" onclick="handleCategoryCardClick('${c.title}', '${c.type}')">
       <div class="space-y-3">
         <div class="flex items-center justify-between">
           <div class="w-10 h-10 rounded-xl ${c.color} flex items-center justify-center font-bold">
@@ -911,11 +948,110 @@ function renderCategoriesDirectory() {
         </div>
       </div>
       <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-xs text-primary font-bold">
-        <span>Browse Category</span>
+        <span>Browse Content</span>
         <span class="material-symbols-outlined text-sm">arrow_forward</span>
       </div>
     </div>
   `).join('');
+}
+
+function handleCategoryCardClick(title, type) {
+  if (type === 'events') {
+    filterCategoriesTab('events');
+  } else if (type === 'meetings') {
+    filterCategoriesTab('meetings');
+  } else {
+    openCategoryDetail(title);
+  }
+}
+
+function filterCategoriesTab(tab) {
+  document.querySelectorAll('.cat-tab-btn').forEach(b => {
+    b.className = 'cat-tab-btn px-3 py-1.5 rounded-lg font-semibold text-gray-600 hover:text-gray-900';
+  });
+  const activeBtn = document.getElementById(`catTab-${tab}`);
+  if (activeBtn) activeBtn.className = 'cat-tab-btn px-3 py-1.5 rounded-lg font-bold bg-white text-primary shadow-xs';
+
+  const catGrid = document.getElementById('categoriesGrid');
+  const eventsContainer = document.getElementById('integratedEventsContainer');
+  const meetingsContainer = document.getElementById('integratedMeetingsContainer');
+
+  if (!catGrid || !eventsContainer || !meetingsContainer) return;
+
+  if (tab === 'all') {
+    catGrid.classList.remove('hidden');
+    eventsContainer.classList.add('hidden');
+    meetingsContainer.classList.add('hidden');
+    renderCategoriesDirectory('all');
+  } else if (tab === 'academic') {
+    catGrid.classList.remove('hidden');
+    eventsContainer.classList.add('hidden');
+    meetingsContainer.classList.add('hidden');
+    renderCategoriesDirectory('academic');
+  } else if (tab === 'events') {
+    catGrid.classList.add('hidden');
+    eventsContainer.classList.remove('hidden');
+    meetingsContainer.classList.add('hidden');
+    renderIntegratedEvents();
+  } else if (tab === 'meetings') {
+    catGrid.classList.add('hidden');
+    eventsContainer.classList.add('hidden');
+    meetingsContainer.classList.remove('hidden');
+    renderIntegratedMeetings();
+  }
+}
+
+function renderIntegratedEvents() {
+  const container = document.getElementById('integratedEventsGrid');
+  if (!container) return;
+
+  container.innerHTML = state.events.map(e => `
+    <div class="bg-white rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow group">
+      <div class="aspect-video w-full relative overflow-hidden bg-slate-900 cursor-pointer" onclick="openEventDetail(${e.id})">
+        <img src="${e.banner_url || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+        <div class="absolute top-3 left-3 flex items-center gap-1.5">
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${e.status === 'Live' ? 'bg-rose-600 text-white animate-pulse' : 'bg-primary text-white'}">${e.status || 'Upcoming'}</span>
+          ${getPermissionBadgeMarkup(e.clearance_level || 'Standard')}
+        </div>
+        <div class="absolute bottom-2.5 left-3 right-3 text-white">
+          <div class="text-[11px] font-mono flex items-center gap-1 opacity-90">
+            <span class="material-symbols-outlined text-xs">calendar_today</span>
+            <span>${e.date} • ${e.time || '09:00'}</span>
+          </div>
+        </div>
+      </div>
+      <div class="p-5 flex-1 flex flex-col justify-between space-y-3">
+        <div>
+          <h3 class="font-bold text-gray-900 text-sm group-hover:text-primary transition-colors cursor-pointer line-clamp-2" onclick="openEventDetail(${e.id})">
+            ${e.title}
+          </h3>
+          <p class="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">
+            ${e.description || 'Pioneering agricultural advancements, symposium breakouts, and technical keynotes.'}
+          </p>
+        </div>
+        <div class="pt-3 border-t border-outline-variant/60 flex items-center justify-between">
+          <div class="text-[11px] font-semibold text-gray-800">${e.speaker || 'Keynote Speaker'}</div>
+          <button onclick="openEventDetail(${e.id})" class="px-3 py-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1">
+            <span>View Details</span>
+            <span class="material-symbols-outlined text-xs">arrow_forward</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderIntegratedMeetings() {
+  const container = document.getElementById('integratedMeetingsGrid');
+  if (!container) return;
+
+  const meetingVideos = state.accessibleVideos.filter(v => {
+    return v.category.includes('Townhall') || v.category.includes('Meeting') || (v.tags && v.tags.includes('meeting')) || (v.title && v.title.toLowerCase().includes('townhall'));
+  });
+
+  const list = meetingVideos.length > 0 ? meetingVideos : state.accessibleVideos.slice(0, 6);
+  container.innerHTML = list.map(v => createVideoCardHtml(v)).join('');
 }
 
 function submitClearanceRequest() {
@@ -966,7 +1102,7 @@ function createVideoCardHtml(v) {
         <div>
           <div class="flex items-center justify-between gap-2 mb-1.5">
             <span class="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">${v.department}</span>
-            ${getPermissionBadgeMarkup(v.permission_level)}
+            ${getPermissionBadgeMarkup(v)}
           </div>
           <h4 class="text-xs font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
             ${v.title}
@@ -1562,6 +1698,177 @@ function filterVideoTable() {
   renderVideoManagementTable();
 }
 
+// PBAC Person Picker Selection State
+state.selectedUploadPersons = new Set();
+state.selectedDrawerPersons = new Set();
+
+function toggleUploadAccessModeUI(mode) {
+  const box = document.getElementById('uploadPersonSelectorBox');
+  if (!box) return;
+  if (mode === 'public') {
+    box.classList.add('hidden');
+  } else {
+    box.classList.remove('hidden');
+    const title = document.getElementById('uploadPersonBoxTitle');
+    if (title) {
+      title.textContent = mode === 'include' 
+        ? '👥 เลือกรายชื่อผู้มีสิทธิ์เข้าถึง (Include Whitelist):' 
+        : '🚫 เลือกรายชื่อผู้ที่ถูกยกเว้นการเข้าถึง (Exclude Blacklist):';
+    }
+    renderUploadPersonList();
+  }
+}
+
+function renderUploadPersonList(filter = '') {
+  const container = document.getElementById('uploadPersonListContainer');
+  if (!container) return;
+
+  const q = filter.toLowerCase();
+  let users = state.users;
+  if (q) {
+    users = users.filter(u => u.name.toLowerCase().includes(q) || u.department.toLowerCase().includes(q) || u.role.toLowerCase().includes(q));
+  }
+
+  container.innerHTML = users.map(u => {
+    const isChecked = state.selectedUploadPersons.has(u.id);
+    const isVip = u.name.includes('Noi') || u.name.includes('Noom') || u.name.includes('Gunnthanat') || u.department === 'Executive';
+    return `
+      <label class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 cursor-pointer text-xs">
+        <div class="flex items-center gap-2.5">
+          <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleUploadPerson(${u.id})" class="rounded text-primary focus:ring-primary w-4 h-4">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold" style="background-color: ${u.avatar_color || '#10b981'}">
+            ${u.name.substring(0, 1)}
+          </div>
+          <div>
+            <div class="font-bold text-gray-900 flex items-center gap-1.5">
+              <span>${u.name}</span>
+              ${isVip ? '<span class="px-1.5 py-0.2 bg-purple-100 text-purple-700 font-extrabold rounded text-[9px]">VIP</span>' : ''}
+            </div>
+            <div class="text-[10px] text-gray-400">${u.role} • ${u.department}</div>
+          </div>
+        </div>
+        <span class="text-[10px] font-mono text-gray-400">${u.emp_id || 'ID-' + u.id}</span>
+      </label>
+    `;
+  }).join('');
+
+  const countText = document.getElementById('uploadSelectedPersonsCountText');
+  if (countText) countText.textContent = `เลือกแล้ว: ${state.selectedUploadPersons.size} ท่าน`;
+}
+
+function filterUploadPersonList(q) {
+  renderUploadPersonList(q);
+}
+
+function toggleUploadPerson(id) {
+  if (state.selectedUploadPersons.has(id)) {
+    state.selectedUploadPersons.delete(id);
+  } else {
+    state.selectedUploadPersons.add(id);
+  }
+  const countText = document.getElementById('uploadSelectedPersonsCountText');
+  if (countText) countText.textContent = `เลือกแล้ว: ${state.selectedUploadPersons.size} ท่าน`;
+}
+
+function selectVipPresetForUpload() {
+  state.selectedUploadPersons.clear();
+  state.users.forEach(u => {
+    if (u.name.includes('Noi') || u.name.includes('Noom') || u.name.includes('Gunnthanat') || u.name.includes('Alice') || u.department === 'Executive') {
+      state.selectedUploadPersons.add(u.id);
+    }
+  });
+  renderUploadPersonList();
+  showToast('เลือกกลุ่ม VIP / ผู้บริหาร & R&D Lead เรียบร้อยแล้ว', 'info');
+}
+
+function clearUploadPersons() {
+  state.selectedUploadPersons.clear();
+  renderUploadPersonList();
+}
+
+function toggleDrawerAccessModeUI(mode) {
+  const box = document.getElementById('drawerPersonSelectorBox');
+  if (!box) return;
+  if (mode === 'public') {
+    box.classList.add('hidden');
+  } else {
+    box.classList.remove('hidden');
+    const title = document.getElementById('drawerPersonBoxTitle');
+    if (title) {
+      title.textContent = mode === 'include'
+        ? '👥 จัดการรายชื่อผู้มีสิทธิ์เข้าถึง (Include Whitelist):'
+        : '🚫 จัดการรายชื่อผู้ที่ถูกยกเว้น (Exclude Blacklist):';
+    }
+    renderDrawerPersonList();
+  }
+}
+
+function renderDrawerPersonList(filter = '') {
+  const container = document.getElementById('drawerPersonListContainer');
+  if (!container) return;
+
+  const q = filter.toLowerCase();
+  let users = state.users;
+  if (q) {
+    users = users.filter(u => u.name.toLowerCase().includes(q) || u.department.toLowerCase().includes(q) || u.role.toLowerCase().includes(q));
+  }
+
+  container.innerHTML = users.map(u => {
+    const isChecked = state.selectedDrawerPersons.has(u.id);
+    const isVip = u.name.includes('Noi') || u.name.includes('Noom') || u.name.includes('Gunnthanat') || u.department === 'Executive';
+    return `
+      <label class="flex items-center justify-between p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs">
+        <div class="flex items-center gap-2">
+          <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleDrawerPerson(${u.id})" class="rounded text-primary focus:ring-primary w-3.5 h-3.5">
+          <div class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold" style="background-color: ${u.avatar_color || '#10b981'}">
+            ${u.name.substring(0, 1)}
+          </div>
+          <div>
+            <div class="font-bold text-gray-900 flex items-center gap-1">
+              <span>${u.name}</span>
+              ${isVip ? '<span class="px-1 py-0.1 bg-purple-100 text-purple-700 font-extrabold rounded text-[8px]">VIP</span>' : ''}
+            </div>
+            <div class="text-[9px] text-gray-400">${u.role}</div>
+          </div>
+        </div>
+      </label>
+    `;
+  }).join('');
+
+  const countText = document.getElementById('drawerSelectedPersonsCountText');
+  if (countText) countText.textContent = `เลือกแล้ว: ${state.selectedDrawerPersons.size} ท่าน`;
+}
+
+function filterDrawerPersonList(q) {
+  renderDrawerPersonList(q);
+}
+
+function toggleDrawerPerson(id) {
+  if (state.selectedDrawerPersons.has(id)) {
+    state.selectedDrawerPersons.delete(id);
+  } else {
+    state.selectedDrawerPersons.add(id);
+  }
+  const countText = document.getElementById('drawerSelectedPersonsCountText');
+  if (countText) countText.textContent = `เลือกแล้ว: ${state.selectedDrawerPersons.size} ท่าน`;
+}
+
+function selectVipPresetForDrawer() {
+  state.selectedDrawerPersons.clear();
+  state.users.forEach(u => {
+    if (u.name.includes('Noi') || u.name.includes('Noom') || u.name.includes('Gunnthanat') || u.name.includes('Alice') || u.department === 'Executive') {
+      state.selectedDrawerPersons.add(u.id);
+    }
+  });
+  renderDrawerPersonList();
+  showToast('เลือกกลุ่ม VIP / ผู้บริหาร & R&D Lead ใน Drawer', 'info');
+}
+
+function clearDrawerPersons() {
+  state.selectedDrawerPersons.clear();
+  renderDrawerPersonList();
+}
+
 function openEditDrawer(videoId) {
   const v = state.allVideos.find(x => x.id === videoId);
   if (!v) return;
@@ -1572,10 +1879,29 @@ function openEditDrawer(videoId) {
   document.getElementById('editDrawerTitle').value = v.title;
   document.getElementById('editDrawerDesc').value = v.description || '';
   document.getElementById('editDrawerDept').value = v.department;
-  document.getElementById('editDrawerLevel').value = v.permission_level;
+  if (document.getElementById('editDrawerCategory')) {
+    document.getElementById('editDrawerCategory').value = v.category || 'Research & Whitepaper';
+  }
   document.getElementById('editDrawerTags').value = v.tags || '';
   document.getElementById('editDrawerIsHidden').checked = (v.is_hidden === 1);
   renderTagPicker('editDrawerTagsContainer', 'editDrawerTags', false);
+
+  // Set Access Mode and populate Person Picker in Drawer
+  const accessMode = (v.access_mode || 'public').toLowerCase();
+  const radios = document.getElementsByName('drawerAccessMode');
+  for (const r of radios) {
+    r.checked = (r.value === accessMode);
+  }
+
+  state.selectedDrawerPersons.clear();
+  let ids = [];
+  try {
+    if (accessMode === 'include') ids = JSON.parse(v.allowed_user_ids || '[]');
+    else if (accessMode === 'exclude') ids = JSON.parse(v.excluded_user_ids || '[]');
+  } catch (e) {}
+  ids.forEach(id => state.selectedDrawerPersons.add(Number(id)));
+
+  toggleDrawerAccessModeUI(accessMode);
 
   const overlay = document.getElementById('edit-drawer-overlay');
   const drawer = document.getElementById('edit-drawer');
@@ -1603,22 +1929,45 @@ async function saveEditDrawerChanges() {
   const title = document.getElementById('editDrawerTitle').value.trim();
   const description = document.getElementById('editDrawerDesc').value.trim();
   const department = document.getElementById('editDrawerDept').value;
-  const permission_level = document.getElementById('editDrawerLevel').value;
+  const category = document.getElementById('editDrawerCategory')?.value || department;
   const tags = document.getElementById('editDrawerTags').value.trim();
   const is_hidden = document.getElementById('editDrawerIsHidden').checked ? 1 : 0;
+
+  let access_mode = 'public';
+  const radios = document.getElementsByName('drawerAccessMode');
+  for (const r of radios) {
+    if (r.checked) {
+      access_mode = r.value;
+      break;
+    }
+  }
+
+  const selectedArray = Array.from(state.selectedDrawerPersons);
+  const allowed_user_ids = access_mode === 'include' ? selectedArray : [];
+  const excluded_user_ids = access_mode === 'exclude' ? selectedArray : [];
 
   try {
     const res = await fetch(`/api/videos/${videoId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description, department, permission_level, tags, is_hidden })
+      body: JSON.stringify({ 
+        title, 
+        description, 
+        department, 
+        category,
+        tags, 
+        is_hidden,
+        access_mode,
+        allowed_user_ids,
+        excluded_user_ids
+      })
     });
     const json = await res.json();
     if (json.success) {
       closeEditDrawer();
       await loadAllVideos();
       await loadAccessibleVideos();
-      showToast('Video permissions & metadata saved', 'success');
+      showToast(`บันทึกสิทธิ์วิดีโอเรียบร้อย (${access_mode.toUpperCase()})`, 'success');
     }
   } catch (err) {
     showToast('Failed to save changes', 'error');
@@ -1650,10 +1999,22 @@ async function submitUploadVideo() {
   const title = document.getElementById('uploadVideoTitle').value.trim();
   const department = document.getElementById('uploadVideoDept').value;
   const description = document.getElementById('uploadVideoDesc').value.trim();
-  const permission_level = document.getElementById('uploadVideoLevel').value;
-  const category = document.getElementById('uploadVideoCategory').value;
+  const category = document.getElementById('uploadVideoCategory')?.value || 'Research & Whitepaper';
   const duration = document.getElementById('uploadVideoDuration').value.trim() || '12:00';
   const tags = document.getElementById('uploadVideoTags').value.trim();
+
+  let access_mode = 'public';
+  const radios = document.getElementsByName('uploadAccessMode');
+  for (const r of radios) {
+    if (r.checked) {
+      access_mode = r.value;
+      break;
+    }
+  }
+
+  const selectedArray = Array.from(state.selectedUploadPersons);
+  const allowed_user_ids = access_mode === 'include' ? selectedArray : [];
+  const excluded_user_ids = access_mode === 'exclude' ? selectedArray : [];
 
   if (!title || !department) {
     showToast('Please specify a title and department', 'error');
@@ -1668,11 +2029,13 @@ async function submitUploadVideo() {
         title,
         description,
         department,
-        permission_level,
         category,
         duration,
         tags,
-        video_url
+        video_url,
+        access_mode,
+        allowed_user_ids,
+        excluded_user_ids
       })
     });
     const json = await res.json();
@@ -1681,14 +2044,14 @@ async function submitUploadVideo() {
       document.getElementById('uploadVideoUrl').value = '';
       document.getElementById('uploadVideoTitle').value = '';
       document.getElementById('uploadVideoDesc').value = '';
-      document.getElementById('uploadVideoTags').value = '';
+      clearUploadPersons();
 
       await loadAllVideos();
       await loadAccessibleVideos();
       navigateView('admin-videos');
-      showToast(`Successfully indexed video (${json.data.video_id}) with [${permission_level}] clearance`, 'success');
+      showToast(`อัปโหลดวิดีโอและกำหนดสิทธิ์ (${access_mode.toUpperCase()}) สำเร็จแล้ว!`, 'success');
     } else {
-      showToast('Upload error: ' + json.message, 'error');
+      showToast(json.message || 'Upload failed', 'error');
     }
   } catch (err) {
     showToast('Failed to upload video', 'error');
@@ -2136,35 +2499,179 @@ async function deleteCategoryPrompt(catId) {
   }
 }
 
-// ---------------- DEPARTMENT MANAGEMENT ----------------
+// ---------------- MANAGE CATEGORIES & PERSONNEL DIRECTORY ----------------
 
 function renderAdminDeptTable() {
   const grid = document.getElementById('adminDeptGrid');
   if (!grid) return;
 
-  grid.innerHTML = state.departments.map(d => `
-    <div class="bg-white p-5 rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
-      <div class="space-y-3">
-        <div class="flex items-center justify-between">
-          <div class="w-10 h-10 rounded-xl bg-emerald-50 text-primary flex items-center justify-center font-bold">
-            <span class="material-symbols-outlined text-xl">${d.icon || 'domain'}</span>
-          </div>
-          <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-700">${d.code || 'BU'}</span>
-        </div>
+  // Render categories with personnel list
+  grid.innerHTML = state.categories.map(c => {
+    // Determine personnel associated with this category based on department / tags
+    const associatedUsers = state.users.filter(u => {
+      const uTags = (u.allowed_tags || '').toLowerCase();
+      const catName = (c.name || '').toLowerCase();
+      return u.department.toLowerCase().includes(catName) || 
+             catName.includes(u.department.toLowerCase()) || 
+             uTags.includes(catName) ||
+             (u.is_admin === 1) ||
+             (u.name.includes('Noi') || u.name.includes('Noom'));
+    });
+
+    const userAvatars = associatedUsers.slice(0, 4).map(u => `
+      <div title="${u.name} (${u.role})" class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-white text-[9px] font-bold shadow-xs shrink-0 -ml-1.5 first:ml-0" style="background-color: ${u.avatar_color || '#10b981'}">
+        ${u.name.substring(0, 1)}
+      </div>
+    `).join('');
+
+    const moreCount = associatedUsers.length > 4 ? `<span class="text-[10px] text-gray-400 font-bold ml-1">+${associatedUsers.length - 4}</span>` : '';
+
+    return `
+      <div class="bg-white p-5 rounded-2xl border border-outline-variant shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
         <div>
-          <h3 class="font-bold text-sm text-gray-900">${d.name}</h3>
-          <p class="text-xs text-gray-500 mt-1 leading-relaxed">${d.description || 'Specialized business unit repository.'}</p>
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-11 h-11 rounded-xl bg-emerald-50 text-primary flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-2xl">${c.icon || 'category'}</span>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+              ${c.video_count || 0} Videos
+            </span>
+          </div>
+          <h3 class="font-bold text-sm text-gray-900">${c.name}</h3>
+          <p class="text-xs text-gray-500 mt-1 leading-relaxed">Enterprise taxonomy domain governing curated content and authorized viewer groups.</p>
+        </div>
+
+        <!-- Associated Personnel / Members List -->
+        <div class="pt-3 border-t border-slate-100 space-y-2">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="font-bold text-gray-700 flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm text-primary">groups</span>
+              <span>Authorized Personnel (${associatedUsers.length}):</span>
+            </span>
+          </div>
+          <div class="flex items-center">
+            ${userAvatars}
+            ${moreCount}
+          </div>
+          <div class="text-[10px] text-gray-400 truncate">
+            ${associatedUsers.map(u => u.name).slice(0, 3).join(', ')}${associatedUsers.length > 3 ? '...' : ''}
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+          <button onclick="openCategoryDrilldown('${c.name}')" class="font-bold text-primary hover:underline flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">analytics</span>
+            <span>Drill-down Videos</span>
+          </button>
+          <button onclick="openCategoryDetail('${c.name}')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-gray-700 font-semibold rounded-lg text-[11px]">
+            View Hub
+          </button>
         </div>
       </div>
-      <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between">
-        <span class="text-xs font-bold text-emerald-800">${d.video_count || 0} Videos Indexed</span>
-        <button onclick="openDepartmentHub('${d.name}')" class="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
-          <span>View Hub</span>
-          <span class="material-symbols-outlined text-xs">arrow_forward</span>
-        </button>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
+}
+
+// ---------------- CATEGORY VIDEO BREAKDOWN DRILL-DOWN (ADMIN DASHBOARD) ----------------
+
+async function openCategoryDrilldown(catName = 'All') {
+  const modal = document.getElementById('categoryDrilldownModal');
+  if (!modal) return;
+
+  const titleEl = document.getElementById('drilldownCategoryTitle');
+  const badgeEl = document.getElementById('drilldownCategoryBadge');
+  const totalVidEl = document.getElementById('drilldownTotalVideos');
+  const totalViewsEl = document.getElementById('drilldownTotalViews');
+  const tbody = document.getElementById('drilldownTableBody');
+  const summaryEl = document.getElementById('drilldownTableSummary');
+
+  if (titleEl) titleEl.textContent = `${catName} Category Video Breakdown`;
+  if (badgeEl) badgeEl.textContent = `${catName} Domain`;
+
+  try {
+    const res = await fetch(`/api/analytics/category-drilldown/${encodeURIComponent(catName === 'All' ? '' : catName)}`);
+    const json = await res.json();
+    if (!json.success) throw new Error(json.message);
+
+    const { total_videos, total_views, videos } = json;
+    if (totalVidEl) totalVidEl.textContent = `${total_videos} Videos`;
+    if (totalViewsEl) totalViewsEl.textContent = `${(total_views || 0).toLocaleString()} Views`;
+    if (summaryEl) summaryEl.textContent = `Showing all ${videos.length} videos in this category`;
+
+    if (tbody) {
+      if (videos.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-gray-400">No videos found in this category.</td></tr>`;
+      } else {
+        tbody.innerHTML = videos.map(v => {
+          let modeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">🌐 Public (ทุกคนดูได้)</span>';
+          if (v.access_mode === 'include') {
+            const names = (v.allowed_names || []).join(', ') || 'Listed users';
+            modeBadge = `<div>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">👥 Include (${v.allowed_names?.length || 0} ท่าน)</span>
+              <div class="text-[10px] text-gray-500 mt-0.5 truncate max-w-xs" title="${names}">อนุญาต: ${names}</div>
+            </div>`;
+          } else if (v.access_mode === 'exclude') {
+            const names = (v.excluded_names || []).join(', ') || 'Listed users';
+            modeBadge = `<div>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">🚫 Exclude (${v.excluded_names?.length || 0} ท่าน)</span>
+              <div class="text-[10px] text-gray-500 mt-0.5 truncate max-w-xs" title="${names}">ยกเว้น: ${names}</div>
+            </div>`;
+          }
+
+          const viewersCount = (v.viewers || []).length;
+          const viewerNames = (v.viewers || []).map(vw => `${vw.name} (${vw.department})`).join(', ') || 'No recorded viewers yet';
+
+          return `
+            <tr class="hover:bg-slate-50 transition-colors">
+              <td class="py-3 px-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-14 h-9 rounded bg-slate-900 overflow-hidden relative shrink-0">
+                    <img src="${v.thumbnail_url}" class="w-full h-full object-cover">
+                  </div>
+                  <div>
+                    <div class="font-bold text-gray-900 text-xs hover:text-primary cursor-pointer" onclick="closeCategoryDrilldownModal(); openVideoPlayerModal(${v.id})">${v.title}</div>
+                    <div class="text-[10px] text-gray-400 font-mono">${v.video_id} • ${v.department}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="py-3 px-4 font-mono text-gray-500 text-[11px]">
+                <div>${v.duration}</div>
+                <div class="text-[10px] text-gray-400">${(v.uploaded_at || '').substring(0, 10)}</div>
+              </td>
+              <td class="py-3 px-4 text-center">
+                <span class="font-bold text-gray-900 text-xs">${v.views || 0}</span>
+                <div class="text-[9px] text-emerald-600 font-semibold" title="${viewerNames}">${viewersCount} active viewers</div>
+              </td>
+              <td class="py-3 px-4">
+                ${modeBadge}
+              </td>
+              <td class="py-3 px-4 text-right space-x-1">
+                <button onclick="closeCategoryDrilldownModal(); openVideoPlayerModal(${v.id})" class="p-1 text-gray-400 hover:text-primary rounded hover:bg-slate-100" title="Watch Video">
+                  <span class="material-symbols-outlined text-base">preview</span>
+                </button>
+                <button onclick="closeCategoryDrilldownModal(); openEditDrawer(${v.id})" class="p-1 text-gray-400 hover:text-primary rounded hover:bg-slate-100" title="Edit Permissions">
+                  <span class="material-symbols-outlined text-base">edit</span>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    modal.classList.remove('hidden');
+  } catch (err) {
+    showToast('Failed to load category drilldown: ' + err.message, 'error');
+  }
+}
+
+function closeCategoryDrilldownModal() {
+  const modal = document.getElementById('categoryDrilldownModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function openAddCategoryModal() {
+  openAddDeptModal();
 }
 
 function openAddDeptModal() {

@@ -569,9 +569,18 @@ if (countLogs.count === 0) {
 // Ensure allowed_tags column exists
 try {
   db.exec(`ALTER TABLE users ADD COLUMN allowed_tags TEXT DEFAULT '#general, #standard';`);
-} catch (e) {
-  // column already exists
-}
+} catch (e) {}
+
+// Add Person-based Access Control columns to videos table
+try {
+  db.exec(`ALTER TABLE videos ADD COLUMN access_mode TEXT DEFAULT 'public';`);
+} catch (e) {}
+try {
+  db.exec(`ALTER TABLE videos ADD COLUMN allowed_user_ids TEXT DEFAULT '[]';`);
+} catch (e) {}
+try {
+  db.exec(`ALTER TABLE videos ADD COLUMN excluded_user_ids TEXT DEFAULT '[]';`);
+} catch (e) {}
 
 // Seed / Update user tags for tag-based access control
 try {
@@ -584,81 +593,121 @@ try {
   db.prepare("UPDATE users SET allowed_tags = '*' WHERE email = 'admin@feedtech.com'").run();
 } catch (e) {}
 
+// Ensure VIP / Key Meeting Personas exist (Khun Noi, P'Noom, Gunnthanat K.)
+try {
+  const existingNoi = db.prepare("SELECT * FROM users WHERE name LIKE '%Noi%' OR email LIKE '%noi%'").get();
+  if (!existingNoi) {
+    db.prepare("INSERT INTO users (emp_id, name, email, department, role, permission_level, is_admin, status, avatar_color, allowed_tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
+      'VIP-001', 'Khun Noi (คุณหน่อย)', 'noi.exec@feedtech.com', 'Executive', 'Executive Director / VIP', 'Highly Confidential', 0, 'Active', '#8b5cf6', '*'
+    );
+  }
+  const existingNoom = db.prepare("SELECT * FROM users WHERE name LIKE '%Noom%' OR email LIKE '%noom%'").get();
+  if (!existingNoom) {
+    db.prepare("INSERT INTO users (emp_id, name, email, department, role, permission_level, is_admin, status, avatar_color, allowed_tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
+      'EMP-1002', 'P\'Noom (พี่หนุ่ม)', 'noom.rd@feedtech.com', 'Biotech', 'Senior R&D Lead', 'Restricted', 0, 'Active', '#0284c7', '#biotech, #research'
+    );
+  }
+  const existingGunn = db.prepare("SELECT * FROM users WHERE name LIKE '%Gunnthanat%' OR email LIKE '%gunnthanat%'").get();
+  if (!existingGunn) {
+    db.prepare("INSERT INTO users (emp_id, name, email, department, role, permission_level, is_admin, status, avatar_color, allowed_tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
+      'EMP-1003', 'Gunnthanat K. (พี่กัณฑ์)', 'gunnthanat@feedtech.com', 'Operations', 'Engineering Team Lead', 'Standard', 1, 'Active', '#059669', '*'
+    );
+  }
+} catch (e) {}
+
+// Update videos with Person-Based Access sample configurations
+try {
+  // VID-8921: Include specific VIP & Research team (Dr. Alice, Somchai, Kittisak, Khun Noi, P'Noom)
+  db.prepare("UPDATE videos SET access_mode = 'include', allowed_user_ids = '[1, 4, 7, 8, 9, 10]' WHERE video_id = 'VID-8921'").run();
+  // VID-8920: Public company-wide
+  db.prepare("UPDATE videos SET access_mode = 'public', allowed_user_ids = '[]', excluded_user_ids = '[]' WHERE video_id = 'VID-8920'").run();
+  // VID-8919: Exclude David Miller (Procurement)
+  db.prepare("UPDATE videos SET access_mode = 'exclude', excluded_user_ids = '[6]' WHERE video_id = 'VID-8919'").run();
+  // VID-8918: Include Somchai, Dr. Alice, Khun Noi
+  db.prepare("UPDATE videos SET access_mode = 'include', allowed_user_ids = '[1, 4, 8]' WHERE video_id = 'VID-8918'").run();
+  // VID-8917: Public
+  db.prepare("UPDATE videos SET access_mode = 'public' WHERE video_id = 'VID-8917'").run();
+  // VID-8916: Include VIP Board & Lead Scientists only (Dr. Alice, Admin, Khun Noi, P'Noom, P'Gunn)
+  db.prepare("UPDATE videos SET access_mode = 'include', allowed_user_ids = '[1, 7, 8, 9, 10]' WHERE video_id = 'VID-8916'").run();
+  // VID-8915: Public
+  db.prepare("UPDATE videos SET access_mode = 'public' WHERE video_id = 'VID-8915'").run();
+  // VID-8914: Exclude Ananya Srisuk
+  db.prepare("UPDATE videos SET access_mode = 'exclude', excluded_user_ids = '[5]' WHERE video_id = 'VID-8914'").run();
+  // VID-8913: Public
+  db.prepare("UPDATE videos SET access_mode = 'public' WHERE video_id = 'VID-8913'").run();
+  // VID-8912: VIP Executive Briefing (Admin, Khun Noi, Gunnthanat K.)
+  db.prepare("UPDATE videos SET access_mode = 'include', allowed_user_ids = '[7, 8, 10]' WHERE video_id = 'VID-8912'").run();
+} catch (e) {}
+
 // Global active simulation user in memory (defaults to Dr. Alice Smith)
 let currentSimulatedUserId = 1;
 
-// Permission Evaluation Engine (Tag-Based Access Control - TBAC & Clearance)
+// Person-Based Access Control (PBAC) Evaluation Engine (Public, Include Whitelist, Exclude Blacklist)
 function evaluateVideoAccess(user, video) {
   if (!user || user.status !== 'Active') return { allowed: false, reason: 'User inactive or not found' };
   
-  // Rule 1: Super Admin / Executive admin has full visibility
-  if (user.is_admin === 1 || user.department === 'Executive' || user.allowed_tags === '*' || (user.allowed_tags && user.allowed_tags.includes('*'))) {
-    return { allowed: true, reason: 'Full Admin Access (* All Tags Authorized)' };
+  // Rule 1: Super Admin / Executive admin has full visibility always
+  if (user.is_admin === 1 || user.role === 'System Administrator' || user.department === 'Executive') {
+    return { allowed: true, reason: '👑 ผู้ดูแลระบบ (Full Administrator Access)' };
   }
 
   // Rule 2: If video is hidden by admin
   if (video.is_hidden === 1) {
-    return { allowed: false, reason: 'Video is archived or hidden by Administrator' };
+    return { allowed: false, reason: '🚫 วิดีโอถูกซ่อนโดยผู้ดูแลระบบ (Archived/Hidden)' };
   }
 
-  // Parse User Allowed Tags & Video Tags
-  const userTags = (user.allowed_tags || '')
-    .split(',')
-    .map(t => t.trim().toLowerCase().replace(/^#/, ''))
-    .filter(Boolean);
+  // Parse allowed & excluded user lists
+  let allowedUsers = [];
+  try {
+    allowedUsers = JSON.parse(video.allowed_user_ids || '[]');
+  } catch (e) {
+    allowedUsers = (video.allowed_user_ids || '').split(',').map(s => parseInt(s.trim())).filter(Boolean);
+  }
 
-  const videoTags = (video.tags || '')
-    .split(',')
-    .map(t => t.trim().toLowerCase().replace(/^#/, ''))
-    .filter(Boolean);
+  let excludedUsers = [];
+  try {
+    excludedUsers = JSON.parse(video.excluded_user_ids || '[]');
+  } catch (e) {
+    excludedUsers = (video.excluded_user_ids || '').split(',').map(s => parseInt(s.trim())).filter(Boolean);
+  }
 
-  // Check Tag Match
-  const matchingTags = videoTags.filter(vt => userTags.includes(vt));
-  const hasTagMatch = matchingTags.length > 0;
+  const accessMode = (video.access_mode || 'public').toLowerCase();
 
-  // Rule 3: Standard Videos -> Accessible to all active employees, or if standard tag is present
-  if (video.permission_level === 'Standard') {
+  // Rule 3: Include Mode (Whitelist) - Only explicitly listed individuals can view
+  if (accessMode === 'include') {
+    const isIncluded = allowedUsers.includes(user.id) || allowedUsers.includes(String(user.id)) || (video.uploaded_by && video.uploaded_by.includes(user.name));
+    if (isIncluded) {
+      return { 
+        allowed: true, 
+        reason: `👥 สิทธิ์เฉพาะบุคคล (Include): บัญชีของคุณอยู่ในรายชื่อผู้ได้รับอนุญาต (${allowedUsers.length} ท่าน)` 
+      };
+    }
     return { 
-      allowed: true, 
-      reason: hasTagMatch ? `Public Standard (Matched Tag: #${matchingTags.join(', #')})` : 'Public Standard Company-Wide Content' 
+      allowed: false, 
+      reason: `⛔ สิทธิ์เฉพาะบุคคล: วิดีโอนี้จำกัดสิทธิ์เฉพาะรายชื่อบุคคลที่กำหนดเท่านั้น (${allowedUsers.length} ท่าน)` 
     };
   }
 
-  // Rule 4: Restricted Videos -> Requires user permission level >= Restricted AND (matching tag OR matching department)
-  if (video.permission_level === 'Restricted') {
-    if (user.permission_level === 'Standard') {
-      return { allowed: false, reason: 'User permission is Standard; video requires Restricted clearance' };
+  // Rule 4: Exclude Mode (Blacklist) - Everyone can view EXCEPT listed individuals
+  if (accessMode === 'exclude') {
+    const isExcluded = excludedUsers.includes(user.id) || excludedUsers.includes(String(user.id));
+    if (isExcluded) {
+      return { 
+        allowed: false, 
+        reason: `⛔ ถูกจำกัดสิทธิ์ (Exclude): บัญชีของคุณอยู่ในรายชื่อที่ยกเว้นการเข้าถึง` 
+      };
     }
-    
-    if (hasTagMatch) {
-      return { allowed: true, reason: `Tag-Based Clearance Granted (Matched: #${matchingTags.join(', #')})` };
-    }
-
-    if (user.department === video.department) {
-      return { allowed: true, reason: `Departmental Clearance (${video.department})` };
-    }
-
-    return { allowed: false, reason: `Restricted content requires matching tags (${video.tags})` };
+    return { 
+      allowed: true, 
+      reason: `🌐 เข้าถึงได้ทั่วไป (ยกเว้นเฉพาะบุคคล ${excludedUsers.length} ท่าน)` 
+    };
   }
 
-  // Rule 5: Highly Confidential -> Requires user permission level 'Highly Confidential' AND (matching confidential tag OR matching department leadership)
-  if (video.permission_level === 'Highly Confidential') {
-    if (user.permission_level !== 'Highly Confidential') {
-      return { allowed: false, reason: 'Video is Highly Confidential. User lacks necessary security clearance' };
-    }
-
-    if (hasTagMatch) {
-      return { allowed: true, reason: `Confidential Tag Access Granted (Matched: #${matchingTags.join(', #')})` };
-    }
-
-    if (user.department === video.department) {
-      return { allowed: true, reason: `Departmental Confidential Clearance (${video.department})` };
-    }
-
-    return { allowed: false, reason: `Highly Confidential restricted to specialized tags: ${video.tags}` };
-  }
-
-  return { allowed: false, reason: 'Access Denied by tag policy' };
+  // Rule 5: Public - Open to all active company members
+  return { 
+    allowed: true, 
+    reason: '🌐 สาธารณะ (Public): พนักงานทุกคนในองค์กรเข้าถึงได้' 
+  };
 }
 
 // ---------------- API ROUTES ----------------
@@ -1063,38 +1112,46 @@ app.post('/api/videos', (req, res) => {
     return res.status(403).json({ success: false, message: 'สิทธิ์ถูกปฏิเสธ: เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถอัปโหลดวิดีโอได้ พนักงานทั่วไปมีสิทธิ์ดูอย่างเดียว' });
   }
 
-  const { title, description, department, category, permission_level, duration, thumbnail_url, video_url, tags, allow_downloads, enable_comments } = req.body;
+  const { 
+    title, description, department, category, permission_level, duration, 
+    thumbnail_url, video_url, tags, allow_downloads, enable_comments,
+    access_mode, allowed_user_ids, excluded_user_ids
+  } = req.body;
   
-  if (!title || !department || !permission_level) {
-    return res.status(400).json({ success: false, message: 'Title, Department, and Permission Level are required' });
+  if (!title) {
+    return res.status(400).json({ success: false, message: 'Video title is required' });
   }
 
   const video_id = `VID-${Math.floor(8000 + Math.random() * 1999)}`;
   const defaultThumb = 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=800&q=80';
   const defaultVideo = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+  const finalCategory = category || department || 'Research & Whitepaper';
 
   try {
     const result = db.prepare(`
-      INSERT INTO videos (video_id, title, description, department, category, permission_level, duration, thumbnail_url, video_url, tags, uploaded_by, allow_downloads, enable_comments)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO videos (video_id, title, description, department, category, permission_level, duration, thumbnail_url, video_url, tags, uploaded_by, allow_downloads, enable_comments, access_mode, allowed_user_ids, excluded_user_ids)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       video_id,
       title,
       description || 'Uploaded via Feedtech Cloud Hub simulator.',
-      department,
-      category || 'Research & Whitepaper',
-      permission_level,
+      department || finalCategory,
+      finalCategory,
+      permission_level || 'Standard',
       duration || '10:00',
       thumbnail_url || defaultThumb,
       video_url || defaultVideo,
       tags || '#feedtech, #internal',
       currentUser ? currentUser.name : 'Administrator',
       allow_downloads ? 1 : 0,
-      enable_comments ? 1 : 0
+      enable_comments ? 1 : 0,
+      access_mode || 'public',
+      typeof allowed_user_ids === 'string' ? allowed_user_ids : JSON.stringify(allowed_user_ids || []),
+      typeof excluded_user_ids === 'string' ? excluded_user_ids : JSON.stringify(excluded_user_ids || [])
     );
 
     db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
-      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'VIDEO_UPLOAD', `${video_id} - ${title}`, `Uploaded new video into ${department} with classification [${permission_level}]`);
+      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'VIDEO_UPLOAD', `${video_id} - ${title}`, `Uploaded new video with Access Mode [${access_mode || 'public'}]`);
 
     const newVideo = db.prepare("SELECT * FROM videos WHERE id = ?").get(result.lastInsertRowid);
     res.json({ success: true, message: 'Video uploaded and indexed successfully!', data: newVideo });
@@ -1106,7 +1163,11 @@ app.post('/api/videos', (req, res) => {
 // Update Video Metadata & Permissions
 app.put('/api/videos/:id', (req, res) => {
   const videoId = req.params.id;
-  const { title, description, department, category, permission_level, tags, is_hidden, allow_downloads, enable_comments } = req.body;
+  const { 
+    title, description, department, category, permission_level, tags, 
+    is_hidden, allow_downloads, enable_comments,
+    access_mode, allowed_user_ids, excluded_user_ids
+  } = req.body;
 
   try {
     db.prepare(`
@@ -1119,17 +1180,77 @@ app.put('/api/videos/:id', (req, res) => {
           tags = COALESCE(?, tags),
           is_hidden = COALESCE(?, is_hidden),
           allow_downloads = COALESCE(?, allow_downloads),
-          enable_comments = COALESCE(?, enable_comments)
+          enable_comments = COALESCE(?, enable_comments),
+          access_mode = COALESCE(?, access_mode),
+          allowed_user_ids = COALESCE(?, allowed_user_ids),
+          excluded_user_ids = COALESCE(?, excluded_user_ids)
       WHERE id = ? OR video_id = ?
-    `).run(title, description, department, category, permission_level, tags, is_hidden, allow_downloads, enable_comments, videoId, videoId);
+    `).run(
+      title, description, department, category, permission_level, tags, 
+      is_hidden, allow_downloads, enable_comments,
+      access_mode,
+      allowed_user_ids !== undefined ? (typeof allowed_user_ids === 'string' ? allowed_user_ids : JSON.stringify(allowed_user_ids)) : null,
+      excluded_user_ids !== undefined ? (typeof excluded_user_ids === 'string' ? excluded_user_ids : JSON.stringify(excluded_user_ids)) : null,
+      videoId, videoId
+    );
 
     const updated = db.prepare("SELECT * FROM videos WHERE id = ? OR video_id = ?").get(videoId, videoId);
 
     const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
     db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
-      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'VIDEO_METADATA_UPDATE', updated.video_id, `Updated video [${updated.title}] permission level to ${updated.permission_level}`);
+      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'VIDEO_METADATA_UPDATE', updated.video_id, `Updated video [${updated.title}] access mode to ${updated.access_mode || 'public'}`);
 
     res.json({ success: true, message: 'Video updated successfully', data: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Category Video Breakdown for Admin Dashboard (Drill-down)
+app.get('/api/analytics/category-drilldown/:catName', (req, res) => {
+  const catName = decodeURIComponent(req.params.catName);
+  try {
+    const videos = db.prepare("SELECT * FROM videos WHERE category LIKE ? OR department LIKE ? ORDER BY views DESC").all(`%${catName}%`, `%${catName}%`);
+    const allUsers = db.prepare("SELECT id, name, role, department FROM users").all();
+    const userMap = {};
+    allUsers.forEach(u => userMap[u.id] = u);
+
+    const enrichedVideos = videos.map(v => {
+      let allowedNames = [];
+      let excludedNames = [];
+      try {
+        const aIds = JSON.parse(v.allowed_user_ids || '[]');
+        allowedNames = aIds.map(id => userMap[id]?.name || `User #${id}`);
+      } catch (e) {}
+      try {
+        const eIds = JSON.parse(v.excluded_user_ids || '[]');
+        excludedNames = eIds.map(id => userMap[id]?.name || `User #${id}`);
+      } catch (e) {}
+
+      // Get view count and recent viewers
+      const viewers = db.prepare(`
+        SELECT u.name, u.role, u.department, w.progress_percent, w.watched_at
+        FROM watch_history w
+        JOIN users u ON w.user_id = u.id
+        WHERE w.video_id = ?
+        ORDER BY w.watched_at DESC
+      `).all(v.id);
+
+      return {
+        ...v,
+        allowed_names: allowedNames,
+        excluded_names: excludedNames,
+        viewers
+      };
+    });
+
+    res.json({
+      success: true,
+      category: catName,
+      total_videos: videos.length,
+      total_views: videos.reduce((sum, v) => sum + (v.views || 0), 0),
+      videos: enrichedVideos
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

@@ -183,25 +183,17 @@
             <span class="material-symbols-outlined text-xl">favorite</span>
             <span>Favorites</span>
           </a>
-          <a href="#" onclick="navigateView('events'); return false;" id="nav-events" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
-            <span class="material-symbols-outlined text-xl">event</span>
-            <span>Events & Seminars</span>
-          </a>
-          <a href="#" onclick="navigateView('meetings'); return false;" id="nav-meetings" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
-            <span class="material-symbols-outlined text-xl">meeting_room</span>
-            <span>Meeting Recordings</span>
-          </a>
           <a href="#" onclick="navigateView('categories'); return false;" id="nav-categories" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
             <span class="material-symbols-outlined text-xl">category</span>
-            <span>Categories Directory</span>
+            <span>Knowledge Categories</span>
           </a>
         </nav>
 
         <div class="my-3 border-t border-outline-variant"></div>
 
-        <!-- 17 DEPARTMENTS ACCORDION -->
+        <!-- CATEGORIES QUICK NAV LIST -->
         <div class="px-3 py-1.5 flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase tracking-wider cursor-pointer" onclick="toggleDeptMenu()">
-          <span>Departments (17)</span>
+          <span>Categories & Hubs</span>
           <span id="deptChevron" class="material-symbols-outlined text-sm transition-transform">expand_more</span>
         </div>
         <div id="deptListContainer" class="space-y-0.5 mt-1 max-h-56 overflow-y-auto pr-1">
@@ -224,21 +216,17 @@
             <span class="material-symbols-outlined text-xl">group</span>
             <span>User Management</span>
           </a>
+          <a href="#" onclick="navigateView('admin-depts'); return false;" id="nav-admin-depts" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
+            <span class="material-symbols-outlined text-xl">category</span>
+            <span>Manage Categories</span>
+          </a>
           <a href="#" onclick="navigateView('admin-tags'); return false;" id="nav-admin-tags" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
             <span class="material-symbols-outlined text-xl">sell</span>
-            <span>Tag & Category Management</span>
-          </a>
-          <a href="#" onclick="navigateView('admin-depts'); return false;" id="nav-admin-depts" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
-            <span class="material-symbols-outlined text-xl">apartment</span>
-            <span>Department Management</span>
+            <span>Tag Management</span>
           </a>
           <a href="#" onclick="navigateView('admin-videos'); return false;" id="nav-admin-videos" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
             <span class="material-symbols-outlined text-xl">video_library</span>
             <span>Video Management</span>
-          </a>
-          <a href="#" onclick="navigateView('admin-events'); return false;" id="nav-admin-events" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
-            <span class="material-symbols-outlined text-xl">event</span>
-            <span>Event Management</span>
           </a>
           <a href="#" onclick="navigateView('admin-upload'); return false;" id="nav-admin-upload" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
             <span class="material-symbols-outlined text-xl">cloud_upload</span>
@@ -676,14 +664,59 @@
         </div>
       </div>
 
-      <!-- 8. VIEW: CATEGORIES DIRECTORY -->
+      <!-- 8. VIEW: CATEGORIES DIRECTORY (INTEGRATED CONTENT HUB) -->
       <div id="view-categories" class="view-content hidden space-y-6 max-w-7xl mx-auto">
-        <div>
-          <h2 class="text-2xl font-black text-gray-900">Knowledge Categories Directory</h2>
-          <p class="text-xs text-gray-500 mt-1">Browse Feedtech video assets organized by operational and scientific classification.</p>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-black text-gray-900">Knowledge Categories Directory</h2>
+            <p class="text-xs text-gray-500 mt-1">Browse Feedtech video assets, corporate events, and recorded meetings organized by classification.</p>
+          </div>
+          <!-- Filter Tabs inside Categories Directory -->
+          <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-outline-variant text-xs">
+            <button onclick="filterCategoriesTab('all')" id="catTab-all" class="cat-tab-btn px-3 py-1.5 rounded-lg font-bold bg-white text-primary shadow-xs">All Domains</button>
+            <button onclick="filterCategoriesTab('academic')" id="catTab-academic" class="cat-tab-btn px-3 py-1.5 rounded-lg font-semibold text-gray-600 hover:text-gray-900">Scientific R&D</button>
+            <button onclick="filterCategoriesTab('events')" id="catTab-events" class="cat-tab-btn px-3 py-1.5 rounded-lg font-semibold text-gray-600 hover:text-gray-900 flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm">event</span>
+              <span>Events & Symposia</span>
+            </button>
+            <button onclick="filterCategoriesTab('meetings')" id="catTab-meetings" class="cat-tab-btn px-3 py-1.5 rounded-lg font-semibold text-gray-600 hover:text-gray-900 flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm">meeting_room</span>
+              <span>Meeting Recordings</span>
+            </button>
+          </div>
         </div>
+
+        <!-- Section 1: Standard Categories Grid -->
         <div id="categoriesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          <!-- Populated dynamically -->
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <!-- Section 2: Integrated Corporate Events Grid (Embedded) -->
+        <div id="integratedEventsContainer" class="space-y-4 hidden">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-base text-primary">event</span>
+              <span>Corporate Events & Symposia Live / Replay</span>
+            </h3>
+            <span class="text-xs text-gray-400">Official Feedtech Global Conferences</span>
+          </div>
+          <div id="integratedEventsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- Populated via JS from events data -->
+          </div>
+        </div>
+
+        <!-- Section 3: Integrated Meeting Recordings Grid (Embedded) -->
+        <div id="integratedMeetingsContainer" class="space-y-4 hidden">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-base text-primary">meeting_room</span>
+              <span>Townhall & Department Meeting Recordings</span>
+            </h3>
+            <span class="text-xs text-gray-400">Executive Briefings & Technical Reviews</span>
+          </div>
+          <div id="integratedMeetingsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- Populated via JS -->
+          </div>
         </div>
       </div>
 
@@ -763,62 +796,61 @@
         </div>
 
         <!-- Bento Grid Main Content -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Engagement by Department Bar Chart (Col Span 2) -->
+          <!-- Monthly Video Consumption by Category Bar Chart (Col Span 2) -->
           <div class="lg:col-span-2 bg-white border border-outline-variant rounded-xl p-6 shadow-sm flex flex-col">
             <div class="flex justify-between items-center mb-6">
               <div>
-                <h3 class="font-bold text-gray-900 text-sm">Engagement by Department</h3>
-                <p class="text-xs text-gray-400">Monthly aggregate video plays across business units</p>
+                <h3 class="font-bold text-gray-900 text-sm">Monthly Video Consumption by Category</h3>
+                <p class="text-xs text-gray-400">Interactive video view breakdown across categories (Click bar to drill down)</p>
               </div>
-              <button onclick="navigateView('admin-videos')" class="text-primary hover:bg-emerald-50 p-1.5 rounded-lg transition-colors text-xs font-bold flex items-center gap-1">
-                <span>View Videos</span>
-                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+              <button onclick="openCategoryDrilldown('Biotech')" class="text-primary hover:bg-emerald-50 px-2.5 py-1.5 rounded-lg transition-colors text-xs font-bold flex items-center gap-1 border border-primary/20 shadow-xs">
+                <span class="material-symbols-outlined text-sm">analytics</span>
+                <span>Inspect Video Breakdown</span>
               </button>
             </div>
             
-            <!-- Abstracted Bar Chart -->
+            <!-- Abstracted Bar Chart with Interactive Click-to-Drilldown -->
             <div class="flex-1 relative flex items-end justify-between gap-3 pt-6 border-b border-outline-variant/40 pb-4 h-56">
-              <div class="flex flex-col items-center gap-2 group flex-1 h-full justify-end cursor-pointer">
-                <div class="w-full max-w-[42px] bg-primary/20 rounded-t-md h-[75%] group-hover:bg-primary/30 transition-colors relative flex items-end overflow-hidden">
+              <div onclick="openCategoryDrilldown('Biotech')" title="Click to drill down Biotech videos" class="flex flex-col items-center gap-2 group flex-1 h-full justify-end cursor-pointer">
+                <div class="w-full max-w-[42px] bg-primary/20 rounded-t-md h-[75%] group-hover:bg-primary/40 transition-all relative flex items-end overflow-hidden group-hover:scale-105">
                   <div class="w-full bg-primary h-[85%] rounded-t-md"></div>
                 </div>
                 <span class="text-[11px] font-bold text-gray-600 group-hover:text-primary">Biotech</span>
               </div>
-              <div class="flex flex-col items-center gap-2 group flex-1 h-full justify-end cursor-pointer">
-                <div class="w-full max-w-[42px] bg-primary/20 rounded-t-md h-[90%] group-hover:bg-primary/30 transition-colors relative flex items-end overflow-hidden">
+              <div onclick="openCategoryDrilldown('Swine')" title="Click to drill down Swine videos" class="flex flex-col items-center gap-2 group flex-1 h-full justify-end cursor-pointer">
+                <div class="w-full max-w-[42px] bg-primary/20 rounded-t-md h-[90%] group-hover:bg-primary/40 transition-all relative flex items-end overflow-hidden group-hover:scale-105">
                   <div class="w-full bg-primary h-[90%] rounded-t-md"></div>
                 </div>
                 <span class="text-[11px] font-bold text-gray-600 group-hover:text-primary">Swine</span>
               </div>
-              <div class="flex flex-col items-center gap-2 group flex-1 h-full justify-end cursor-pointer">
-                <div class="w-full max-w-[42px] bg-primary/20 rounded-t-md h-[60%] group-hover:bg-primary/30 transition-colors relative flex items-end overflow-hidden">
+              <div onclick="openCategoryDrilldown('QC-Lab')" title="Click to drill down QC-Lab videos" class="flex flex-col items-center gap-2 group flex-1 h-full justify-end cursor-pointer">
+                <div class="w-full max-w-[42px] bg-primary/20 rounded-t-md h-[60%] group-hover:bg-primary/40 transition-all relative flex items-end overflow-hidden group-hover:scale-105">
                   <div class="w-full bg-primary h-[70%] rounded-t-md"></div>
                 </div>
                 <span class="text-[11px] font-bold text-gray-600 group-hover:text-primary">QC-Lab</span>
               </div>
-              <div class="flex flex-col items-center gap-2 group flex-1 h-full justify-end cursor-pointer">
-                <div class="w-full max-w-[42px] bg-primary/20 rounded-t-md h-[45%] group-hover:bg-primary/30 transition-colors relative flex items-end overflow-hidden">
+              <div onclick="openCategoryDrilldown('Poultry')" title="Click to drill down Poultry videos" class="flex flex-col items-center gap-2 group flex-1 h-full justify-end cursor-pointer">
+                <div class="w-full max-w-[42px] bg-primary/20 rounded-t-md h-[45%] group-hover:bg-primary/40 transition-all relative flex items-end overflow-hidden group-hover:scale-105">
                   <div class="w-full bg-primary h-[60%] rounded-t-md"></div>
                 </div>
                 <span class="text-[11px] font-bold text-gray-600 group-hover:text-primary">Poultry</span>
               </div>
-              <div class="flex flex-col items-center gap-2 group flex-1 h-full justify-end cursor-pointer">
-                <div class="w-full max-w-[42px] bg-primary/20 rounded-t-md h-[55%] group-hover:bg-primary/30 transition-colors relative flex items-end overflow-hidden">
+              <div onclick="openCategoryDrilldown('Production')" title="Click to drill down Operations videos" class="flex flex-col items-center gap-2 group flex-1 h-full justify-end cursor-pointer">
+                <div class="w-full max-w-[42px] bg-primary/20 rounded-t-md h-[55%] group-hover:bg-primary/40 transition-all relative flex items-end overflow-hidden group-hover:scale-105">
                   <div class="w-full bg-primary h-[80%] rounded-t-md"></div>
                 </div>
-                <span class="text-[11px] font-bold text-gray-600 group-hover:text-primary">Nutrition</span>
+                <span class="text-[11px] font-bold text-gray-600 group-hover:text-primary">Operations</span>
               </div>
-              <div class="flex flex-col items-center gap-2 group flex-1 h-full justify-end cursor-pointer">
-                <div class="w-full max-w-[42px] bg-primary/20 rounded-t-md h-[40%] group-hover:bg-primary/30 transition-colors relative flex items-end overflow-hidden">
+              <div onclick="openCategoryDrilldown('Aquatic')" title="Click to drill down Aquatic videos" class="flex flex-col items-center gap-2 group flex-1 h-full justify-end cursor-pointer">
+                <div class="w-full max-w-[42px] bg-primary/20 rounded-t-md h-[40%] group-hover:bg-primary/40 transition-all relative flex items-end overflow-hidden group-hover:scale-105">
                   <div class="w-full bg-primary h-[50%] rounded-t-md"></div>
                 </div>
                 <span class="text-[11px] font-bold text-gray-600 group-hover:text-primary">Aquatic</span>
               </div>
             </div>
             <div class="flex items-center justify-between text-xs text-gray-400 mt-4 pt-2">
-              <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-primary"></span> Primary Engagement</span>
-              <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-primary/20"></span> Target Capacity</span>
+              <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-primary"></span> Primary Consumption</span>
+              <span class="text-[11px] text-primary font-medium cursor-pointer hover:underline" onclick="openCategoryDrilldown('All')">💡 Click any category to view individual video statistics</span>
             </div>
           </div>
 
@@ -1049,28 +1081,72 @@
             <textarea id="uploadVideoDesc" rows="3" placeholder="Summary of the video content, methodology, and key takeaways..." class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none resize-none"></textarea>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-bold text-gray-700 mb-1">Security Clearance <span class="text-rose-500">*</span></label>
-              <select id="uploadVideoLevel" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-semibold text-gray-900">
-                <option value="Standard">Standard (Company-wide)</option>
-                <option value="Restricted">Restricted (Department & Managers)</option>
-                <option value="Highly Confidential">Highly Confidential (C-Level / Scientists)</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-gray-700 mb-1">Category</label>
-              <select id="uploadVideoCategory" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none">
+              <label class="block text-xs font-bold text-gray-700 mb-1">Category <span class="text-rose-500">*</span></label>
+              <select id="uploadVideoCategory" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-semibold text-gray-900">
                 <option value="Research & Whitepaper">Research & Whitepaper</option>
                 <option value="Field Trials & Reports">Field Trials & Reports</option>
                 <option value="Training & Safety Protocols">Training & Safety Protocols</option>
                 <option value="Townhall & Executive Updates">Townhall & Executive Updates</option>
+                <option value="Lab Demos & Assay Procedures">Lab Demos & Assay Procedures</option>
                 <option value="Production & Mill Operations">Production & Mill Operations</option>
+                <option value="Corporate Events & Symposia">Corporate Events & Symposia</option>
+                <option value="Meeting Recordings">Meeting Recordings</option>
               </select>
             </div>
             <div>
               <label class="block text-xs font-bold text-gray-700 mb-1">Duration (MM:SS)</label>
               <input id="uploadVideoDuration" type="text" value="15:30" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none">
+            </div>
+          </div>
+
+          <!-- Person-Based Access Control (PBAC) Settings -->
+          <div class="bg-slate-50 border border-outline-variant p-4 rounded-xl space-y-3">
+            <div>
+              <label class="block text-xs font-bold text-gray-800 mb-1.5 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-base text-primary">shield_person</span>
+                <span>ระบบสิทธิ์การเข้าถึง (Access Control Mode) <span class="text-rose-500">*</span></span>
+              </label>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <label class="flex items-center gap-2 p-2.5 bg-white border border-outline-variant rounded-lg cursor-pointer hover:border-primary transition-all">
+                  <input type="radio" name="uploadAccessMode" value="public" checked onchange="toggleUploadAccessModeUI(this.value)" class="text-primary focus:ring-primary">
+                  <div>
+                    <div class="text-xs font-bold text-gray-800">🌐 สาธารณะ (Public)</div>
+                    <div class="text-[10px] text-gray-400">พนักงานทุกคนดูได้</div>
+                  </div>
+                </label>
+                <label class="flex items-center gap-2 p-2.5 bg-white border border-outline-variant rounded-lg cursor-pointer hover:border-primary transition-all">
+                  <input type="radio" name="uploadAccessMode" value="include" onchange="toggleUploadAccessModeUI(this.value)" class="text-primary focus:ring-primary">
+                  <div>
+                    <div class="text-xs font-bold text-gray-800">👥 กำหนดเฉพาะบุคคล (Include)</div>
+                    <div class="text-[10px] text-gray-400">เฉพาะรายชื่อที่เลือกเท่านั้น</div>
+                  </div>
+                </label>
+                <label class="flex items-center gap-2 p-2.5 bg-white border border-outline-variant rounded-lg cursor-pointer hover:border-primary transition-all">
+                  <input type="radio" name="uploadAccessMode" value="exclude" onchange="toggleUploadAccessModeUI(this.value)" class="text-primary focus:ring-primary">
+                  <div>
+                    <div class="text-xs font-bold text-gray-800">🚫 ยกเว้นบุคคล (Exclude)</div>
+                    <div class="text-[10px] text-gray-400">ดูได้ทุกคน ยกเว้นรายชื่อนี้</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Person Selector Box (Visible when Include or Exclude is selected) -->
+            <div id="uploadPersonSelectorBox" class="hidden space-y-2.5 pt-2 border-t border-outline-variant/60">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="text-[11px] font-bold text-gray-700" id="uploadPersonBoxTitle">เลือกรายชื่อพนักงาน:</span>
+                <div class="flex items-center gap-1.5 text-[10px]">
+                  <button type="button" onclick="selectVipPresetForUpload()" class="px-2 py-1 bg-purple-50 text-purple-700 hover:bg-purple-100 font-bold rounded-md border border-purple-200">⭐ กลุ่ม VIP (คุณหน่อย, พี่หนุ่ม, พี่กัณฑ์)</button>
+                  <button type="button" onclick="clearUploadPersons()" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-gray-600 font-bold rounded-md">ล้างทั้งหมด</button>
+                </div>
+              </div>
+              <input type="text" id="uploadPersonSearchInput" oninput="filterUploadPersonList(this.value)" placeholder="พิมพ์ค้นหาชื่อ หรือตำแหน่งพนักงาน..." class="w-full px-3 py-1.5 text-xs bg-white border border-outline-variant rounded-lg outline-none">
+              <div id="uploadPersonListContainer" class="max-h-40 overflow-y-auto space-y-1.5 p-2 bg-white rounded-lg border border-outline-variant divide-y divide-slate-100">
+                <!-- Populated dynamically via JS -->
+              </div>
+              <div class="text-[11px] text-gray-500 font-medium" id="uploadSelectedPersonsCountText">เลือกแล้ว: 0 ท่าน</div>
             </div>
           </div>
 
@@ -1275,21 +1351,21 @@
         </div>
       </div>
 
-      <!-- 18. VIEW: DEPARTMENT MANAGEMENT (ADMIN) -->
+      <!-- 18. VIEW: MANAGE CATEGORIES & PERSONNEL DIRECTORY (ADMIN) -->
       <div id="view-admin-depts" class="view-content hidden space-y-6 max-w-7xl mx-auto">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 class="text-2xl font-black text-gray-900">Department Management</h2>
-            <p class="text-xs text-gray-500 mt-1">Configure and monitor the 17 Feedtech Business Units, BU codes, and video repository allocations.</p>
+            <h2 class="text-2xl font-black text-gray-900">Manage Categories & Personnel</h2>
+            <p class="text-xs text-gray-500 mt-1">Configure knowledge categories, inspect associated personnel, and oversee content repositories.</p>
           </div>
-          <button onclick="openAddDeptModal()" class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-emerald-800 flex items-center gap-1.5 shadow-sm">
-            <span class="material-symbols-outlined text-sm">domain_add</span>
-            <span>Add Department</span>
+          <button onclick="openAddCategoryModal()" class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-emerald-800 flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm">add_circle</span>
+            <span>Add New Category</span>
           </button>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="adminDeptGrid">
-          <!-- Populated via JS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="adminDeptGrid">
+          <!-- Populated via JS with categories and members list -->
         </div>
       </div>
 
@@ -1457,12 +1533,57 @@
           </select>
         </div>
         <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1">Clearance Level</label>
-          <select id="editDrawerLevel" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-semibold">
-            <option value="Standard">Standard</option>
-            <option value="Restricted">Restricted</option>
-            <option value="Highly Confidential">Highly Confidential</option>
+          <label class="block text-xs font-bold text-gray-700 mb-1">Category</label>
+          <select id="editDrawerCategory" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-semibold">
+            <option value="Research & Whitepaper">Research & Whitepaper</option>
+            <option value="Field Trials & Reports">Field Trials & Reports</option>
+            <option value="Training & Safety Protocols">Training & Safety Protocols</option>
+            <option value="Townhall & Executive Updates">Townhall & Executive Updates</option>
+            <option value="Lab Demos & Assay Procedures">Lab Demos & Assay Procedures</option>
+            <option value="Production & Mill Operations">Production & Mill Operations</option>
+            <option value="Corporate Events & Symposia">Corporate Events & Symposia</option>
+            <option value="Meeting Recordings">Meeting Recordings</option>
           </select>
+        </div>
+      </div>
+
+      <!-- Edit Drawer Person-Based Access Control (PBAC) -->
+      <div class="bg-slate-50 border border-outline-variant p-4 rounded-xl space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-800 mb-1.5 flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-base text-primary">shield_person</span>
+            <span>สิทธิ์การเข้าถึง (Access Control Mode)</span>
+          </label>
+          <div class="grid grid-cols-3 gap-2 text-xs">
+            <label class="flex items-center gap-1.5 p-2 bg-white border border-outline-variant rounded-lg cursor-pointer">
+              <input type="radio" name="drawerAccessMode" value="public" onchange="toggleDrawerAccessModeUI(this.value)" class="text-primary focus:ring-primary">
+              <span class="font-bold text-gray-800 text-[11px]">🌐 Public</span>
+            </label>
+            <label class="flex items-center gap-1.5 p-2 bg-white border border-outline-variant rounded-lg cursor-pointer">
+              <input type="radio" name="drawerAccessMode" value="include" onchange="toggleDrawerAccessModeUI(this.value)" class="text-primary focus:ring-primary">
+              <span class="font-bold text-gray-800 text-[11px]">👥 Include</span>
+            </label>
+            <label class="flex items-center gap-1.5 p-2 bg-white border border-outline-variant rounded-lg cursor-pointer">
+              <input type="radio" name="drawerAccessMode" value="exclude" onchange="toggleDrawerAccessModeUI(this.value)" class="text-primary focus:ring-primary">
+              <span class="font-bold text-gray-800 text-[11px]">🚫 Exclude</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Person Selector Box for Drawer -->
+        <div id="drawerPersonSelectorBox" class="hidden space-y-2 pt-2 border-t border-outline-variant/60">
+          <div class="flex flex-wrap items-center justify-between gap-1.5 text-[10px]">
+            <span class="font-bold text-gray-700" id="drawerPersonBoxTitle">จัดการรายชื่อบุคคล:</span>
+            <div class="flex gap-1">
+              <button type="button" onclick="selectVipPresetForDrawer()" class="px-2 py-0.5 bg-purple-50 text-purple-700 hover:bg-purple-100 font-bold rounded border border-purple-200">⭐ กลุ่ม VIP</button>
+              <button type="button" onclick="clearDrawerPersons()" class="px-2 py-0.5 bg-slate-200 hover:bg-slate-300 text-gray-600 rounded">ล้าง</button>
+            </div>
+          </div>
+          <input type="text" id="drawerPersonSearchInput" oninput="filterDrawerPersonList(this.value)" placeholder="ค้นหาชื่อ..." class="w-full px-2.5 py-1 text-xs bg-white border border-outline-variant rounded-lg outline-none">
+          <div id="drawerPersonListContainer" class="max-h-36 overflow-y-auto space-y-1 p-2 bg-white rounded-lg border border-outline-variant divide-y divide-slate-100">
+            <!-- Populated dynamically via JS -->
+          </div>
+          <div class="text-[10px] text-gray-500 font-medium" id="drawerSelectedPersonsCountText">เลือกแล้ว: 0 ท่าน</div>
         </div>
       </div>
 
@@ -2010,6 +2131,77 @@
       <div class="p-4 border-t border-outline-variant bg-slate-50 flex justify-end gap-2 text-xs">
         <button onclick="closeEventModal()" class="px-4 py-2 border border-outline-variant text-gray-600 rounded-lg hover:bg-slate-200">Cancel</button>
         <button onclick="saveEventModalSubmit()" class="px-5 py-2 bg-primary text-white font-bold rounded-lg hover:bg-emerald-800 shadow-sm">Save Event</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CATEGORY VIDEO BREAKDOWN (DRILL-DOWN FOR ADMIN DASHBOARD) -->
+  <div id="categoryDrilldownModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-4xl w-full border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-outline-variant bg-slate-50 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-xl">insights</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+              <span id="drilldownCategoryTitle">Category Video Breakdown</span>
+              <span id="drilldownCategoryBadge" class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[11px] font-bold rounded-full">Active</span>
+            </h3>
+            <p class="text-xs text-gray-500 mt-0.5" id="drilldownCategorySubtitle">Detailed metrics, video inventory, and audience consumption audit</p>
+          </div>
+        </div>
+        <button onclick="closeCategoryDrilldownModal()" class="p-1.5 text-gray-400 hover:text-gray-700 rounded-full hover:bg-slate-200">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Quick KPI Stats Bar -->
+      <div class="grid grid-cols-3 divide-x divide-outline-variant border-b border-outline-variant bg-white text-xs">
+        <div class="p-4 text-center">
+          <span class="text-gray-400 block mb-0.5">Total Videos</span>
+          <span id="drilldownTotalVideos" class="text-lg font-black text-gray-900">0 Videos</span>
+        </div>
+        <div class="p-4 text-center">
+          <span class="text-gray-400 block mb-0.5">Aggregate Views</span>
+          <span id="drilldownTotalViews" class="text-lg font-black text-primary">0 Views</span>
+        </div>
+        <div class="p-4 text-center">
+          <span class="text-gray-400 block mb-0.5">Access Gate</span>
+          <span class="text-sm font-bold text-emerald-700">PBAC Enforced</span>
+        </div>
+      </div>
+
+      <!-- Modal Body (Table of Videos in Category) -->
+      <div class="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
+        <div class="flex items-center justify-between">
+          <h4 class="font-bold text-gray-900 text-sm">Indexed Videos in this Category</h4>
+          <span class="text-gray-400 text-xs" id="drilldownTableSummary">Showing all videos</span>
+        </div>
+
+        <div class="border border-outline-variant rounded-xl overflow-hidden shadow-xs">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-outline-variant">
+                <th class="py-3 px-4">Video Asset</th>
+                <th class="py-3 px-4">Duration & Uploaded</th>
+                <th class="py-3 px-4 text-center">Views</th>
+                <th class="py-3 px-4">Access Mode & Permissions</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="drilldownTableBody" class="divide-y divide-outline-variant text-gray-700">
+              <!-- Populated dynamically via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 border-t border-outline-variant bg-slate-50 flex justify-between items-center text-xs">
+        <span class="text-gray-400">💡 Click any video to preview or edit individual access whitelist</span>
+        <button onclick="closeCategoryDrilldownModal()" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 font-bold text-gray-700 rounded-lg">Close</button>
       </div>
     </div>
   </div>
