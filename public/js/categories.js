@@ -374,6 +374,10 @@ function closeCategoryDrilldownModal() {
   if (modal) modal.classList.add('hidden');
 }
 
+function closeCategoryDrilldown() {
+  closeCategoryDrilldownModal();
+}
+
 function openAddCategoryModal() {
   openAddDeptModal();
 }
