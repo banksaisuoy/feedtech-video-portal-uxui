@@ -48,20 +48,6 @@ function renderUserTable() {
           </div>
         </td>
         <td class="py-3.5 px-5 font-semibold text-gray-700">${u.department}</td>
-        <td class="py-3.5 px-5">
-          <div class="flex flex-wrap gap-1 max-w-[240px]">
-            ${(u.allowed_tags || '#general').split(',').map(t => {
-              const tag = t.trim();
-              const isAll = (tag === '*');
-              const isConf = tag.includes('confidential');
-              return `
-                <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ${isAll ? 'bg-purple-100 text-purple-800 font-bold border border-purple-200' : (isConf ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-100 text-slate-700 border border-slate-200')}">
-                  ${tag}
-                </span>
-              `;
-            }).join('')}
-          </div>
-        </td>
         <td class="py-3.5 px-5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.is_admin ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}">${u.is_admin ? '🛡️ Administrator' : '👤 Regular Staff'}</span></td>
         <td class="py-3.5 px-5">
           <span class="inline-flex items-center gap-1.5 font-semibold text-[11px] ${isInactive ? 'text-rose-600' : 'text-emerald-700'}">
@@ -171,12 +157,13 @@ function inspectUserVideoAccess(userId) {
   const listEl = document.getElementById('userAccessVideosList');
 
   if (titleEl) titleEl.textContent = `ตรวจสอบสิทธิ์การดูวิดีโอ: ${user.name}`;
-  if (subtitleEl) subtitleEl.textContent = `${user.role} • แผนก ${user.department} • ${user.email} (${user.emp_id || 'ID-' + user.id})`;
+  if (subtitleEl) subtitleEl.textContent = `${user.role} • ${user.department} • ${user.email} (${user.emp_id || 'ID-' + user.id})`;
 
   if (tagsListEl) {
-    tagsListEl.innerHTML = (user.allowed_tags || '#general').split(',').map(t => {
-      return `<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-mono font-bold">${t.trim()}</span>`;
-    }).join('');
+    tagsListEl.innerHTML = `
+      <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-bold">PBAC Access Control</span>
+      <span class="px-2 py-0.5 rounded text-[10px] ${user.is_admin ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700'} font-bold">${user.is_admin ? '🛡️ Admin (Full Access)' : '👤 Regular User'}</span>
+    `;
   }
 
   const videos = state.allVideos || [];
@@ -989,65 +976,83 @@ async function loadAccessMatrix() {
 
 function generateMatrixHtml(matrixData) {
   return `
-    <table class="w-full text-left border-collapse text-xs">
+    <table class="min-w-full w-full text-left border-collapse text-xs">
       <thead>
         <tr class="bg-slate-50 border-b border-outline-variant font-bold text-gray-500 uppercase text-[10px]">
-          <th class="py-3 px-4">User Persona</th>
-          <th class="py-3 px-4">Department & Access Role</th>
-          <th class="py-3 px-4">Role / Permissions</th>
-          <th class="py-3 px-4 text-center">Accessible Videos</th>
-          <th class="py-3 px-4">Permission Evaluation Breakdown</th>
+          <th class="py-3 px-4 w-52">User Persona</th>
+          <th class="py-3 px-4 w-36">Category / Domain</th>
+          <th class="py-3 px-4 w-44">Role & Access Type</th>
+          <th class="py-3 px-4 text-center w-32">Accessible Rate</th>
+          <th class="py-3 px-4">Live Video Access (PBAC)</th>
+          <th class="py-3 px-4 text-right w-24">Inspect</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-outline-variant">
         ${matrixData.map(row => {
           const u = row.user;
           const isAdmin = (u.is_admin === 1 || u.role === 'System Administrator' || u.department === 'Executive');
-          const accessiblePct = Math.round((row.accessibleCount / (row.accessibleCount + row.restrictedCount)) * 100);
+          const totalVids = row.accessibleCount + row.restrictedCount;
+          const accessiblePct = totalVids > 0 ? Math.round((row.accessibleCount / totalVids) * 100) : 0;
           
           return `
             <tr class="hover:bg-slate-50 transition-colors">
-              <td class="py-3 px-4 font-bold text-gray-900">
-                ${u.name}
-                <div class="text-[10px] text-gray-400 font-mono">${u.emp_id}</div>
+              <td class="py-3.5 px-4 align-top">
+                <div class="font-bold text-gray-900">${u.name}</div>
+                <div class="text-[10px] text-gray-400 font-mono mt-0.5">${u.emp_id} • ${u.email}</div>
               </td>
-              <td class="py-3 px-4">
+              <td class="py-3.5 px-4 align-top">
                 <span class="font-semibold text-gray-700">${u.department}</span>
-                <div class="mt-0.5">${getPermissionBadgeMarkup(u.permission_level)}</div>
-                <div class="mt-1 text-[10px] text-emerald-800 font-mono bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                  Tags: ${u.allowed_tags || '#general'}
-                </div>
               </td>
-              <td class="py-3 px-4">
+              <td class="py-3.5 px-4 align-top">
                 ${isAdmin ? `
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
-                    <span class="material-symbols-outlined text-xs">admin_panel_settings</span> Administrator (Full Access)
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                    <span class="material-symbols-outlined text-xs">admin_panel_settings</span> 🛡️ Admin (Full Access)
                   </span>
                 ` : `
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                    <span class="material-symbols-outlined text-xs">visibility</span> Staff (View Only)
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <span class="material-symbols-outlined text-xs">verified_user</span> 👤 Regular User (PBAC)
                   </span>
                 `}
               </td>
-              <td class="py-3 px-4 text-center">
-                <span class="font-bold text-emerald-700">${row.accessibleCount}</span> / ${row.accessibleCount + row.restrictedCount}
+              <td class="py-3.5 px-4 align-top text-center whitespace-nowrap">
+                <span class="font-bold text-emerald-700">${row.accessibleCount}</span> / ${totalVids}
                 <div class="w-20 bg-slate-200 h-1.5 rounded-full mx-auto mt-1 overflow-hidden">
                   <div class="bg-emerald-500 h-full" style="width: ${accessiblePct}%"></div>
                 </div>
+                <span class="text-[9px] text-gray-400 font-mono">${accessiblePct}% available</span>
               </td>
-              <td class="py-3 px-4">
-                <div class="flex flex-wrap gap-1 max-w-lg">
-                  ${row.accessible.map(a => `
-                    <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200" title="Granted: ${a.title} (${a.level})">
-                      <span class="material-symbols-outlined text-[10px]">check</span> ${a.video_id}
+              <td class="py-3.5 px-4 align-top">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  ${isAdmin ? `
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                      <span class="material-symbols-outlined text-xs">all_inclusive</span> Full Catalog Access (Super Admin)
                     </span>
-                  `).join('')}
-                  ${row.restricted.map(r => `
-                    <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-rose-50 text-rose-700 border border-rose-200" title="Hidden: ${r.reason}">
-                      <span class="material-symbols-outlined text-[10px]">lock</span> ${r.video_id}
+                  ` : `
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      <span class="material-symbols-outlined text-xs">check_circle</span> ${row.accessibleCount} Permitted
                     </span>
-                  `).join('')}
+                    ${row.restrictedCount > 0 ? `
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                        <span class="material-symbols-outlined text-xs">block</span> ${row.restrictedCount} Restricted
+                      </span>
+                    ` : ''}
+                    ${row.restricted.length > 0 ? `
+                      <div class="w-full mt-1 flex flex-wrap gap-1">
+                        ${row.restricted.map(r => `
+                          <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-rose-100 text-rose-800 font-mono font-medium" title="Restricted: ${r.title} (${r.reason})">
+                            <span class="material-symbols-outlined text-[10px]">lock</span> ${r.video_id}
+                          </span>
+                        `).join('')}
+                      </div>
+                    ` : ''}
+                  `}
                 </div>
+              </td>
+              <td class="py-3.5 px-4 align-top text-right">
+                <button onclick="inspectUserVideoAccess(${u.id})" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-[11px] font-bold transition-colors inline-flex items-center gap-1">
+                  <span class="material-symbols-outlined text-xs">visibility</span>
+                  <span>Inspect</span>
+                </button>
               </td>
             </tr>
           `;
@@ -1058,12 +1063,13 @@ function generateMatrixHtml(matrixData) {
 }
 
 function openPermissionMatrixModal() {
+  navigateView('admin-matrix');
   loadAccessMatrix();
-  document.getElementById('matrixModal').classList.remove('hidden');
 }
 
 function closePermissionMatrixModal() {
-  document.getElementById('matrixModal').classList.add('hidden');
+  const modal = document.getElementById('matrixModal');
+  if (modal) modal.classList.add('hidden');
 }
 
 // ---------------- AUDIT LOGS & ACTION TRACE (STITCH DESIGN 395a8206f8004d51ab6fb069e032e214) ----------------

@@ -29,6 +29,7 @@ async function init() {
   await loadAccessibleVideos();
   await loadAllVideos();
   await loadCategories();
+  await loadContentTypes();
   await loadTags();
   await loadEvents();
 

@@ -122,7 +122,7 @@ function renderPersonaSelector() {
   if (!sel) return;
   sel.innerHTML = state.users.map(u => `
     <option value="${u.id}" ${state.currentUser && state.currentUser.id === u.id ? 'selected' : ''}>
-      ${u.name} — [Tags: ${u.allowed_tags || '#general'}] (${u.department}) ${u.is_admin ? '🛡️ Admin' : ''}
+      ${u.name} — ${u.role} (${u.department}) ${u.is_admin ? '👑 Admin' : '👤 User'}
     </option>
   `).join('');
 }
@@ -156,7 +156,7 @@ function renderCurrentUserUI() {
   }
 
   if (deptText) {
-    deptText.textContent = `Dept: ${u.department} | Role: ${u.role} | Access: PBAC (Include / Exclude)`;
+    deptText.textContent = `Dept: ${u.department} | Role: ${u.role} | Access: PBAC`;
   }
 
   // Top navbar profile
@@ -165,7 +165,7 @@ function renderCurrentUserUI() {
   const navAvatar = document.getElementById('navAvatar');
 
   if (navName) navName.textContent = u.name;
-  if (navRole) navRole.textContent = `Tags: ${u.allowed_tags || '#general'}`;
+  if (navRole) navRole.textContent = `${u.role} • ${u.is_admin ? 'Admin' : 'User'}`;
   if (navAvatar) {
     const initials = u.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
     navAvatar.textContent = initials;

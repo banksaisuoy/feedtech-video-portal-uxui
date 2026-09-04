@@ -108,6 +108,128 @@ function populateDepartmentSelects() {
   populateCategorySelects();
 }
 
+// ---------------- CONTENT TYPE / FORMAT MANAGEMENT ----------------
+
+async function loadContentTypes() {
+  try {
+    const res = await fetch('/api/content-types');
+    const json = await res.json();
+    if (json.success) {
+      state.contentTypes = json.data;
+      populateContentTypeSelects();
+      renderContentTypeManagementList();
+    }
+  } catch (err) {
+    console.error('Failed to load content types', err);
+  }
+}
+
+function populateContentTypeSelects() {
+  const selects = ['uploadVideoCategory', 'editDrawerCategory', 'videoContentTypeFilter', 'homeContentTypeFilter'];
+  if (!state.contentTypes) return;
+
+  selects.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isFilter = id.includes('Filter');
+    const currentVal = el.value;
+    let opts = isFilter ? '<option value="">All Content Types</option>' : '';
+    opts += state.contentTypes.map(ct => `<option value="${ct.name}">${ct.name}</option>`).join('');
+    el.innerHTML = opts;
+    if (currentVal && state.contentTypes.some(ct => ct.name === currentVal)) {
+      el.value = currentVal;
+    }
+  });
+}
+
+function renderContentTypeManagementList() {
+  const container = document.getElementById('contentTypeManageList');
+  if (!container) return;
+
+  const types = state.contentTypes || [];
+  if (types.length === 0) {
+    container.innerHTML = '<div class="text-xs text-gray-400 py-2">No content types configured.</div>';
+    return;
+  }
+
+  container.innerHTML = types.map(ct => `
+    <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-outline-variant rounded-lg text-xs hover:bg-white transition-all">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary text-base">${ct.icon || 'description'}</span>
+        <div>
+          <span class="font-bold text-gray-900">${ct.name}</span>
+          <span class="text-[10px] text-gray-400 ml-1.5 font-mono">(${ct.video_count || 0} videos)</span>
+        </div>
+      </div>
+      <button type="button" onclick="deleteContentTypeSubmit(${ct.id})" class="text-gray-400 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition-colors" title="Delete content type">
+        <span class="material-symbols-outlined text-sm">delete</span>
+      </button>
+    </div>
+  `).join('');
+}
+
+function openAddContentTypeModal() {
+  const modal = document.getElementById('contentTypeModal');
+  if (modal) {
+    document.getElementById('modalContentTypeName').value = '';
+    document.getElementById('modalContentTypeDesc').value = '';
+    renderContentTypeManagementList();
+    modal.classList.remove('hidden');
+  }
+}
+
+function closeContentTypeModal() {
+  const modal = document.getElementById('contentTypeModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function saveContentTypeSubmit() {
+  const nameInput = document.getElementById('modalContentTypeName');
+  const descInput = document.getElementById('modalContentTypeDesc');
+  const name = nameInput ? nameInput.value.trim() : '';
+  const description = descInput ? descInput.value.trim() : '';
+
+  if (!name) {
+    showToast('Please enter a content type name', 'warning');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/content-types', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, icon: 'description', description })
+    });
+    const json = await res.json();
+    if (json.success) {
+      showToast(`Content Type "${name}" created`, 'success');
+      nameInput.value = '';
+      if (descInput) descInput.value = '';
+      await loadContentTypes();
+    } else {
+      showToast(json.message || 'Failed to create content type', 'error');
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
+}
+
+async function deleteContentTypeSubmit(id) {
+  if (!confirm('Are you sure you want to delete this Content Type?')) return;
+  try {
+    const res = await fetch(`/api/content-types/${id}`, { method: 'DELETE' });
+    const json = await res.json();
+    if (json.success) {
+      showToast('Content Type deleted', 'info');
+      await loadContentTypes();
+    } else {
+      showToast(json.message || 'Failed to delete content type', 'error');
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
+}
+
 // Backward compatibility alias for sidebar
 function renderDepartmentsSidebar() {
   renderSidebarCategories();
@@ -145,6 +267,10 @@ function renderCategoryManagementTable() {
     const totalVids = cats.reduce((acc, c) => acc + (c.video_count || 0), 0);
     totalVidEl.textContent = totalVids;
   }
+  const contentTypeKpiEl = document.getElementById('adminCatKpiContentTypes');
+  if (contentTypeKpiEl) {
+    contentTypeKpiEl.textContent = `${(state.contentTypes || []).length} Types`;
+  }
 
   if (list.length === 0) {
     tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-xs text-gray-400">No categories found matching current criteria.</td></tr>`;
@@ -178,11 +304,6 @@ function renderCategoryManagementTable() {
       <td class="py-3.5 px-5 text-center">
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
           ${c.video_count || 0} videos
-        </span>
-      </td>
-      <td class="py-3.5 px-5">
-        <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-          Public / Internal
         </span>
       </td>
       <td class="py-3.5 px-5 text-right whitespace-nowrap space-x-1">
@@ -473,18 +594,22 @@ async function openCategoryDrilldown(catName = 'All') {
   const tbody = document.getElementById('drilldownTableBody');
   const summaryEl = document.getElementById('drilldownTableSummary');
 
-  if (titleEl) titleEl.textContent = `${catName} Category Video Breakdown`;
-  if (badgeEl) badgeEl.textContent = `${catName} Domain`;
+  const displayCat = (!catName || catName === 'All') ? 'All Domains' : catName;
+  if (titleEl) titleEl.textContent = `${displayCat} Video Breakdown`;
+  if (badgeEl) badgeEl.textContent = `${displayCat}`;
 
   try {
-    const res = await fetch(`/api/analytics/category-drilldown/${encodeURIComponent(catName === 'All' ? '' : catName)}`);
+    const url = (!catName || catName === 'All') 
+      ? '/api/analytics/category-drilldown' 
+      : `/api/analytics/category-drilldown/${encodeURIComponent(catName)}`;
+    const res = await fetch(url);
     const json = await res.json();
     if (!json.success) throw new Error(json.message);
 
     const { total_videos, total_views, videos } = json;
     if (totalVidEl) totalVidEl.textContent = `${total_videos} Videos`;
     if (totalViewsEl) totalViewsEl.textContent = `${(total_views || 0).toLocaleString()} Views`;
-    if (summaryEl) summaryEl.textContent = `Showing all ${videos.length} videos in this category`;
+    if (summaryEl) summaryEl.textContent = `Showing ${videos.length} videos in ${displayCat}`;
 
     if (tbody) {
       if (videos.length === 0) {

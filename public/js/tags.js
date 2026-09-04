@@ -187,7 +187,6 @@ function openAddUserModal() {
   const levelEl = document.getElementById('modalLevel');
   if (levelEl) levelEl.value = 'Standard';
 
-  renderTagPicker('userModalTagsContainer', 'modalTags', true);
   document.getElementById('userModal').classList.remove('hidden');
 }
 
@@ -200,7 +199,7 @@ function editUserPrompt(userId) {
   document.getElementById('modalName').value = u.name;
   document.getElementById('modalEmail').value = u.email;
   document.getElementById('modalRole').value = u.role || (u.is_admin ? 'System Administrator' : 'Staff Member');
-  document.getElementById('modalTags').value = u.allowed_tags || '#general';
+  document.getElementById('modalTags').value = u.allowed_tags || '';
 
   // Populate category options
   const modalDept = document.getElementById('modalDept');
@@ -217,7 +216,6 @@ function editUserPrompt(userId) {
   const levelEl = document.getElementById('modalLevel');
   if (levelEl) levelEl.value = u.permission_level || (u.is_admin ? 'Highly Confidential' : 'Standard');
 
-  renderTagPicker('userModalTagsContainer', 'modalTags', true);
   document.getElementById('userModal').classList.remove('hidden');
 }
 
@@ -241,12 +239,12 @@ async function saveUserModalSubmit() {
   const roleSelect = document.getElementById('modalRoleSelect')?.value || 'user';
   const isAdmin = roleSelect === 'admin';
   const role = isAdmin ? 'System Administrator' : (document.getElementById('modalRole')?.value.trim() || 'Staff Member');
-  const allowed_tags = document.getElementById('modalTags').value.trim();
+  const allowed_tags = document.getElementById('modalTags')?.value?.trim() || '*';
   const permission_level = isAdmin ? 'Highly Confidential' : 'Standard';
   const emp_id = document.getElementById('modalEmpId').value.trim();
 
-  if (!name || !email || !allowed_tags) {
-    showToast('Please specify Name, Email, and Allowed Tags', 'error');
+  if (!name || !email) {
+    showToast('Please specify Name and Email', 'error');
     return;
   }
 
@@ -271,7 +269,7 @@ async function saveUserModalSubmit() {
       closeUserModal();
       await loadUsers();
       await loadAccessibleVideos();
-      showToast(id ? 'User & Allowed Tags updated' : 'User created with Allowed Tags', 'success');
+      showToast(id ? 'User updated successfully' : 'User created successfully', 'success');
     } else {
       showToast('Error: ' + json.message, 'error');
     }
@@ -349,6 +347,16 @@ async function loadTags() {
       state.tags = json.data;
       const countEl = document.getElementById('tagStatCount');
       if (countEl) countEl.textContent = `${state.tags.length} Tags`;
+      const catCountEl = document.getElementById('tagCategoryCoveredCount');
+      if (catCountEl) {
+        const uniqueCats = new Set(state.tags.map(t => t.department).filter(Boolean));
+        catCountEl.textContent = `${uniqueCats.size} Categories`;
+      }
+      const refCountEl = document.getElementById('tagTotalRefCount');
+      if (refCountEl) {
+        const totalRefs = state.tags.reduce((sum, t) => sum + (t.video_count || 0), 0);
+        refCountEl.textContent = `${totalRefs} References`;
+      }
       renderTagTable();
       renderCategorySubcategoryPills();
     }
@@ -356,9 +364,6 @@ async function loadTags() {
     console.error('Failed to load tags', err);
   }
 }
-
-// Note: loadCategories() is defined in categories.js and manages sidebar, table, and selects
-
 
 function renderCategorySubcategoryPills() {
   const container = document.getElementById('categorySubcategoryPillsContainer');
@@ -393,7 +398,7 @@ function renderCategorySubcategoryPills() {
               <span class="material-symbols-outlined text-primary text-sm">${icon}</span>
               <span>${dept}</span>
             </span>
-            <span class="text-[10px] bg-slate-200 text-gray-700 px-1.5 py-0.5 rounded font-bold">${tags.length} subcategories</span>
+            <span class="text-[10px] bg-slate-200 text-gray-700 px-1.5 py-0.5 rounded font-bold">${tags.length} tags</span>
           </div>
           <div class="flex flex-wrap gap-1.5">
             ${tags.map(t => `
@@ -425,7 +430,6 @@ function openAddTagForCategory(deptName) {
 async function handleQuickAddTag() {
   const input = document.getElementById('quickTagName');
   const deptSelect = document.getElementById('quickTagDept');
-  const clearSelect = document.getElementById('quickTagClearance');
   if (!input) return;
 
   let name = input.value.trim();
@@ -439,7 +443,6 @@ async function handleQuickAddTag() {
   }
 
   const department = deptSelect ? deptSelect.value : 'General';
-  const clearance_level = clearSelect ? clearSelect.value : 'Standard';
 
   try {
     const res = await fetch('/api/tags', {
@@ -448,18 +451,17 @@ async function handleQuickAddTag() {
       body: JSON.stringify({
         name,
         department,
-        clearance_level,
-        description: `Subcategory under ${department} for video categorization and search.`
+        clearance_level: 'Standard',
+        description: `Search tag under ${department} for video categorization.`
       })
     });
     const json = await res.json();
     if (json.success) {
       input.value = '';
       await loadTags();
-      await loadAccessibleVideos();
-      showToast(`Tag ${name} added under ${department} successfully!`, 'success');
+      showToast(`Tag ${name} created successfully`, 'success');
     } else {
-      showToast('Error: ' + json.message, 'error');
+      showToast(json.message || 'Failed to create tag', 'error');
     }
   } catch (err) {
     showToast('Failed to add tag', 'error');
@@ -468,33 +470,27 @@ async function handleQuickAddTag() {
 
 function renderTagTable() {
   const tbody = document.getElementById('tagTableBody');
-  if (!tbody) return;
+  if (!tbody || !state.tags) return;
 
   const search = (document.getElementById('tagSearchInput')?.value || '').toLowerCase().trim();
-  const clearanceFilter = document.getElementById('tagClearanceFilter')?.value || '';
   const categoryFilter = document.getElementById('tagCategoryFilter')?.value || '';
 
   const filtered = state.tags.filter(t => {
     const matchSearch = !search || t.name.toLowerCase().includes(search) || (t.description && t.description.toLowerCase().includes(search)) || (t.department && t.department.toLowerCase().includes(search));
-    const matchClearance = !clearanceFilter || t.clearance_level === clearanceFilter;
     const matchCategory = !categoryFilter || t.department === categoryFilter;
-    return matchSearch && matchClearance && matchCategory;
+    return matchSearch && matchCategory;
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-gray-400 italic">No tags match the search or category filter.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-gray-400 italic">No tags match the search or category filter.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = filtered.map(t => {
-    const isConf = t.clearance_level === 'Highly Confidential';
-    const isRest = t.clearance_level === 'Restricted';
-    const tagBadgeColor = isConf ? 'bg-rose-50 text-rose-800 border-rose-200' : (isRest ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200');
-
     return `
       <tr class="hover:bg-slate-50 transition-colors">
         <td class="py-3 px-5 font-mono font-bold">
-          <button onclick="handleTagSearch('${t.name}')" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs border ${tagBadgeColor} hover:scale-105 transition-transform" title="Click to search videos tagged ${t.name}">
+          <button onclick="handleTagSearch('${t.name}')" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs border bg-emerald-50 text-emerald-800 border-emerald-200 hover:scale-105 transition-transform" title="Click to search videos tagged ${t.name}">
             <span class="material-symbols-outlined text-[13px]">sell</span>
             <span>${t.name}</span>
           </button>
@@ -505,14 +501,12 @@ function renderTagTable() {
             <span>${t.department}</span>
           </span>
         </td>
-        <td class="py-3 px-5">${getPermissionBadgeMarkup(t.clearance_level)}</td>
         <td class="py-3 px-5 text-center">
           <button onclick="handleTagSearch('${t.name}')" class="inline-flex items-center gap-1 font-bold text-primary hover:underline" title="Search all videos with this tag">
             <span class="material-symbols-outlined text-xs">search</span>
             <span>${t.video_count || 0} videos</span>
           </button>
         </td>
-        <td class="py-3 px-5 text-center font-bold text-gray-700">${t.user_count || 0} users</td>
         <td class="py-3 px-5 text-gray-500 max-w-xs truncate" title="${t.description || ''}">${t.description || '-'}</td>
         <td class="py-3 px-5 text-right space-x-1">
           <button onclick="editTagPrompt(${t.id})" class="p-1.5 text-gray-400 hover:text-primary rounded-md hover:bg-slate-100 transition-colors" title="Edit Tag">
@@ -532,16 +526,15 @@ function filterTagTable() {
 }
 
 function openAddTagModal() {
-  document.getElementById('tagModalTitle').textContent = 'Add New Tag / Subcategory';
+  document.getElementById('tagModalTitle').textContent = 'Add New Search Tag';
   document.getElementById('modalTagId').value = '';
   document.getElementById('modalTagName').value = '';
-  document.getElementById('modalTagClearance').value = 'Standard';
+  if (document.getElementById('modalTagClearance')) document.getElementById('modalTagClearance').value = 'Standard';
   document.getElementById('modalTagDesc').value = '';
 
   const deptSel = document.getElementById('modalTagDept');
-  if (deptSel) {
-    const cats = ['Biotech', 'Swine', 'QC-Lab', 'Operations', 'Poultry', 'Aquatic', 'Executive', 'General'];
-    deptSel.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+  if (deptSel && state.categories) {
+    deptSel.innerHTML = state.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
   }
 
   document.getElementById('tagModal').classList.remove('hidden');
@@ -551,11 +544,15 @@ function editTagPrompt(tagId) {
   const tag = state.tags.find(t => t.id === tagId);
   if (!tag) return;
 
-  document.getElementById('tagModalTitle').textContent = 'Edit Security Tag Access Scope';
+  document.getElementById('tagModalTitle').textContent = `Edit Tag: ${tag.name}`;
   document.getElementById('modalTagId').value = tag.id;
   document.getElementById('modalTagName').value = tag.name;
-  document.getElementById('modalTagClearance').value = tag.clearance_level || 'Standard';
-  document.getElementById('modalTagDept').value = tag.department || 'General';
+  if (document.getElementById('modalTagClearance')) document.getElementById('modalTagClearance').value = 'Standard';
+  const deptSel = document.getElementById('modalTagDept');
+  if (deptSel && state.categories) {
+    deptSel.innerHTML = state.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    deptSel.value = tag.department || state.categories[0]?.name;
+  }
   document.getElementById('modalTagDesc').value = tag.description || '';
   document.getElementById('tagModal').classList.remove('hidden');
 }
@@ -597,7 +594,7 @@ async function saveTagModalSubmit() {
       closeTagModal();
       await loadTags();
       await loadAccessibleVideos();
-      showToast(id ? 'Security Tag updated' : 'Security Tag created successfully', 'success');
+      showToast(id ? 'Tag updated successfully' : 'Tag created successfully', 'success');
     } else {
       showToast('Error: ' + json.message, 'error');
     }

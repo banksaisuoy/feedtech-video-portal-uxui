@@ -124,11 +124,7 @@ function renderFeaturedCarousel() {
           <div class="flex items-center gap-3 pt-2">
             <button type="button" onclick="openVideoWatchPage(${v.id})" class="px-5 py-2.5 bg-primary hover:bg-emerald-600 text-white rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/40 hover:scale-102 transition-all cursor-pointer">
               <span class="material-symbols-outlined fill text-lg">play_arrow</span>
-              <span>ดูวิดีโอไฮไลท์ (Watch Now)</span>
-            </button>
-            <button type="button" onclick="openVideoPlayerModal(${v.id})" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold text-xs sm:text-sm flex items-center gap-1.5 backdrop-blur transition-all border border-white/10 cursor-pointer">
-              <span class="material-symbols-outlined text-base">picture_in_picture_alt</span>
-              <span>Quick Preview</span>
+              <span>Watch Highlight</span>
             </button>
           </div>
         </div>
@@ -257,13 +253,67 @@ window.pauseFeaturedCarousel = pauseFeaturedCarousel;
 window.resumeFeaturedCarousel = resumeFeaturedCarousel;
 
 function renderHomeVideos() {
-  const allAcc = state.accessibleVideos;
+  const allAcc = state.accessibleVideos || [];
+  const q = (state.searchQuery || '').trim().toLowerCase();
+
+  const carouselEl = document.getElementById('homeFeaturedCarousel');
+  const recEl = document.getElementById('homeRecommendedGrid');
+  const recSection = recEl ? recEl.closest('section') : null;
+  const catContainer = document.getElementById('homeCategoriesContainer');
+
+  if (q) {
+    // Search mode: hide carousel and recommended section, show search results
+    if (carouselEl) carouselEl.style.display = 'none';
+    if (recSection) recSection.style.display = 'none';
+
+    if (catContainer) {
+      const safeQuery = state.searchQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const matches = allAcc.filter(v => {
+        const title = (v.title || '').toLowerCase();
+        const tags = (v.tags || '').toLowerCase();
+        const cat = (v.category || '').toLowerCase();
+        const dept = (v.department || '').toLowerCase();
+        const desc = (v.description || '').toLowerCase();
+        return title.includes(q) || tags.includes(q) || cat.includes(q) || dept.includes(q) || desc.includes(q);
+      });
+
+      catContainer.innerHTML = `
+        <section class="space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white rounded-xl border border-outline-variant shadow-xs">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">search</span>
+                <h2 class="text-base font-bold text-gray-900">Search Results for "<span class="text-primary">${safeQuery}</span>"</h2>
+              </div>
+              <p class="text-xs text-gray-500 mt-0.5">Found ${matches.length} video${matches.length === 1 ? '' : 's'} matching across Title, Tags, Category, and Description</p>
+            </div>
+            <button type="button" onclick="clearGlobalSearch()" class="px-3.5 py-1.5 text-xs font-bold text-gray-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1.5 transition-colors self-start sm:self-auto cursor-pointer">
+              <span class="material-symbols-outlined text-sm">close</span>
+              <span>Clear Search</span>
+            </button>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            ${matches.length > 0 
+              ? matches.map(v => createVideoCardHtml(v)).join('') 
+              : `<div class="col-span-full py-16 text-center text-xs text-gray-400 bg-white rounded-xl border border-dashed border-outline-variant">
+                  <span class="material-symbols-outlined text-4xl text-gray-300 block mb-2">search_off</span>
+                  No videos found matching "${safeQuery}". Try searching by another keyword, category, or tag.
+                </div>`}
+          </div>
+        </section>
+      `;
+    }
+    return;
+  }
+
+  // Normal mode: restore carousel and recommended section
+  if (carouselEl) carouselEl.style.display = '';
+  if (recSection) recSection.style.display = '';
 
   // 0. Render Pinned Hero Carousel
   renderFeaturedCarousel();
 
   // 1. Recommended (Prioritize is_recommended = 1, then sort by views)
-  const recEl = document.getElementById('homeRecommendedGrid');
   if (recEl) {
     const recVideos = [...allAcc].sort((a, b) => {
       if ((b.is_recommended || 0) !== (a.is_recommended || 0)) {
@@ -277,45 +327,57 @@ function renderHomeVideos() {
       : `<div class="col-span-full py-8 text-center text-xs text-gray-400">No recommended videos available under current permissions.</div>`;
   }
 
-  // 2. Research & Whitepapers (Biotech) (Max 4)
-  const biotechEl = document.getElementById('homeBiotechGrid');
-  if (biotechEl) {
-    const biotechVideos = allAcc.filter(v => v.department === 'Biotech' || v.category.includes('Research') || (v.tags && v.tags.includes('biotech'))).slice(0, 4);
-    biotechEl.innerHTML = biotechVideos.length > 0
-      ? biotechVideos.map(v => createVideoCardHtml(v)).join('')
-      : `<div class="col-span-full py-8 text-center text-xs text-gray-400">No Biotech research videos available under current permissions.</div>`;
-  }
+  // 2. Dynamic Categories Container (Render rows for ALL categories in state.categories)
+  if (catContainer) {
+    const cats = state.categories || [];
+    if (cats.length === 0) {
+      catContainer.innerHTML = '<div class="text-xs text-gray-400 py-6 text-center">Loading categories...</div>';
+      return;
+    }
 
-  // 3. Field Trials & Reports (Max 4)
-  const trialsEl = document.getElementById('homeTrialsGrid');
-  if (trialsEl) {
-    const trialVideos = allAcc.filter(v => v.category.includes('Trial') || v.category.includes('Crop') || (v.tags && (v.tags.includes('drones') || v.tags.includes('swine') || v.tags.includes('nutrition')))).slice(0, 4);
-    const displayList = trialVideos.length > 0 ? trialVideos : allAcc.slice(2, 6);
-    trialsEl.innerHTML = displayList.slice(0, 4).map(v => createVideoCardHtml(v)).join('');
-  }
+    const rowsHtml = cats.map(c => {
+      // Find accessible videos in this category
+      const cVideos = allAcc.filter(v => 
+        (v.department && v.department.toLowerCase() === c.name.toLowerCase()) || 
+        (v.category && v.category.toLowerCase() === c.name.toLowerCase()) ||
+        (v.tags && v.tags.toLowerCase().includes(c.name.toLowerCase()))
+      );
 
-  // 4. Training & Safety Protocols (Max 4)
-  const safetyEl = document.getElementById('homeSafetyGrid');
-  if (safetyEl) {
-    const safetyVideos = allAcc.filter(v => v.category.includes('Safety') || v.category.includes('Training') || (v.tags && (v.tags.includes('safety') || v.tags.includes('biosecurity') || v.tags.includes('qclab')))).slice(0, 4);
-    const displayList = safetyVideos.length > 0 ? safetyVideos : allAcc.slice(1, 5);
-    safetyEl.innerHTML = displayList.slice(0, 4).map(v => createVideoCardHtml(v)).join('');
-  }
+      // Render category row if there are videos or show a placeholder
+      const cardsHtml = cVideos.length > 0 
+        ? cVideos.slice(0, 4).map(v => createVideoCardHtml(v)).join('')
+        : `<div class="col-span-full py-6 text-center text-xs text-gray-400 bg-slate-50/60 rounded-xl border border-dashed border-outline-variant">No videos currently published under ${c.name}.</div>`;
 
-  // 5. Townhall & Executive Updates (Max 4)
-  const townhallsEl = document.getElementById('homeTownhallsGrid');
-  if (townhallsEl) {
-    const townhallVideos = allAcc.filter(v => v.category.includes('Townhall') || v.department === 'Executive' || (v.tags && (v.tags.includes('meeting') || v.tags.includes('confidential')))).slice(0, 4);
-    const displayList = townhallVideos.length > 0 ? townhallVideos : allAcc.slice(0, 4);
-    townhallsEl.innerHTML = displayList.slice(0, 4).map(v => createVideoCardHtml(v)).join('');
-  }
+      const isImg = c.icon && (c.icon.startsWith('data:') || c.icon.startsWith('http') || c.icon.startsWith('/'));
+      const iconHtml = isImg 
+        ? `<img src="${c.icon}" class="w-5 h-5 object-contain rounded" alt="${c.name}">` 
+        : `<span class="material-symbols-outlined text-base text-primary">${c.icon || 'domain'}</span>`;
 
-  // 6. Production & Mill Operations (Max 4)
-  const operationsEl = document.getElementById('homeOperationsGrid');
-  if (operationsEl) {
-    const opVideos = allAcc.filter(v => v.department === 'Operations' || v.category.includes('Mill') || (v.tags && (v.tags.includes('scada') || v.tags.includes('rawmaterial')))).slice(0, 4);
-    const displayList = opVideos.length > 0 ? opVideos : allAcc.slice(3, 7);
-    operationsEl.innerHTML = displayList.slice(0, 4).map(v => createVideoCardHtml(v)).join('');
+      return `
+        <section class="space-y-4 pt-6 border-t border-outline-variant">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-emerald-50 text-primary flex items-center justify-center font-bold shrink-0 border border-emerald-100">
+                ${iconHtml}
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-gray-900">${c.name}</h3>
+                <p class="text-xs text-gray-500 line-clamp-1">${c.description || `Knowledge domain videos and recordings for ${c.name}`}</p>
+              </div>
+            </div>
+            <button onclick="openCategoryDetail('${c.name}')" class="text-xs font-bold text-primary hover:text-emerald-700 hover:underline flex items-center gap-1 group">
+              <span>View All (${cVideos.length})</span>
+              <span class="material-symbols-outlined text-sm transition-transform group-hover:translate-x-0.5">arrow_forward</span>
+            </button>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            ${cardsHtml}
+          </div>
+        </section>
+      `;
+    }).join('');
+
+    catContainer.innerHTML = rowsHtml;
   }
 }
 
@@ -665,12 +727,6 @@ function createVideoCardHtml(v) {
       <div class="relative aspect-video w-full bg-slate-900 overflow-hidden">
         <img src="${v.thumbnail_url || 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
         
-        <!-- Badges on Thumbnail -->
-        <div class="absolute top-2 left-2 flex flex-col gap-1 items-start">
-          ${v.is_featured ? `<span class="px-1.5 py-0.5 rounded bg-amber-500/90 text-slate-900 font-black text-[9px] flex items-center gap-0.5 shadow-sm"><span class="material-symbols-outlined text-[11px] fill">push_pin</span> PINNED</span>` : ''}
-          ${v.is_recommended ? `<span class="px-1.5 py-0.5 rounded bg-emerald-600/90 text-white font-bold text-[9px] flex items-center gap-0.5 shadow-sm"><span class="material-symbols-outlined text-[11px] fill">star</span> REC</span>` : ''}
-        </div>
-
         <!-- Duration Badge -->
         <span class="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
           ${v.duration}

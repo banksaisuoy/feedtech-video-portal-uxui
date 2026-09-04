@@ -12,6 +12,7 @@ window.state = {
   users: [],
   videos: [],
   categories: [],
+  contentTypes: [],
   tags: [],
   events: [],
   history: [],

@@ -47,6 +47,14 @@ db.exec(`
     icon TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS content_types (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL,
+    icon TEXT DEFAULT 'description',
+    description TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS tags (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
@@ -237,21 +245,49 @@ if (countDepts.count === 0) {
   }
 }
 
-// Seed Categories if empty
-const countCats = db.prepare("SELECT COUNT(*) as count FROM categories").get();
-if (countCats.count === 0) {
-  const cats = [
-    { name: 'Research & Whitepaper', icon: 'menu_book' },
-    { name: 'Field Trials & Reports', icon: 'analytics' },
-    { name: 'Training & Safety Protocols', icon: 'school' },
-    { name: 'Townhall & Executive Updates', icon: 'campaign' },
-    { name: 'Lab Demos & Assay Procedures', icon: 'biotech' },
-    { name: 'Production & Mill Operations', icon: 'precision_manufacturing' }
+// Seed Content Types if empty
+const countCT = db.prepare("SELECT COUNT(*) as count FROM content_types").get();
+if (countCT.count === 0) {
+  const contentTypes = [
+    ['Research & Whitepaper', 'menu_book', 'Peer-reviewed research whitepapers, cellular growth studies, and technical papers.'],
+    ['Field Trials & Reports', 'analytics', 'Field trial yield benchmarks, drone canopy assessments, and commercial trial logs.'],
+    ['Training & Safety Protocols', 'school', 'Employee occupational safety protocols, biosecurity training, and standard operating procedures.'],
+    ['Townhall & Executive Updates', 'campaign', 'Executive leadership townhalls, strategy briefings, and company-wide updates.'],
+    ['Lab Demos & Assay Procedures', 'biotech', 'Laboratory standard operating procedures, wet lab protocols, and bio-assays.'],
+    ['Production & Mill Operations', 'precision_manufacturing', 'Feed milling technology, pelleting efficiency, and automated factory maintenance.'],
+    ['Corporate Events & Symposia', 'event', 'Annual corporate symposia, agricultural summits, and keynote conference sessions.'],
+    ['Meeting Recordings', 'groups', 'Archived team weekly standups, sprint reviews, and technical committee meetings.']
   ];
-  const insertCat = db.prepare("INSERT INTO categories (name, icon) VALUES (?, ?)");
-  for (const c of cats) {
-    insertCat.run(c.name, c.icon);
+  const insertCT = db.prepare("INSERT OR IGNORE INTO content_types (name, icon, description) VALUES (?, ?, ?)");
+  for (const [name, icon, desc] of contentTypes) {
+    insertCT.run(name, icon, desc);
   }
+}
+
+// Clean categories table: Remove content types from categories so categories only contains Knowledge Domains
+try {
+  db.prepare(`
+    DELETE FROM categories WHERE name IN (
+      'Research & Whitepaper',
+      'Field Trials & Reports',
+      'Training & Safety Protocols',
+      'Townhall & Executive Updates',
+      'Lab Demos & Assay Procedures',
+      'Production & Mill Operations',
+      'Corporate Events & Symposia',
+      'Meeting Recordings'
+    )
+  `).run();
+
+  // Sync Knowledge Categories from departments and key domains
+  const deptsForCats = db.prepare("SELECT name, icon, description FROM departments").all();
+  const insertCatSync = db.prepare("INSERT OR IGNORE INTO categories (name, icon, description) VALUES (?, ?, ?)");
+  for (const d of deptsForCats) {
+    insertCatSync.run(d.name, d.icon, d.description || `Knowledge domain for ${d.name}`);
+  }
+  insertCatSync.run('Operations', 'precision_manufacturing', 'Feed mill automation, SCADA controls, and plant engineering.');
+} catch (e) {
+  console.error('Error syncing categories:', e.message);
 }
 
 // Seed Users if empty
@@ -1000,6 +1036,66 @@ app.delete('/api/categories/:id', (req, res) => {
   }
 });
 
+// ---------------- CONTENT TYPE / FORMAT APIS ----------------
+
+// Get all content types with video counts
+app.get('/api/content-types', (req, res) => {
+  try {
+    const types = db.prepare("SELECT * FROM content_types ORDER BY id ASC").all();
+    const videos = db.prepare("SELECT category FROM videos").all();
+    const countMap = {};
+    videos.forEach(v => {
+      if (v.category) countMap[v.category] = (countMap[v.category] || 0) + 1;
+    });
+
+    const data = types.map(t => ({
+      ...t,
+      video_count: countMap[t.name] || 0
+    }));
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Create new content type
+app.post('/api/content-types', (req, res) => {
+  const { name, icon, description } = req.body;
+  if (!name || !name.trim()) return res.status(400).json({ success: false, message: 'Content Type name is required' });
+  try {
+    const result = db.prepare("INSERT INTO content_types (name, icon, description) VALUES (?, ?, ?)").run(name.trim(), icon || 'description', description || '');
+    const newType = db.prepare("SELECT * FROM content_types WHERE id = ?").get(result.lastInsertRowid);
+    
+    // Audit log
+    db.prepare(`
+      INSERT INTO audit_logs (actor_name, actor_role, action, target, details)
+      VALUES (?, ?, ?, ?, ?)
+    `).run('Admin', 'System Administrator', 'CONTENT_TYPE_CREATE', name.trim(), `Created new content type '${name.trim()}'`);
+
+    res.json({ success: true, message: 'Content Type created successfully', data: newType });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Delete content type
+app.delete('/api/content-types/:id', (req, res) => {
+  try {
+    const old = db.prepare("SELECT * FROM content_types WHERE id = ?").get(req.params.id);
+    if (!old) return res.status(404).json({ success: false, message: 'Content type not found' });
+
+    db.prepare("DELETE FROM content_types WHERE id = ?").run(req.params.id);
+    db.prepare(`
+      INSERT INTO audit_logs (actor_name, actor_role, action, target, details)
+      VALUES (?, ?, ?, ?, ?)
+    `).run('Admin', 'System Administrator', 'CONTENT_TYPE_DELETE', old.name, `Deleted content type '${old.name}'`);
+
+    res.json({ success: true, message: 'Content Type deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // ---------------- TAG GOVERNANCE & PERMISSION APIS ----------------
 
 // Get all tags with usage statistics
@@ -1346,10 +1442,13 @@ app.patch('/api/videos/:id/toggle-recommended', (req, res) => {
 });
 
 // Category Video Breakdown for Admin Dashboard (Drill-down)
-app.get('/api/analytics/category-drilldown/:catName', (req, res) => {
-  const catName = decodeURIComponent(req.params.catName);
+app.get(['/api/analytics/category-drilldown', '/api/analytics/category-drilldown/:catName'], (req, res) => {
+  const rawCat = req.params.catName ? decodeURIComponent(req.params.catName) : 'All';
+  const catName = (rawCat === 'All' || rawCat === 'all' || !rawCat) ? '' : rawCat;
   try {
-    const videos = db.prepare("SELECT * FROM videos WHERE category LIKE ? OR department LIKE ? ORDER BY views DESC").all(`%${catName}%`, `%${catName}%`);
+    const videos = catName 
+      ? db.prepare("SELECT * FROM videos WHERE category LIKE ? OR department LIKE ? ORDER BY views DESC").all(`%${catName}%`, `%${catName}%`)
+      : db.prepare("SELECT * FROM videos ORDER BY views DESC").all();
     const allUsers = db.prepare("SELECT id, name, role, department FROM users").all();
     const userMap = {};
     allUsers.forEach(u => userMap[u.id] = u);

@@ -384,15 +384,15 @@
               <span class="material-symbols-outlined text-xl">video_library</span>
               <span class="sidebar-link-text">Video Management</span>
             </a>
-            <a href="#" onclick="navigateView('admin-upload'); return false;" id="nav-admin-upload" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-emerald-700 bg-emerald-50/60 hover:bg-emerald-100/80 transition-colors" title="เพิ่มวิดีโอใหม่ (Add Video)">
-              <span class="material-symbols-outlined text-xl text-primary font-bold">add_circle</span>
-              <span class="sidebar-link-text font-bold">+ เพิ่มวิดีโอ (Add Video)</span>
+            <a href="#" onclick="navigateView('admin-upload'); return false;" id="nav-admin-upload" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Add Video">
+              <span class="material-symbols-outlined text-xl">add_circle</span>
+              <span class="sidebar-link-text">Add Video</span>
             </a>
-            <a href="#" onclick="navigateView('admin-categories'); return false;" id="nav-admin-categories" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Category Management (จัดการหมวดหมู่ความรู้)">
+            <a href="#" onclick="navigateView('admin-categories'); return false;" id="nav-admin-categories" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Category Management">
               <span class="material-symbols-outlined text-xl">domain</span>
               <span class="sidebar-link-text">Category Management</span>
             </a>
-            <a href="#" onclick="navigateView('admin-tags'); return false;" id="nav-admin-tags" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Tag Management (จัดการแท็กค้นหาและ TBAC)">
+            <a href="#" onclick="navigateView('admin-tags'); return false;" id="nav-admin-tags" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Tag Management">
               <span class="material-symbols-outlined text-xl">sell</span>
               <span class="sidebar-link-text">Tag Management</span>
             </a>
@@ -590,115 +590,10 @@
           </div>
         </section>
 
-        <!-- Section 2: Research & Whitepapers (Max 4 Videos) -->
-        <section class="space-y-4 pt-4 border-t border-outline-variant">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-lg bg-emerald-100 text-primary flex items-center justify-center font-bold">
-                <span class="material-symbols-outlined text-base">science</span>
-              </div>
-              <div>
-                <h3 class="text-base font-bold text-gray-900">Research & Whitepapers (Biotech)</h3>
-                <p class="text-xs text-gray-500">Latest scientific discoveries, cellular growth assays, and peer-reviewed feed formulations</p>
-              </div>
-            </div>
-            <button onclick="openCategoryDetail('Research & Whitepaper')" class="text-xs font-bold text-primary hover:text-emerald-700 hover:underline flex items-center gap-1 group">
-              <span>View All</span>
-              <span class="material-symbols-outlined text-sm transition-transform group-hover:translate-x-0.5">arrow_forward</span>
-            </button>
-          </div>
-          <div id="homeBiotechGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <!-- Populated dynamically via JS (Max 4) -->
-          </div>
-        </section>
-
-        <!-- Section 3: Field Trials & Reports (Max 4 Videos) -->
-        <section class="space-y-4 pt-4 border-t border-outline-variant">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
-                <span class="material-symbols-outlined text-base">analytics</span>
-              </div>
-              <div>
-                <h3 class="text-base font-bold text-gray-900">Field Trials & Agricultural Reports</h3>
-                <p class="text-xs text-gray-500">Drone multispectral yield surveys, swine biosecurity, and regional farm trial data</p>
-              </div>
-            </div>
-            <button onclick="openCategoryDetail('Field Trials & Reports')" class="text-xs font-bold text-primary hover:text-emerald-700 hover:underline flex items-center gap-1 group">
-              <span>View All</span>
-              <span class="material-symbols-outlined text-sm transition-transform group-hover:translate-x-0.5">arrow_forward</span>
-            </button>
-          </div>
-          <div id="homeTrialsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <!-- Populated dynamically via JS (Max 4) -->
-          </div>
-        </section>
-
-        <!-- Section 4: Training & Safety Protocols (Max 4 Videos) -->
-        <section class="space-y-4 pt-4 border-t border-outline-variant">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
-                <span class="material-symbols-outlined text-base">school</span>
-              </div>
-              <div>
-                <h3 class="text-base font-bold text-gray-900">Training & Safety Protocols</h3>
-                <p class="text-xs text-gray-500">Chemical spectrometry calibration, biohazard control, and mill safety procedures</p>
-              </div>
-            </div>
-            <button onclick="openCategoryDetail('Training & Safety Protocols')" class="text-xs font-bold text-primary hover:text-emerald-700 hover:underline flex items-center gap-1 group">
-              <span>View All</span>
-              <span class="material-symbols-outlined text-sm transition-transform group-hover:translate-x-0.5">arrow_forward</span>
-            </button>
-          </div>
-          <div id="homeSafetyGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <!-- Populated dynamically via JS (Max 4) -->
-          </div>
-        </section>
-
-        <!-- Section 5: Townhall & Executive Updates (Max 4 Videos) -->
-        <section class="space-y-4 pt-4 border-t border-outline-variant">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
-                <span class="material-symbols-outlined text-base">campaign</span>
-              </div>
-              <div>
-                <h3 class="text-base font-bold text-gray-900">Townhall & Executive Updates</h3>
-                <p class="text-xs text-gray-500">Quarterly corporate townhalls, executive briefings, and global grain supply strategy</p>
-              </div>
-            </div>
-            <button onclick="openCategoryDetail('Townhall & Executive Updates')" class="text-xs font-bold text-primary hover:text-emerald-700 hover:underline flex items-center gap-1 group">
-              <span>View All</span>
-              <span class="material-symbols-outlined text-sm transition-transform group-hover:translate-x-0.5">arrow_forward</span>
-            </button>
-          </div>
-          <div id="homeTownhallsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <!-- Populated dynamically via JS (Max 4) -->
-          </div>
-        </section>
-
-        <!-- Section 6: Production & Mill Operations (Max 4 Videos) -->
-        <section class="space-y-4 pt-4 border-t border-outline-variant">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
-                <span class="material-symbols-outlined text-base">precision_manufacturing</span>
-              </div>
-              <div>
-                <h3 class="text-base font-bold text-gray-900">Production & Mill Operations</h3>
-                <p class="text-xs text-gray-500">SCADA automated silos, conveyor telemetry, and smart factory operations</p>
-              </div>
-            </div>
-            <button onclick="openCategoryDetail('Production & Mill Operations')" class="text-xs font-bold text-primary hover:text-emerald-700 hover:underline flex items-center gap-1 group">
-              <span>View All</span>
-              <span class="material-symbols-outlined text-sm transition-transform group-hover:translate-x-0.5">arrow_forward</span>
-            </button>
-          </div>
-          <div id="homeOperationsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <!-- Populated dynamically via JS (Max 4) -->
-          </div>
-        </section>
+        <!-- Dynamic Category Rows (Populated from state.categories) -->
+        <div id="homeCategoriesContainer" class="space-y-8">
+          <!-- Dynamically populated via renderHomeVideos() -->
+        </div>
       </div>
 
       <!-- 2. VIEW: RECOMMENDED -->
@@ -739,10 +634,6 @@
             <h2 class="text-2xl font-black text-gray-900">Watch History & Continue Watching</h2>
             <p class="text-xs text-gray-500 mt-1">Pick up right where you left off or inspect your chronological playback activity log.</p>
           </div>
-          <button onclick="clearWatchHistoryDemo()" class="px-3.5 py-1.5 border border-outline-variant bg-white text-gray-600 text-xs font-semibold rounded-lg hover:bg-slate-50 flex items-center gap-1.5 self-start sm:self-center shadow-sm">
-            <span class="material-symbols-outlined text-sm">delete_sweep</span>
-            <span>Clear History</span>
-          </button>
         </div>
 
         <!-- Section 1: In-Progress / Continue Watching Cards -->
@@ -1255,8 +1146,8 @@
                     <span class="material-symbols-outlined text-base">person_add</span>
                   </div>
                   <div>
-                    <div class="font-semibold text-gray-800">User Added via TBAC</div>
-                    <div class="text-[11px] text-gray-500">Granted #swine, #nutrition tags</div>
+                    <div class="font-semibold text-gray-800">User Account Provisioned (PBAC)</div>
+                    <div class="text-[11px] text-gray-500">Configured video access authorization policy</div>
                     <div class="text-[10px] text-gray-400 mt-0.5 font-mono">3 hours ago</div>
                   </div>
                 </div>
@@ -1347,7 +1238,6 @@
                   <th class="py-3 px-5">Employee ID</th>
                   <th class="py-3 px-5">Name & Email</th>
                   <th class="py-3 px-5">Category</th>
-                  <th class="py-3 px-5">Allowed Tags</th>
                   <th class="py-3 px-5">Role</th>
                   <th class="py-3 px-5">Status</th>
                   <th class="py-3 px-5 text-right">Actions</th>
@@ -1370,7 +1260,7 @@
           </div>
           <button onclick="navigateView('admin-upload')" class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-emerald-800 flex items-center gap-1.5 shadow-sm transition-colors">
             <span class="material-symbols-outlined text-sm">add_circle</span>
-            <span>+ เพิ่มวิดีโอ (Add Video)</span>
+            <span>+ Add Video</span>
           </button>
         </div>
 
@@ -1450,7 +1340,12 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-gray-700 mb-1">Content Type / Format <span class="text-rose-500">*</span></label>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-bold text-gray-700">Content Type / Format <span class="text-rose-500">*</span></label>
+              <button type="button" onclick="openAddContentTypeModal()" class="text-[11px] text-primary font-bold hover:underline flex items-center gap-0.5">
+                <span class="material-symbols-outlined text-xs">tune</span> + Manage Types
+              </button>
+            </div>
             <select id="uploadVideoCategory" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-semibold text-gray-900">
               <option value="Research & Whitepaper">Research & Whitepaper</option>
               <option value="Field Trials & Reports">Field Trials & Reports</option>
@@ -1710,12 +1605,12 @@
         </div>
       </div>
 
-      <!-- 17. VIEW: TAG & SUBCATEGORY MANAGEMENT (ADMIN - TBAC) -->
+      <!-- 17. VIEW: TAG MANAGEMENT (ADMIN) -->
       <div id="view-admin-tags" class="view-content hidden space-y-8 max-w-7xl mx-auto">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 class="text-2xl font-black text-gray-900">Tags & Subcategories Management</h2>
-            <p class="text-xs text-gray-500 mt-1">Manage video search tags, assign tags to knowledge categories as subcategories, and configure tag-based access control (TBAC).</p>
+            <h2 class="text-2xl font-black text-gray-900">Tag Management</h2>
+            <p class="text-xs text-gray-500 mt-1">Manage video search tags and assign tags to knowledge categories for discovery and filtering.</p>
           </div>
           <div class="flex items-center gap-2">
             <button onclick="openAddTagModal()" class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-emerald-800 flex items-center gap-1.5 shadow-sm">
@@ -1725,7 +1620,7 @@
           </div>
         </div>
 
-        <!-- Metric KPI Cards (Pure Tags & TBAC) -->
+        <!-- Metric KPI Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="bg-white p-5 rounded-xl border border-outline-variant shadow-sm flex items-center gap-4">
             <div class="w-12 h-12 rounded-xl bg-emerald-50 text-primary flex items-center justify-center font-bold">
@@ -1737,21 +1632,21 @@
             </div>
           </div>
           <div class="bg-white p-5 rounded-xl border border-outline-variant shadow-sm flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-              <span class="material-symbols-outlined text-2xl">shield</span>
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-2xl">category</span>
             </div>
             <div>
-              <div class="text-[11px] text-gray-500 font-medium">TBAC Clearance Policies</div>
-              <div class="text-xl font-black text-gray-900">Enforced Real-time</div>
+              <div class="text-[11px] text-gray-500 font-medium">Categories Covered</div>
+              <div class="text-xl font-black text-gray-900" id="tagCategoryCoveredCount">12 Categories</div>
             </div>
           </div>
           <div class="bg-white p-5 rounded-xl border border-outline-variant shadow-sm flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-              <span class="material-symbols-outlined text-2xl">lock_open</span>
+            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-2xl">video_library</span>
             </div>
             <div>
-              <div class="text-[11px] text-gray-500 font-medium">Restricted & Confidential Tags</div>
-              <div class="text-xl font-black text-gray-900" id="tagConfidentialCount">Protected Scope</div>
+              <div class="text-[11px] text-gray-500 font-medium">Tagged Video References</div>
+              <div class="text-xl font-black text-gray-900" id="tagTotalRefCount">23 Videos</div>
             </div>
           </div>
         </div>
@@ -1762,12 +1657,12 @@
             <div>
               <h3 class="text-sm font-bold text-gray-900 flex items-center gap-1.5">
                 <span class="material-symbols-outlined text-primary text-base">hub</span>
-                <span>Subcategories Grouped by Knowledge Category</span>
+                <span>Tags Grouped by Knowledge Category</span>
               </h3>
-              <p class="text-[11px] text-gray-400">Click any subcategory tag to immediately search relevant videos across the portal.</p>
+              <p class="text-[11px] text-gray-400">Click any tag to immediately search relevant videos across the portal.</p>
             </div>
             <button onclick="openAddTagModal()" class="px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 rounded-lg text-xs font-bold flex items-center gap-1 shrink-0 self-start sm:self-auto transition-colors">
-              <span class="material-symbols-outlined text-sm">add</span> Add Subcategory Tag
+              <span class="material-symbols-outlined text-sm">add</span> Add Tag
             </button>
           </div>
           <div id="categorySubcategoryPillsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
@@ -1781,23 +1676,17 @@
             <div>
               <h3 class="text-sm font-bold text-gray-900 flex items-center gap-1.5">
                 <span class="material-symbols-outlined text-primary text-base">label</span>
-                Search Tags Directory & Subcategory Assignment
+                Search Tags Directory
               </h3>
-              <p class="text-[11px] text-gray-500">Add or delete tags used for video searching and defining subcategories.</p>
+              <p class="text-[11px] text-gray-500">Add or manage tags used for video searching and organizing knowledge categories.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <div class="relative w-56">
                 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">search</span>
-                <input id="tagSearchInput" oninput="filterTagTable()" type="text" placeholder="Search tag or subcategory..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary outline-none">
+                <input id="tagSearchInput" oninput="filterTagTable()" type="text" placeholder="Search tags..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary outline-none">
               </div>
               <select id="tagCategoryFilter" onchange="filterTagTable()" class="px-2.5 py-1.5 text-xs border border-outline-variant rounded-lg bg-white outline-none font-medium text-gray-700">
                 <option value="">All Categories</option>
-              </select>
-              <select id="tagClearanceFilter" onchange="filterTagTable()" class="px-2.5 py-1.5 text-xs border border-outline-variant rounded-lg bg-white outline-none font-medium text-gray-700">
-                <option value="">All Access Scopes</option>
-                <option value="Standard">Public / General</option>
-                <option value="Restricted">Internal / Restricted</option>
-                <option value="Highly Confidential">Executive / R&D</option>
               </select>
             </div>
           </div>
@@ -1813,18 +1702,13 @@
               <select id="quickTagDept" class="px-2.5 py-1.5 bg-white border border-outline-variant rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-primary">
                 <!-- Populated dynamically with categories -->
               </select>
-              <select id="quickTagClearance" class="px-2.5 py-1.5 bg-white border border-outline-variant rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary">
-                <option value="Standard">Public Access</option>
-                <option value="Restricted">Restricted</option>
-                <option value="Highly Confidential">Highly Confidential</option>
-              </select>
               <button onclick="handleQuickAddTag()" class="px-3.5 py-1.5 bg-primary text-white font-bold rounded-lg hover:bg-emerald-800 text-xs shadow-sm flex items-center gap-1 transition-colors">
                 <span class="material-symbols-outlined text-sm">add</span>
                 <span>+ Add Tag</span>
               </button>
             </div>
             <div class="text-[11px] text-gray-500 italic">
-              Create search tags or subcategories on the fly
+              Create search tags on the fly
             </div>
           </div>
 
@@ -1833,12 +1717,10 @@
               <thead>
                 <tr class="bg-slate-50 text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-outline-variant">
                   <th class="py-3 px-5">Tag Name</th>
-                  <th class="py-3 px-5">Parent Category (Subcategory Of)</th>
-                  <th class="py-3 px-5">Access Scope</th>
-                  <th class="py-3 px-5 text-center">Tagged Videos (Search)</th>
-                  <th class="py-3 px-5 text-center">Authorized Users</th>
+                  <th class="py-3 px-5">Parent Category</th>
+                  <th class="py-3 px-5 text-center">Tagged Videos</th>
                   <th class="py-3 px-5">Description</th>
-                  <th class="py-3 px-5 text-right">Actions (Edit / Delete)</th>
+                  <th class="py-3 px-5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody id="tagTableBody" class="divide-y divide-outline-variant text-xs text-gray-700">
@@ -1896,12 +1778,14 @@
 
           <div class="bg-white rounded-xl p-5 border border-outline-variant shadow-xs flex items-center justify-between">
             <div>
-              <div class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Policy Governance</div>
-              <div class="text-2xl font-black text-emerald-800 mt-1">100% Covered</div>
-              <div class="text-[10px] text-gray-400 mt-1">RBAC & PBAC Access Gates</div>
+              <div class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Content Types / Formats</div>
+              <div class="text-2xl font-black text-gray-900 mt-1" id="adminCatKpiContentTypes">8 Types</div>
+              <button onclick="openAddContentTypeModal()" class="text-[11px] text-primary font-bold hover:underline flex items-center gap-1 mt-1">
+                <span class="material-symbols-outlined text-xs">tune</span> Manage Content Types
+              </button>
             </div>
             <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-              <span class="material-symbols-outlined text-2xl">verified_user</span>
+              <span class="material-symbols-outlined text-2xl">auto_stories</span>
             </div>
           </div>
         </div>
@@ -1927,7 +1811,6 @@
                   <th class="py-3 px-5">Category Name</th>
                   <th class="py-3 px-5">Description & Knowledge Scope</th>
                   <th class="py-3 px-5 text-center">Managed Videos</th>
-                  <th class="py-3 px-5">Default Clearance</th>
                   <th class="py-3 px-5 text-right">Actions</th>
                 </tr>
               </thead>
@@ -2142,7 +2025,12 @@
           </select>
         </div>
         <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1">Content Type / Format</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-bold text-gray-700">Content Type / Format</label>
+            <button type="button" onclick="openAddContentTypeModal()" class="text-[10px] text-primary font-bold hover:underline flex items-center gap-0.5">
+              <span class="material-symbols-outlined text-xs">tune</span> Manage
+            </button>
+          </div>
           <select id="editDrawerCategory" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-semibold">
             <option value="Research & Whitepaper">Research & Whitepaper</option>
             <option value="Field Trials & Reports">Field Trials & Reports</option>
@@ -2292,30 +2180,13 @@
             <!-- Populated dynamically with categories -->
           </select>
         </div>
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="block font-bold text-gray-700">Allowed Video Tags <span class="text-rose-500">*</span></label>
-            <div class="flex items-center gap-1.5 text-[10px]">
-              <button type="button" onclick="selectAllTagsInPicker('modalTags', 'userModalTagsContainer', true)" class="text-primary font-bold hover:underline">Select All (*)</button>
-              <span class="text-gray-300">|</span>
-              <button type="button" onclick="clearTagsInPicker('modalTags', 'userModalTagsContainer')" class="text-gray-400 hover:text-rose-500">Clear</button>
-            </div>
-          </div>
-          <input type="hidden" id="modalTags" value="#general, #standard">
-          <input type="hidden" id="modalRole" value="Staff Member">
-          <div id="userModalTagsContainer" class="p-3 bg-slate-50 border border-outline-variant rounded-xl flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
-            <!-- Tag pills generated dynamically via JS -->
-          </div>
-          <div class="flex items-center gap-1.5 mt-2">
-            <input id="userCustomTagInput" type="text" placeholder="Add custom tag e.g. #drone..." class="flex-1 px-2.5 py-1.5 text-[11px] bg-white border border-outline-variant rounded-lg outline-none font-mono">
-            <button type="button" onclick="addCustomTagToPicker('userCustomTagInput', 'modalTags', 'userModalTagsContainer')" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-gray-700 font-bold rounded-lg text-[11px] shrink-0">+ Add Tag</button>
-          </div>
-        </div>
+        <input type="hidden" id="modalTags" value="">
+        <input type="hidden" id="modalRole" value="Staff Member">
         <div>
           <label class="block font-bold text-gray-700 mb-1">Role & Permissions (บทบาทและการเข้าถึง) <span class="text-rose-500">*</span></label>
           <select id="modalRoleSelect" class="w-full px-3 py-2 border border-outline-variant rounded-lg outline-none focus:ring-2 focus:ring-primary font-semibold text-gray-900">
-            <option value="user">👤 Regular User / Staff (ผู้ใช้งานทั่วไป ดูวิดีโอตามหมวดหมู่และแท็ก)</option>
-            <option value="admin">🛡️ Administrator (ผู้ดูแลระบบ เข้าถึงแดชบอร์ด จัดการวิดีโอ หมวดหมู่ แท็ก และผู้ใช้งาน)</option>
+            <option value="user">👤 Regular User / Staff (ผู้ใช้งานทั่วไป เข้าถึงวิดีโอตามสิทธิ์ PBAC)</option>
+            <option value="admin">🛡️ Administrator (ผู้ดูแลระบบ เข้าถึงวิดีโอทั้งหมดและจัดการระบบ)</option>
           </select>
           <input type="hidden" id="modalLevel" value="Standard">
         </div>
@@ -2585,23 +2456,16 @@
           <label class="block font-bold text-gray-700 mb-1">Tag Name (e.g. #biotech, #swine) <span class="text-rose-500">*</span></label>
           <input id="modalTagName" type="text" placeholder="#cellular" class="w-full px-3 py-2 border border-outline-variant rounded-lg outline-none focus:ring-2 focus:ring-primary font-mono font-bold text-gray-900">
         </div>
+        <input type="hidden" id="modalTagClearance" value="Standard">
         <div>
-          <label class="block font-bold text-gray-700 mb-1">Access Scope <span class="text-rose-500">*</span></label>
-          <select id="modalTagClearance" class="w-full px-3 py-2 border border-outline-variant rounded-lg outline-none focus:ring-2 focus:ring-primary font-semibold text-gray-900">
-            <option value="Standard">Public / General Access</option>
-            <option value="Restricted">Internal Restricted</option>
-            <option value="Highly Confidential">Executive & R&D Only</option>
-          </select>
-        </div>
-        <div>
-          <label class="block font-bold text-gray-700 mb-1">Parent Category / Subcategory Of (หมวดหมู่หลัก) <span class="text-rose-500">*</span></label>
+          <label class="block font-bold text-gray-700 mb-1">Parent Category (หมวดหมู่หลัก) <span class="text-rose-500">*</span></label>
           <select id="modalTagDept" class="w-full px-3 py-2 border border-outline-variant rounded-lg outline-none focus:ring-2 focus:ring-primary font-semibold">
             <!-- Dynamic options -->
           </select>
         </div>
         <div>
-          <label class="block font-bold text-gray-700 mb-1">Description & Access Scope</label>
-          <textarea id="modalTagDesc" rows="2" placeholder="Describe the knowledge domain and security scope of this tag..." class="w-full px-3 py-2 border border-outline-variant rounded-lg outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
+          <label class="block font-bold text-gray-700 mb-1">Description (คำอธิบาย)</label>
+          <textarea id="modalTagDesc" rows="2" placeholder="Describe the topic and purpose of this tag..." class="w-full px-3 py-2 border border-outline-variant rounded-lg outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
         </div>
       </div>
       <div class="p-4 border-t border-outline-variant bg-slate-50 flex justify-end gap-2 text-xs">
@@ -2771,6 +2635,65 @@
           <span class="material-symbols-outlined text-sm">save</span>
           <span>Save Category</span>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / MANAGE CONTENT TYPE (ADMIN) -->
+  <div id="contentTypeModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div class="px-6 py-4 border-b border-outline-variant bg-slate-50 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-lg">auto_stories</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-gray-900">Manage Content Types / Formats</h3>
+            <p class="text-[11px] text-gray-500">Add or remove global video content formats (e.g. Research, Training, Townhall)</p>
+          </div>
+        </div>
+        <button onclick="closeContentTypeModal()" class="text-gray-400 hover:text-gray-700 p-1 rounded-md hover:bg-slate-200"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <div class="p-6 space-y-5 text-xs">
+        <!-- Add New Content Type Form -->
+        <div class="bg-slate-50 border border-outline-variant rounded-xl p-4 space-y-3">
+          <h4 class="font-bold text-gray-800 text-xs flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm text-primary">add_circle</span>
+            <span>Add New Content Type</span>
+          </h4>
+          <div class="space-y-2">
+            <div>
+              <label class="block font-bold text-gray-700 mb-1">Type Name <span class="text-rose-500">*</span></label>
+              <input id="modalContentTypeName" type="text" placeholder="e.g. Technical Whitepaper, Live Webinar" class="w-full px-3 py-2 border border-outline-variant rounded-lg outline-none focus:ring-2 focus:ring-primary font-semibold text-gray-900 bg-white">
+            </div>
+            <div>
+              <label class="block font-bold text-gray-700 mb-1">Description (Optional)</label>
+              <input id="modalContentTypeDesc" type="text" placeholder="Brief explanation of this content type..." class="w-full px-3 py-2 border border-outline-variant rounded-lg outline-none focus:ring-2 focus:ring-primary text-gray-700 bg-white">
+            </div>
+            <div class="flex justify-end pt-1">
+              <button type="button" onclick="saveContentTypeSubmit()" class="px-4 py-2 bg-primary text-white font-bold rounded-lg hover:bg-emerald-800 shadow-sm transition-colors flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">add</span>
+                <span>Save Content Type</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Existing Content Types List -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="font-bold text-gray-700 text-xs">Existing Content Types</label>
+            <span class="text-[10px] text-gray-400">Manage configured formats</span>
+          </div>
+          <div id="contentTypeManageList" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+            <!-- Populated via renderContentTypeManagementList() -->
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-outline-variant bg-slate-50 flex justify-end gap-2 text-xs">
+        <button onclick="closeContentTypeModal()" class="px-5 py-2 bg-slate-200 text-gray-700 font-bold rounded-lg hover:bg-slate-300 transition-colors">Close</button>
       </div>
     </div>
   </div>

@@ -130,13 +130,21 @@ function togglePortalAdminMode() {
 // ---------------- GLOBAL SEARCH ----------------
 
 function handleGlobalSearch(query) {
-  state.searchQuery = query.trim();
+  state.searchQuery = (query || '').trim();
   if (state.activeView !== 'home') {
     navigateView('home');
   } else {
     renderHomeVideos();
   }
 }
+
+function clearGlobalSearch() {
+  state.searchQuery = '';
+  const input = document.getElementById('globalSearchInput');
+  if (input) input.value = '';
+  renderHomeVideos();
+}
+window.clearGlobalSearch = clearGlobalSearch;
 
 function openHeroVideo() {
   if (state.accessibleVideos.length > 0) {
