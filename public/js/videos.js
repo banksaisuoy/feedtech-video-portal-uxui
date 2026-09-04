@@ -501,6 +501,11 @@ async function openVideoWatchPage(videoId) {
     // Navigate to watch view
     navigateView('watch');
 
+    // Auto-collapse sidebar to maximize video viewing space
+    if (typeof setSidebarCollapsed === 'function') {
+      setSidebarCollapsed(true);
+    }
+
     // Populate Breadcrumbs
     const bcCat = document.getElementById('watchBreadcrumbCategory');
     const bcTitle = document.getElementById('watchBreadcrumbTitle');

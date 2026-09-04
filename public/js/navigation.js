@@ -41,7 +41,8 @@ function navigateView(viewName) {
 
   // Deselect all sidebar links
   document.querySelectorAll('.sidebar-link').forEach(el => {
-    el.className = 'sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-r-full text-sm font-medium text-gray-600 hover:bg-slate-100/80 transition-all border-l-4 border-transparent';
+    el.classList.remove('font-bold', 'text-primary', 'bg-primary/10', 'border-primary', 'shadow-xs');
+    el.classList.add('text-gray-600', 'font-medium', 'border-transparent');
   });
 
   // Activate target view
@@ -55,7 +56,8 @@ function navigateView(viewName) {
   // Highlight active sidebar item
   const activeNav = document.getElementById(`nav-${viewName}`);
   if (activeNav) {
-    activeNav.className = 'sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-r-full text-sm font-bold text-primary bg-primary/10 border-l-4 border-primary shadow-xs transition-all';
+    activeNav.classList.remove('text-gray-600', 'font-medium', 'border-transparent');
+    activeNav.classList.add('font-bold', 'text-primary', 'bg-primary/10', 'border-primary', 'shadow-xs');
   }
 
   // View specific loaders
@@ -135,6 +137,78 @@ function openHeroVideo() {
 function toggleHeroFavorite() {
   if (state.accessibleVideos.length > 0) {
     toggleFavorite(state.accessibleVideos[0].id);
+  }
+}
+
+// ---------------- COLLAPSIBLE MINI SIDEBAR (ICON-ONLY MODE) ----------------
+
+window.initSidebarState = function() {
+  const saved = localStorage.getItem('feedtech_sidebar_collapsed');
+  if (saved === 'true') {
+    setSidebarCollapsed(true);
+  }
+};
+
+window.toggleSidebarCollapse = function() {
+  const sidebar = document.getElementById('mainSidebar');
+  if (!sidebar) return;
+  const willCollapse = !sidebar.classList.contains('collapsed');
+  setSidebarCollapsed(willCollapse);
+};
+
+window.setSidebarCollapsed = function(collapsed) {
+  const sidebar = document.getElementById('mainSidebar');
+  if (!sidebar) return;
+
+  if (collapsed) {
+    sidebar.classList.add('collapsed');
+    localStorage.setItem('feedtech_sidebar_collapsed', 'true');
+  } else {
+    sidebar.classList.remove('collapsed');
+    localStorage.setItem('feedtech_sidebar_collapsed', 'false');
+  }
+};
+
+// ---------------- THEME SWITCHER (DARK / LIGHT MODE) ----------------
+
+window.initTheme = function() {
+  const savedTheme = localStorage.getItem('feedtech_theme') || 'light';
+  applyTheme(savedTheme);
+};
+
+window.setPortalTheme = function(theme) {
+  applyTheme(theme);
+  showToast(theme === 'dark' ? '🌙 สลับเข้าสู่โหมดมืด (Dark Mode)' : '☀️ สลับเข้าสู่โหมดสว่าง (Light Mode)', 'info');
+};
+
+window.toggleDarkMode = function() {
+  const isDark = document.documentElement.classList.contains('dark');
+  const nextTheme = isDark ? 'light' : 'dark';
+  applyTheme(nextTheme);
+  showToast(nextTheme === 'dark' ? '🌙 เปิดใช้งานโหมดมืด (Dark Mode)' : '☀️ เปิดใช้งานโหมดสว่าง (Light Mode)', 'info');
+};
+
+function applyTheme(theme) {
+  const isDark = (theme === 'dark');
+  if (isDark) {
+    document.documentElement.classList.add('dark');
+    document.documentElement.classList.remove('light');
+  } else {
+    document.documentElement.classList.remove('dark');
+    document.documentElement.classList.add('light');
+  }
+  localStorage.setItem('feedtech_theme', theme);
+
+  // Sync icon in top navbar
+  const icon = document.getElementById('quickThemeIcon');
+  if (icon) {
+    icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+  }
+
+  // Sync select in Profile Preferences
+  const prefThemeSelect = document.getElementById('prefThemeSelect');
+  if (prefThemeSelect) {
+    prefThemeSelect.value = theme;
   }
 }
 

@@ -73,6 +73,92 @@
     #edit-drawer.open {
       transform: translateX(0);
     }
+
+    /* COLLAPSIBLE MINI SIDEBAR (ICON-ONLY MODE) */
+    #mainSidebar {
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease;
+    }
+    #mainSidebar.collapsed {
+      width: 72px !important;
+      padding-left: 8px !important;
+      padding-right: 8px !important;
+    }
+    #mainSidebar.collapsed .sidebar-link-text,
+    #mainSidebar.collapsed .sidebar-section-title {
+      display: none !important;
+    }
+    #mainSidebar.collapsed .sidebar-section-divider {
+      display: block !important;
+    }
+    #mainSidebar.collapsed .sidebar-link {
+      justify-content: center !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      border-left-width: 0 !important;
+    }
+
+    /* DARK MODE PALETTE & OVERRIDES */
+    html.dark {
+      color-scheme: dark;
+    }
+    html.dark body {
+      background-color: #090d16 !important;
+      color: #f1f5f9 !important;
+    }
+    html.dark header,
+    html.dark aside,
+    html.dark .bg-white {
+      background-color: #111827 !important;
+      border-color: #1f2937 !important;
+      color: #f3f4f6 !important;
+    }
+    html.dark #mainViewContainer,
+    html.dark .bg-slate-50,
+    html.dark .bg-slate-100 {
+      background-color: #0b1120 !important;
+      border-color: #1f2937 !important;
+    }
+    html.dark .text-gray-900,
+    html.dark .text-gray-800 {
+      color: #f9fafb !important;
+    }
+    html.dark .text-gray-700,
+    html.dark .text-gray-600 {
+      color: #cbd5e1 !important;
+    }
+    html.dark .text-gray-500,
+    html.dark .text-gray-400 {
+      color: #94a3b8 !important;
+    }
+    html.dark .border-outline-variant,
+    html.dark .border-slate-200,
+    html.dark .border-slate-100 {
+      border-color: #1f2937 !important;
+    }
+    html.dark input,
+    html.dark select,
+    html.dark textarea {
+      background-color: #0f172a !important;
+      color: #f9fafb !important;
+      border-color: #374151 !important;
+    }
+    html.dark .sidebar-link:hover {
+      background-color: #1e293b !important;
+    }
+    html.dark #edit-drawer {
+      background-color: #111827 !important;
+      border-color: #1f2937 !important;
+    }
+    html.dark #logDetailsModal > div,
+    html.dark #userAccessModal > div,
+    html.dark #profileModal > div,
+    html.dark #tagModal > div,
+    html.dark #eventModal > div,
+    html.dark #videoPlayerModal > div {
+      background-color: #111827 !important;
+      border-color: #1f2937 !important;
+      color: #f3f4f6 !important;
+    }
   </style>
 </head>
 <body class="bg-background text-on-surface font-sans antialiased h-screen flex flex-col overflow-hidden">
@@ -178,13 +264,18 @@
   </div>
 
   <!-- MAIN TOP NAVBAR -->
-  <header class="h-[72px] bg-white border-b border-outline-variant flex items-center justify-between px-6 z-40 shrink-0">
-    <div class="flex items-center gap-6">
-      <div class="flex items-center gap-3 cursor-pointer" onclick="navigateView('home')">
-        <div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-white shadow-sm">
+  <header class="h-[72px] bg-white border-b border-outline-variant flex items-center justify-between px-4 sm:px-6 z-40 shrink-0">
+    <div class="flex items-center gap-3">
+      <!-- Sidebar Collapse Toggle Button (Hamburger ☰) -->
+      <button type="button" id="sidebarToggleBtn" onclick="toggleSidebarCollapse()" class="p-2 text-gray-600 hover:text-primary hover:bg-slate-100 rounded-lg transition-colors flex items-center justify-center cursor-pointer" title="ย่อ / ขยาย แถบเมนูด้านข้าง (Toggle Mini Sidebar)">
+        <span class="material-symbols-outlined text-2xl">menu</span>
+      </button>
+
+      <div class="flex items-center gap-2.5 cursor-pointer" onclick="navigateView('home')">
+        <div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-white shadow-sm shrink-0">
           <span class="material-symbols-outlined text-2xl">agriculture</span>
         </div>
-        <div>
+        <div class="hidden sm:block">
           <h1 class="font-bold text-lg text-primary tracking-tight leading-none">Feedtech Portal</h1>
           <p class="text-[11px] text-gray-400 font-medium tracking-wide">Enterprise Video Hub</p>
         </div>
@@ -192,24 +283,30 @@
     </div>
 
     <!-- Center Search Bar -->
-    <div class="flex-1 max-w-xl mx-8 relative hidden md:block">
+    <div class="flex-1 max-w-xl mx-4 sm:mx-8 relative hidden md:block">
       <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
       <input id="globalSearchInput" oninput="handleGlobalSearch(this.value)" type="text" placeholder="Search research videos, meetings, protocols, tags..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-outline-variant rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-container focus:bg-white transition-all">
     </div>
 
     <!-- Right User Controls -->
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2 sm:gap-3">
       <!-- Portal/Admin Mode Switch Quick Toggle (Only visible for Admins) -->
       <button id="viewToggleBtn" onclick="togglePortalAdminMode()" class="hidden items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-primary/20 text-primary bg-primary/5 hover:bg-primary/10 transition-colors">
         <span class="material-symbols-outlined text-base">admin_panel_settings</span>
         <span id="viewToggleText">Switch to Admin Console</span>
       </button>
 
-      <button onclick="openProfileModal('preferences')" class="p-2 text-gray-500 hover:bg-slate-100 rounded-full transition-colors" title="Web Preferences & Settings">
+      <!-- Quick Theme Toggle (Light / Dark Mode) -->
+      <button type="button" id="quickThemeToggleBtn" onclick="toggleDarkMode()" class="p-2 text-gray-500 hover:bg-slate-100 rounded-full transition-colors cursor-pointer" title="สลับโหมดมืด / สว่าง (Toggle Dark/Light Mode)">
+        <span class="material-symbols-outlined text-xl" id="quickThemeIcon">dark_mode</span>
+      </button>
+
+      <!-- Settings / Preferences Icon (เข้าใช้ที่นี่ที่เดียว) -->
+      <button onclick="openProfileModal('preferences')" class="p-2 text-gray-500 hover:bg-slate-100 rounded-full transition-colors cursor-pointer" title="การตั้งค่าเว็บ (Web Preferences & Settings)">
         <span class="material-symbols-outlined text-xl">tune</span>
       </button>
 
-      <div class="flex items-center gap-2.5 pl-3 border-l border-outline-variant cursor-pointer group" onclick="openProfileModal('profile')" title="View Profile & Settings">
+      <div class="flex items-center gap-2.5 pl-2 sm:pl-3 border-l border-outline-variant cursor-pointer group" onclick="openProfileModal('profile')" title="ดูข้อมูลผู้ใช้และการตั้งค่า">
         <div id="navAvatar" class="w-9 h-9 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-sm shadow-sm group-hover:ring-2 group-hover:ring-primary transition-all">
           AS
         </div>
@@ -220,7 +317,7 @@
       </div>
 
       <!-- Logout Button -->
-      <button onclick="handleLogout()" class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 transition-colors shadow-2xs" title="ออกจากระบบ (Logout)">
+      <button onclick="handleLogout()" class="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 transition-colors shadow-2xs cursor-pointer" title="ออกจากระบบ (Logout)">
         <span class="material-symbols-outlined text-base">logout</span>
         <span class="hidden sm:inline">Logout</span>
       </button>
@@ -230,73 +327,64 @@
   <!-- BODY CONTENT AREA (SIDEBAR + MAIN) -->
   <div class="flex flex-1 min-h-0 overflow-hidden relative">
     
-    <!-- SIDEBAR NAVIGATION (ALL MENUS) -->
-    <aside class="w-[270px] h-full bg-white border-r border-outline-variant flex flex-col justify-between shrink-0 overflow-y-auto scrollbar-hide py-4 px-3 select-none">
+    <!-- SIDEBAR NAVIGATION (COLLAPSIBLE MINI / EXPANDED) -->
+    <aside id="mainSidebar" class="w-[260px] h-full bg-white border-r border-outline-variant flex flex-col justify-between shrink-0 overflow-y-auto scrollbar-hide py-4 px-3 select-none">
       
       <div class="space-y-4">
         <!-- USER PORTAL SECTION -->
         <div id="sidebarUserSection">
-          <div class="px-3 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider">User Portal</div>
+          <div class="sidebar-section-title px-3 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider">User Portal</div>
+          <hr class="sidebar-section-divider hidden my-2 border-outline-variant">
           <nav class="space-y-1 mt-1">
-            <a href="#" onclick="navigateView('home'); return false;" id="nav-home" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-semibold text-primary bg-primary/10 border-l-4 border-primary">
+            <a href="#" onclick="navigateView('home'); return false;" id="nav-home" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-semibold text-primary bg-primary/10 border-l-4 border-primary transition-all" title="Home (หน้าหลัก)">
               <span class="material-symbols-outlined text-xl fill">home</span>
-              <span>Home</span>
+              <span class="sidebar-link-text">Home</span>
             </a>
-            <a href="#" onclick="navigateView('categories'); return false;" id="nav-categories" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
+            <a href="#" onclick="navigateView('categories'); return false;" id="nav-categories" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Categories Hub (หมวดหมู่วิดีโอ)">
               <span class="material-symbols-outlined text-xl">category</span>
-              <span>Categories Hub</span>
+              <span class="sidebar-link-text">Categories Hub</span>
             </a>
-            <a href="#" onclick="navigateView('history'); return false;" id="nav-history" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
+            <a href="#" onclick="navigateView('history'); return false;" id="nav-history" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="History & Continue (ประวัติการดู)">
               <span class="material-symbols-outlined text-xl">history</span>
-              <span>History & Continue</span>
+              <span class="sidebar-link-text">History & Continue</span>
             </a>
-            <a href="#" onclick="navigateView('favorites'); return false;" id="nav-favorites" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
+            <a href="#" onclick="navigateView('favorites'); return false;" id="nav-favorites" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Favorites (วิดีโอที่ชอบ)">
               <span class="material-symbols-outlined text-xl">favorite</span>
-              <span>Favorites</span>
+              <span class="sidebar-link-text">Favorites</span>
             </a>
           </nav>
         </div>
 
         <!-- ADMIN MANAGEMENT SECTION (Visible only for Admins) -->
         <div id="sidebarAdminSection" class="pt-4 border-t border-outline-variant hidden">
-          <div class="px-3 py-1.5 text-[11px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
+          <div class="sidebar-section-title px-3 py-1.5 text-[11px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
             <span class="material-symbols-outlined text-sm">shield</span>
             <span>Admin Management</span>
           </div>
+          <hr class="sidebar-section-divider hidden my-2 border-outline-variant">
           <nav class="space-y-1 mt-1">
-            <a href="#" onclick="navigateView('admin-dashboard'); return false;" id="nav-admin-dashboard" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
+            <a href="#" onclick="navigateView('admin-dashboard'); return false;" id="nav-admin-dashboard" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Dashboard Overview (แดชบอร์ด)">
               <span class="material-symbols-outlined text-xl">dashboard</span>
-              <span>Dashboard Overview</span>
+              <span class="sidebar-link-text">Dashboard Overview</span>
             </a>
-            <a href="#" onclick="navigateView('admin-videos'); return false;" id="nav-admin-videos" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
+            <a href="#" onclick="navigateView('admin-videos'); return false;" id="nav-admin-videos" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Video Management (จัดการวิดีโอ)">
               <span class="material-symbols-outlined text-xl">video_library</span>
-              <span>Video Management</span>
+              <span class="sidebar-link-text">Video Management</span>
             </a>
-            <a href="#" onclick="navigateView('admin-tags'); return false;" id="nav-admin-tags" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
+            <a href="#" onclick="navigateView('admin-tags'); return false;" id="nav-admin-tags" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Categories & Tags (จัดการแท็ก/หมวดหมู่)">
               <span class="material-symbols-outlined text-xl">sell</span>
-              <span>Categories & Tags</span>
+              <span class="sidebar-link-text">Categories & Tags</span>
             </a>
-            <a href="#" onclick="navigateView('admin-users'); return false;" id="nav-admin-users" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
+            <a href="#" onclick="navigateView('admin-users'); return false;" id="nav-admin-users" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="User Management (จัดการผู้ใช้)">
               <span class="material-symbols-outlined text-xl">group</span>
-              <span>User Management</span>
+              <span class="sidebar-link-text">User Management</span>
             </a>
-            <a href="#" onclick="navigateView('admin-logs'); return false;" id="nav-admin-logs" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
+            <a href="#" onclick="navigateView('admin-logs'); return false;" id="nav-admin-logs" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="System Audit Logs (ประวัติระบบ)">
               <span class="material-symbols-outlined text-xl">receipt_long</span>
-              <span>System Audit Logs</span>
+              <span class="sidebar-link-text">System Audit Logs</span>
             </a>
           </nav>
         </div>
-      </div>
-
-      <!-- FOOTER / SETTINGS LINK IN SIDEBAR -->
-      <div class="pt-4 border-t border-outline-variant space-y-1">
-        <a href="#" onclick="openProfileModal('preferences'); return false;" id="nav-settings" class="sidebar-link flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 hover:text-primary transition-colors cursor-pointer group" title="Configure language, video resolution, and subtitles">
-          <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-xl text-gray-400 group-hover:text-primary transition-colors">settings</span>
-            <span id="navSettingsText" class="font-semibold">Settings & Language</span>
-          </div>
-          <span class="text-[10px] uppercase font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded shadow-2xs" id="sidebarLangBadge">EN</span>
-        </a>
       </div>
     </aside>
 
@@ -2417,10 +2505,10 @@
                 </select>
               </div>
               <div>
-                <label class="block font-medium text-gray-700 mb-1">Preferred Subtitle Language</label>
-                <select class="w-full px-3 py-2 border border-outline-variant rounded-lg bg-white outline-none">
-                  <option>Thai (ภาษาไทย)</option>
-                  <option>English (EN)</option>
+                <label class="block font-medium text-gray-700 mb-1">Display Theme / โหมดการแสดงผล</label>
+                <select id="prefThemeSelect" onchange="setPortalTheme(this.value)" class="w-full px-3 py-2 border border-outline-variant rounded-lg bg-white outline-none font-semibold text-gray-800 text-xs">
+                  <option value="light">☀️ Light Mode (โหมดสว่าง - สบายตา)</option>
+                  <option value="dark">🌙 Dark Mode (โหมดมืด - ถนอมสายตา)</option>
                 </select>
               </div>
             </div>

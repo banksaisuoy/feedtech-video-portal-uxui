@@ -4,6 +4,12 @@
 // ==========================================
 
 async function init() {
+  // Initialize Theme (Dark / Light Mode)
+  if (typeof initTheme === 'function') initTheme();
+
+  // Initialize Sidebar State (Collapsed / Expanded)
+  if (typeof initSidebarState === 'function') initSidebarState();
+
   const savedLang = state.currentLanguage || 'en';
   const navSel = document.getElementById('navbarLangSelect');
   if (navSel) navSel.value = savedLang;

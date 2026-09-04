@@ -120,7 +120,7 @@ window.setPortalLanguage = function(lang) {
   Object.entries(mapNav).forEach(([id, tKey]) => {
     const el = document.getElementById(id);
     if (el) {
-      const span = el.querySelector('span:last-child');
+      const span = el.querySelector('.sidebar-link-text') || el.querySelector('span:last-child');
       if (span) span.textContent = t(tKey);
     }
   });
