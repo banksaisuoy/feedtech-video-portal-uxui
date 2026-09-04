@@ -708,6 +708,57 @@ try {
   db.exec(`ALTER TABLE videos ADD COLUMN is_recommended INTEGER DEFAULT 0;`);
 } catch (e) {}
 
+// Keep the demo catalog populated across every official category.
+try {
+  const demoDepartments = {
+    Biotech: 'Research & Development (R&D)',
+    Swine: 'Veterinary & Animal Health',
+    Poultry: 'Veterinary & Animal Health',
+    Aquatic: 'Veterinary & Animal Health',
+    'Dairy Process': 'Feed Mill Operations',
+    Operations: 'Feed Mill Operations',
+    Ruminant: 'Animal Nutrition Science',
+    'Feed Formulation': 'Animal Nutrition Science',
+    'QC-Lab': 'Quality Assurance & QC-Lab',
+    Automation: 'Information Technology & Digital',
+    Commodity: 'Supply Chain & Procurement',
+    'Food Safety': 'Quality Assurance & QC-Lab',
+    'Precision Nutrition': 'Animal Nutrition Science',
+    'Animal Welfare': 'Veterinary & Animal Health',
+    'Farm IoT': 'Information Technology & Digital',
+    'Supply Chain': 'Supply Chain & Procurement',
+    'Pet Food': 'Animal Nutrition Science',
+    'Sustainable Feed': 'Research & Development (R&D)'
+  };
+  const demoTypes = ['Research & Whitepaper', 'Field Trials & Reports', 'Training & Safety Protocols', 'Meeting Recordings'];
+  const insertDemo = db.prepare(`
+    INSERT INTO videos (video_id, title, description, department, category, content_type, permission_level, duration, views, likes, thumbnail_url, video_url, tags, uploaded_by, access_mode, allowed_user_ids, excluded_user_ids)
+    VALUES (?, ?, ?, ?, ?, ?, 'Standard', ?, ?, ?, ?, ?, ?, 'Demo Content Team', 'public', '[]', '[]')
+  `);
+  for (const [category] of officialCategories) {
+    const count = db.prepare('SELECT COUNT(*) AS count FROM videos WHERE category = ?').get(category).count;
+    for (let index = count; index < 10; index++) {
+      const slug = category.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toUpperCase();
+      insertDemo.run(
+        `MOCK-${slug}-${String(index + 1).padStart(2, '0')}`,
+        `${category} Knowledge Session ${index + 1}`,
+        `Demo catalog video for ${category}, prepared for NAS library integration review.`,
+        demoDepartments[category] || 'Research & Development (R&D)',
+        category,
+        demoTypes[index % demoTypes.length],
+        `${10 + (index % 8)}:${String((index * 7) % 60).padStart(2, '0')}`,
+        120 + index * 37,
+        12 + index,
+        'https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=800&q=80',
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        `#${category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}, #demo, #nas-library`
+      );
+    }
+  }
+} catch (e) {
+  console.error('Error seeding demo category coverage:', e.message);
+}
+
 // Seed / update initial featured highlight and recommended videos
 try {
   const featCount = db.prepare("SELECT COUNT(*) as count FROM videos WHERE is_featured = 1").get().count;

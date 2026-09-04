@@ -80,6 +80,8 @@ function navigateView(viewName) {
     if (typeof loadDepartments === 'function') loadDepartments();
   }
   if (viewName === 'admin-videos') {
+    const videoDeptFilter = document.getElementById('videoDeptFilter');
+    if (videoDeptFilter) videoDeptFilter.value = '';
     if (typeof loadAllVideos === 'function') {
       loadAllVideos();
     } else {
