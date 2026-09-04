@@ -59,9 +59,14 @@ async function loadAllVideos() {
     if (json.success) {
       state.allVideos = json.data;
       renderVideoManagementTable();
+    } else {
+      const tbody = document.getElementById('videoTableBody');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="py-12 text-center text-xs text-rose-500">Unable to load video assets.</td></tr>';
     }
   } catch (err) {
     console.error('Failed to load all videos', err);
+    const tbody = document.getElementById('videoTableBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="py-12 text-center text-xs text-rose-500">Unable to load video assets. Please try again.</td></tr>';
   }
 }
 

@@ -79,7 +79,13 @@ function navigateView(viewName) {
   if (viewName === 'admin-depts') {
     if (typeof loadDepartments === 'function') loadDepartments();
   }
-  if (viewName === 'admin-videos') renderVideoManagementTable();
+  if (viewName === 'admin-videos') {
+    if (typeof loadAllVideos === 'function') {
+      loadAllVideos();
+    } else {
+      renderVideoManagementTable();
+    }
+  }
   if (viewName === 'admin-events') {
     loadEvents().then(() => renderAdminEventsTable());
   }

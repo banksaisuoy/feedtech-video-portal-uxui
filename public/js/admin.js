@@ -237,11 +237,17 @@ function renderVideoManagementTable() {
   const tbody = document.getElementById('videoTableBody');
   if (!tbody) return;
 
+  const videos = Array.isArray(state.allVideos) ? state.allVideos : [];
+  if (videos.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="py-12 text-center text-xs text-gray-400">Loading video assets...</td></tr>';
+    return;
+  }
+
   const q = (document.getElementById('videoTableSearchInput')?.value || '').toLowerCase();
   const dept = document.getElementById('videoDeptFilter')?.value || '';
   const level = document.getElementById('videoLevelFilter')?.value || '';
 
-  let list = state.allVideos;
+  let list = videos;
   if (q) {
     list = list.filter(v => v.title.toLowerCase().includes(q) || v.video_id.toLowerCase().includes(q));
   }
