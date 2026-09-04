@@ -16,13 +16,14 @@ Feedtech Video Portal is designed as a **high-fidelity interactive UI/UX prototy
 
 ## 2. Global Terminology & Taxonomy Governance
 
-### 2.1 Complete Eradication of Department
-* **Rule**: The concept and word **Department** has been completely eliminated across the entire user interface and data models.
-* **Replacement**: **Category (หมวดหมู่ความรู้ / เสาหลักอนุกรมวิธาน)**
-* **Rationale**: Video content in the research portal represents academic, operational, and scientific domains (e.g. Biotechnology, Swine Nutrition, Precision Livestock Analytics, QC-Lab), rather than corporate departmental silos.
+### 2.1 Department and Content Taxonomy
+* **Department**: Organizational unit that a user or event belongs to, independent from video subject matter.
+* **Category**: Knowledge subject used to organize video content (18 official categories).
+* **Content Type**: Format or asset class such as research, training, meeting, or event.
+* **Rationale**: The portal needs both organizational context and knowledge taxonomy; neither should be used as a substitute for the other.
 * **Separation from Tags**:
-  * **Category**: Broad organizational pillars (18 primary domains) displayed with Material Symbols or custom uploaded icons.
-  * **Tags (TBAC)**: Granular topic badges (e.g. #metabolism, #scada, #confidential, #patents) used for Tag-Based Access Control and multi-tag filtering.
+  * **Category**: Broad knowledge subjects displayed with Material Symbols or custom uploaded icons.
+  * **Tags**: Granular search metadata (e.g. #metabolism, #scada, #patents); tags are not authorization rules.
 
 ---
 

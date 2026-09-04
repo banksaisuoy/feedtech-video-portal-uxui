@@ -1413,6 +1413,11 @@ function openEventDetail(eventId) {
   const deptEl = document.getElementById('eventDetailDeptText');
   if (deptEl) deptEl.textContent = event.department || 'General';
 
+  const categoryEl = document.getElementById('eventDetailCategoryText');
+  if (categoryEl) categoryEl.textContent = event.category || 'Corporate Knowledge';
+  const typeEl = document.getElementById('eventDetailTypeText');
+  if (typeEl) typeEl.textContent = event.content_type || 'Corporate Event';
+
   const attEl = document.getElementById('eventDetailAttendeesText');
   if (attEl) attEl.textContent = `${(event.attendees_count || 320).toLocaleString()} Attendees`;
 

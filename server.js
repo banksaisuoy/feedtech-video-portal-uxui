@@ -134,6 +134,8 @@ db.exec(`
     speaker TEXT NOT NULL,
     speaker_role TEXT,
     department TEXT DEFAULT 'General',
+    category TEXT DEFAULT 'Corporate Knowledge',
+    content_type TEXT DEFAULT 'Corporate Event',
     clearance_level TEXT DEFAULT 'Standard',
     banner_url TEXT,
     video_url TEXT,
@@ -143,6 +145,9 @@ db.exec(`
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
 `);
+
+try { db.exec(`ALTER TABLE events ADD COLUMN category TEXT DEFAULT 'Corporate Knowledge'`); } catch (e) {}
+try { db.exec(`ALTER TABLE events ADD COLUMN content_type TEXT DEFAULT 'Corporate Event'`); } catch (e) {}
 
 // Seed Initial Events if empty
 const countEvents = db.prepare("SELECT COUNT(*) as count FROM events").get();
@@ -216,6 +221,30 @@ if (countEvents.count === 0) {
     'https://feedtech-my.sharepoint.com/events/qc-nir-standard.pdf'
   );
 }
+
+try {
+  db.exec(`
+    UPDATE events SET
+      title = CASE WHEN title = 'Feedtech Annual Conference 2023' THEN 'Feedtech Annual Conference 2026' ELSE title END,
+      department = CASE
+        WHEN department = 'Biotech' THEN 'Research & Development (R&D)'
+        WHEN department = 'Swine' THEN 'Veterinary & Animal Health'
+        WHEN department = 'QC-Lab' THEN 'Quality Assurance & QC-Lab'
+        ELSE department
+      END,
+      category = CASE
+        WHEN title LIKE '%Swine%' THEN 'Swine'
+        WHEN title LIKE '%Biotech%' THEN 'Biotech'
+        WHEN title LIKE '%QC-Lab%' THEN 'Quality Control'
+        ELSE 'Corporate Knowledge'
+      END,
+      content_type = CASE
+        WHEN title LIKE '%Training%' THEN 'Training & Safety Protocols'
+        ELSE 'Corporate Events & Symposia'
+      END,
+      status = CASE WHEN date < date('now') THEN 'Past' ELSE 'Upcoming' END
+  `);
+} catch (e) {}
 
 // Migration: Ensure users table has is_executive_board column
 try {
