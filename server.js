@@ -916,26 +916,43 @@ app.post('/api/departments', (req, res) => {
 
 // Get categories
 app.get('/api/categories', (req, res) => {
-  const cats = db.prepare("SELECT * FROM categories ORDER BY id ASC").all();
-  const counts = db.prepare("SELECT category, COUNT(*) as count FROM videos GROUP BY category").all();
-  const countMap = {};
-  counts.forEach(c => { countMap[c.category] = c.count; });
+  try {
+    const cats = db.prepare("SELECT * FROM categories ORDER BY name ASC").all();
+    const videos = db.prepare("SELECT category, department FROM videos").all();
+    
+    const countMap = {};
+    videos.forEach(v => {
+      if (v.category) countMap[v.category] = (countMap[v.category] || 0) + 1;
+      if (v.department && v.department !== v.category) {
+        countMap[v.department] = (countMap[v.department] || 0) + 1;
+      }
+    });
 
-  const data = cats.map(c => ({
-    ...c,
-    video_count: countMap[c.name] || 0
-  }));
-  res.json({ success: true, data });
+    const data = cats.map(c => ({
+      ...c,
+      video_count: countMap[c.name] || 0
+    }));
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 // Create category
 app.post('/api/categories', (req, res) => {
-  const { name, icon } = req.body;
-  if (!name) return res.status(400).json({ success: false, message: 'Name required' });
+  const { name, icon, description } = req.body;
+  if (!name) return res.status(400).json({ success: false, message: 'Category name is required' });
   try {
-    const result = db.prepare("INSERT INTO categories (name, icon) VALUES (?, ?)").run(name, icon || 'category');
+    const result = db.prepare("INSERT INTO categories (name, icon, description) VALUES (?, ?, ?)").run(name.trim(), icon || 'category', description || '');
     const newCat = db.prepare("SELECT * FROM categories WHERE id = ?").get(result.lastInsertRowid);
-    res.json({ success: true, message: 'Category created', data: newCat });
+    
+    // Audit Log
+    db.prepare(`
+      INSERT INTO audit_logs (actor_name, actor_role, action, target, details)
+      VALUES (?, ?, ?, ?, ?)
+    `).run('Kittisak Tech (Admin)', 'System Administrator', 'CATEGORY_CREATE', name.trim(), `Created new category '${name.trim()}' with icon '${icon || 'category'}'`);
+
+    res.json({ success: true, message: 'Category created successfully', data: newCat });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -943,11 +960,21 @@ app.post('/api/categories', (req, res) => {
 
 // Update category
 app.put('/api/categories/:id', (req, res) => {
-  const { name, icon } = req.body;
+  const { name, icon, description } = req.body;
   try {
-    db.prepare("UPDATE categories SET name = COALESCE(?, name), icon = COALESCE(?, icon) WHERE id = ?").run(name, icon, req.params.id);
+    const oldCat = db.prepare("SELECT * FROM categories WHERE id = ?").get(req.params.id);
+    if (!oldCat) return res.status(404).json({ success: false, message: 'Category not found' });
+
+    db.prepare("UPDATE categories SET name = COALESCE(?, name), icon = COALESCE(?, icon), description = COALESCE(?, description) WHERE id = ?").run(name, icon, description, req.params.id);
     const updated = db.prepare("SELECT * FROM categories WHERE id = ?").get(req.params.id);
-    res.json({ success: true, message: 'Category updated', data: updated });
+
+    // Audit Log
+    db.prepare(`
+      INSERT INTO audit_logs (actor_name, actor_role, action, target, details)
+      VALUES (?, ?, ?, ?, ?)
+    `).run('Kittisak Tech (Admin)', 'System Administrator', 'CATEGORY_UPDATE', updated.name, `Updated category details for '${updated.name}'`);
+
+    res.json({ success: true, message: 'Category updated successfully', data: updated });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -956,8 +983,18 @@ app.put('/api/categories/:id', (req, res) => {
 // Delete category
 app.delete('/api/categories/:id', (req, res) => {
   try {
+    const oldCat = db.prepare("SELECT * FROM categories WHERE id = ?").get(req.params.id);
+    if (!oldCat) return res.status(404).json({ success: false, message: 'Category not found' });
+
     db.prepare("DELETE FROM categories WHERE id = ?").run(req.params.id);
-    res.json({ success: true, message: 'Category deleted' });
+
+    // Audit Log
+    db.prepare(`
+      INSERT INTO audit_logs (actor_name, actor_role, action, target, details)
+      VALUES (?, ?, ?, ?, ?)
+    `).run('Kittisak Tech (Admin)', 'System Administrator', 'CATEGORY_DELETE', oldCat.name, `Deleted category '${oldCat.name}'`);
+
+    res.json({ success: true, message: 'Category deleted successfully' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -1436,9 +1473,9 @@ app.post('/api/videos/:id/comments', (req, res) => {
   res.json({ success: true, data: newComment });
 });
 
-// Get Audit Logs (with Filtering & Search)
+// Get Audit Logs (with Filtering, Date range & Search)
 app.get('/api/audit-logs', (req, res) => {
-  const { action, actor, search } = req.query;
+  const { action, actor, search, date_from, date_to, date } = req.query;
   let query = "SELECT * FROM audit_logs WHERE 1=1";
   const params = [];
 
@@ -1450,15 +1487,54 @@ app.get('/api/audit-logs', (req, res) => {
     query += " AND actor_name LIKE ?";
     params.push(`%${actor}%`);
   }
+  if (date) {
+    query += " AND date(created_at) = date(?)";
+    params.push(date);
+  }
+  if (date_from) {
+    query += " AND date(created_at) >= date(?)";
+    params.push(date_from);
+  }
+  if (date_to) {
+    query += " AND date(created_at) <= date(?)";
+    params.push(date_to);
+  }
   if (search) {
-    query += " AND (target LIKE ? OR details LIKE ? OR actor_name LIKE ?)";
-    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    query += " AND (target LIKE ? OR details LIKE ? OR actor_name LIKE ? OR action LIKE ? OR ip_address LIKE ?)";
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
   }
 
-  query += " ORDER BY id DESC LIMIT 100";
+  query += " ORDER BY id DESC LIMIT 300";
   try {
     const logs = db.prepare(query).all(...params);
     res.json({ success: true, data: logs });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Export Audit Logs as CSV
+app.get('/api/audit-logs/export-csv', (req, res) => {
+  try {
+    const logs = db.prepare("SELECT * FROM audit_logs ORDER BY id DESC LIMIT 1000").all();
+    const headers = ['ID', 'Timestamp', 'Actor Name', 'Actor Role', 'Action', 'Target', 'Details', 'IP Address'];
+    
+    const rows = logs.map(l => [
+      l.id,
+      `"${(l.created_at || '').replace(/"/g, '""')}"`,
+      `"${(l.actor_name || '').replace(/"/g, '""')}"`,
+      `"${(l.actor_role || '').replace(/"/g, '""')}"`,
+      `"${(l.action || '').replace(/"/g, '""')}"`,
+      `"${(l.target || '').replace(/"/g, '""')}"`,
+      `"${(l.details || '').replace(/"/g, '""')}"`,
+      `"${(l.ip_address || '127.0.0.1').replace(/"/g, '""')}"`
+    ].join(','));
+
+    const csvContent = [headers.join(','), ...rows].join('\r\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="feedtech_audit_logs.csv"');
+    res.send(csvContent);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

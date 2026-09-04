@@ -340,10 +340,23 @@
               <span class="material-symbols-outlined text-xl fill">home</span>
               <span class="sidebar-link-text">Home</span>
             </a>
-            <a href="#" onclick="navigateView('categories'); return false;" id="nav-categories" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Categories Hub (หมวดหมู่วิดีโอ)">
-              <span class="material-symbols-outlined text-xl">category</span>
-              <span class="sidebar-link-text">Categories Hub</span>
-            </a>
+            <!-- Expandable Categories Dropdown Menu -->
+            <div class="sidebar-dropdown-group" id="sidebarCategoriesGroup">
+              <div class="sidebar-link flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors cursor-pointer group" id="nav-categories" onclick="toggleSidebarCategoriesDropdown(event)" title="Categories (หมวดหมู่วิดีโอ)">
+                <div class="flex items-center gap-3" onclick="navigateView('categories'); event.stopPropagation();">
+                  <span class="material-symbols-outlined text-xl group-hover:text-primary">category</span>
+                  <span class="sidebar-link-text">Categories</span>
+                </div>
+                <button type="button" onclick="toggleSidebarCategoriesDropdown(event)" class="sidebar-link-text p-0.5 text-gray-400 hover:text-gray-700 rounded transition-transform" id="sidebarCatChevronBtn" title="พับ/กางหมวดหมู่ย่อย">
+                  <span class="material-symbols-outlined text-base transition-transform duration-200" id="sidebarCatChevron">expand_more</span>
+                </button>
+              </div>
+              <!-- Submenu: Dynamic Category List (Scrollable) -->
+              <div id="sidebarCategoriesSubmenu" class="hidden pl-4 pr-1 py-1 space-y-0.5 max-h-60 overflow-y-auto scrollbar-thin">
+                <!-- Populated dynamically via renderSidebarCategories() -->
+              </div>
+            </div>
+
             <a href="#" onclick="navigateView('history'); return false;" id="nav-history" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="History & Continue (ประวัติการดู)">
               <span class="material-symbols-outlined text-xl">history</span>
               <span class="sidebar-link-text">History & Continue</span>
@@ -371,9 +384,13 @@
               <span class="material-symbols-outlined text-xl">video_library</span>
               <span class="sidebar-link-text">Video Management</span>
             </a>
-            <a href="#" onclick="navigateView('admin-tags'); return false;" id="nav-admin-tags" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Categories & Tags (จัดการแท็ก/หมวดหมู่)">
+            <a href="#" onclick="navigateView('admin-categories'); return false;" id="nav-admin-categories" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Category Management (จัดการหมวดหมู่ความรู้)">
+              <span class="material-symbols-outlined text-xl">domain</span>
+              <span class="sidebar-link-text">Category Management</span>
+            </a>
+            <a href="#" onclick="navigateView('admin-tags'); return false;" id="nav-admin-tags" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Tag Management (จัดการแท็กค้นหาและ TBAC)">
               <span class="material-symbols-outlined text-xl">sell</span>
-              <span class="sidebar-link-text">Categories & Tags</span>
+              <span class="sidebar-link-text">Tag Management</span>
             </a>
             <a href="#" onclick="navigateView('admin-users'); return false;" id="nav-admin-users" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="User Management (จัดการผู้ใช้)">
               <span class="material-symbols-outlined text-xl">group</span>
@@ -1620,65 +1637,79 @@
 
       <!-- 16. VIEW: PURE AUDIT & COMPLIANCE LOGS (ADMIN) -->
       <div id="view-admin-logs" class="view-content hidden space-y-6 max-w-7xl mx-auto">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <!-- Page Header & Actions -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+            <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2">
               <span class="material-symbols-outlined text-2xl text-primary">receipt_long</span>
-              <span>Dedicated System Audit Logs</span>
-            </h2>
-            <p class="text-xs text-gray-500 mt-1">ประวัติกิจกรรมและการกระทำทั้งหมดในระบบ (ทั้ง Admin และ User): บันทึกการเข้าสู่ระบบ, การดูคลิป, อัปโหลด, แก้ไขข้อมูล และการกดปุ่มต่างๆ</p>
+              <span>Audit Logs</span>
+            </h1>
+            <p class="text-xs text-gray-500 mt-1">Review system activities, access events, and administrative changes (บันทึกกิจกรรมทั้ง Admin และ User).</p>
           </div>
-          <div class="flex items-center gap-2">
-            <button onclick="exportAuditLogs()" class="px-3.5 py-2 border border-outline-variant bg-white text-gray-700 text-xs font-semibold rounded-lg hover:bg-slate-50 flex items-center gap-1.5 shadow-sm">
-              <span class="material-symbols-outlined text-sm">download</span>
+          <div class="flex items-center gap-2.5">
+            <button onclick="exportAuditLogsCsv()" class="px-3.5 py-2 border border-outline-variant bg-white text-gray-700 text-xs font-bold rounded-lg hover:bg-slate-50 flex items-center gap-1.5 shadow-2xs transition-colors">
+              <span class="material-symbols-outlined text-sm text-primary">download</span>
               <span>Export CSV</span>
+            </button>
+            <button onclick="window.print()" class="px-3.5 py-2 border border-outline-variant bg-white text-gray-700 text-xs font-bold rounded-lg hover:bg-slate-50 flex items-center gap-1.5 shadow-2xs transition-colors">
+              <span class="material-symbols-outlined text-sm text-gray-500">picture_as_pdf</span>
+              <span>Print / PDF</span>
             </button>
           </div>
         </div>
 
-        <!-- Filter Bar -->
-        <div class="bg-white rounded-xl border border-outline-variant p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center gap-3 flex-1 min-w-[280px]">
-            <!-- Action Filter -->
-            <div class="flex items-center gap-1.5">
-              <span class="text-xs font-bold text-gray-500">ประเภทเหตุการณ์:</span>
-              <select id="auditActionFilter" onchange="filterAuditLogs()" class="px-3 py-1.5 text-xs font-semibold border border-outline-variant rounded-lg bg-white outline-none focus:ring-1 focus:ring-primary">
-                <option value="ALL">เหตุการณ์ทั้งหมด (All Actions)</option>
-                <option value="AUTH_LOGIN">🔑 เข้าสู่ระบบ (AUTH_LOGIN)</option>
-                <option value="AUTH_LOGOUT">🚪 ออกจากระบบ (AUTH_LOGOUT)</option>
-                <option value="VIDEO_UPLOAD">🎬 อัปโหลดวิดีโอ (VIDEO_UPLOAD)</option>
-                <option value="VIDEO_UPDATE">✏️ แก้ไขวิดีโอ (VIDEO_UPDATE)</option>
-                <option value="VIDEO_DELETE">🗑️ ลบวิดีโอ (VIDEO_DELETE)</option>
-                <option value="USER_UPDATE">👤 เปลี่ยนสิทธิ์ผู้ใช้ (USER_UPDATE)</option>
-                <option value="USER_STATUS_TOGGLE">🔄 สลับสถานะผู้ใช้ (STATUS_TOGGLE)</option>
-                <option value="TAG_UPDATE">🏷️ ปรับปรุงแท็ก (TAG_UPDATE)</option>
-              </select>
-            </div>
-
-            <!-- Search input -->
-            <div class="relative flex-1 max-w-md">
-              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">search</span>
-              <input id="auditSearchInput" oninput="filterAuditLogs()" type="text" placeholder="ค้นหาตามชื่อผู้กระทำ, เป้าหมาย, หรือปุ่มที่กด..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary outline-none">
+        <!-- Filter Strip (Stitch Screen 395a8206f8004d51ab6fb069e032e214) -->
+        <div class="bg-white border border-outline-variant rounded-xl p-4 shadow-sm flex flex-col md:flex-row gap-4 items-end">
+          <div class="flex-1 w-full">
+            <label class="block text-[11px] font-bold text-gray-500 mb-1 uppercase tracking-wider">Date</label>
+            <input id="auditDateFilter" onchange="filterAuditLogs()" type="date" class="w-full bg-slate-50 border border-outline-variant rounded-lg px-3 py-1.5 text-xs text-gray-800 font-mono focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+          </div>
+          <div class="flex-1 w-full">
+            <label class="block text-[11px] font-bold text-gray-500 mb-1 uppercase tracking-wider">Actor / User</label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">search</span>
+              <input id="auditActorFilter" oninput="filterAuditLogs()" type="text" placeholder="Search by name, email, or IP..." class="w-full bg-slate-50 border border-outline-variant rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-800 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
             </div>
           </div>
-
-          <button onclick="document.getElementById('auditActionFilter').value = 'ALL'; document.getElementById('auditSearchInput').value = ''; filterAuditLogs();" class="text-xs font-bold text-gray-500 hover:text-primary transition-colors">
-            รีเซ็ตตัวกรอง
-          </button>
+          <div class="flex-1 w-full">
+            <label class="block text-[11px] font-bold text-gray-500 mb-1 uppercase tracking-wider">Event Type</label>
+            <select id="auditActionFilter" onchange="filterAuditLogs()" class="w-full bg-slate-50 border border-outline-variant rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-800 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+              <option value="ALL">All Events (ทุกประเภทเหตุการณ์)</option>
+              <option value="AUTH_LOGIN">🔑 Login (เข้าสู่ระบบ)</option>
+              <option value="AUTH_LOGOUT">🚪 Logout (ออกจากระบบ)</option>
+              <option value="VIDEO_UPLOAD">🎬 Video Upload (อัปโหลดคลิป)</option>
+              <option value="VIDEO_UPDATE">✏️ Video Update (แก้ไขคลิป)</option>
+              <option value="VIDEO_DELETE">🗑️ Video Delete (ลบคลิป)</option>
+              <option value="CATEGORY_CREATE">📂 Category Create (สร้างหมวดหมู่)</option>
+              <option value="CATEGORY_UPDATE">📝 Category Update (แก้ไขหมวดหมู่)</option>
+              <option value="CATEGORY_DELETE">❌ Category Delete (ลบหมวดหมู่)</option>
+              <option value="USER_UPDATE">👤 User / Role Change (สิทธิ์ผู้ใช้)</option>
+              <option value="USER_STATUS_TOGGLE">🔄 User Status Toggle (เปิด/ปิดสถานะ)</option>
+              <option value="TAG_UPDATE">🏷️ Tag Policy Update (นโยบายแท็ก)</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="filterAuditLogs()" class="px-5 py-2 bg-primary text-white font-bold text-xs rounded-lg hover:bg-emerald-800 transition-colors shadow-2xs">
+              Apply Filters
+            </button>
+            <button onclick="resetAuditFilters()" class="px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors">
+              Reset
+            </button>
+          </div>
         </div>
 
-        <!-- Pure Audit Logs Table -->
-        <div class="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+        <!-- Data Table -->
+        <div class="bg-white border border-outline-variant rounded-xl overflow-hidden shadow-xs">
           <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-              <thead>
-                <tr class="bg-slate-50 text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-outline-variant">
-                  <th class="py-3 px-4">วัน-เวลา (Timestamp)</th>
-                  <th class="py-3 px-4">ผู้กระทำ (Actor)</th>
-                  <th class="py-3 px-4">ประเภทกิจกรรม (Action)</th>
-                  <th class="py-3 px-4">เป้าหมาย (Target)</th>
-                  <th class="py-3 px-4">รายละเอียด (Details)</th>
-                  <th class="py-3 px-4 text-right">ตรวจสอบ</th>
+            <table class="w-full text-left border-collapse min-w-[760px]">
+              <thead class="bg-slate-50 border-b border-outline-variant text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                <tr>
+                  <th class="py-3 px-4 w-44">Timestamp</th>
+                  <th class="py-3 px-4 w-44">Event Type</th>
+                  <th class="py-3 px-4 w-56">User / Actor</th>
+                  <th class="py-3 px-4 w-32">IP Address</th>
+                  <th class="py-3 px-4">Details</th>
+                  <th class="py-3 px-4 text-right w-24">Action</th>
                 </tr>
               </thead>
               <tbody id="auditLogsBody" class="divide-y divide-outline-variant text-xs text-gray-700">
@@ -1689,7 +1720,7 @@
         </div>
       </div>
 
-      <!-- 17. VIEW: TAG & CATEGORY MANAGEMENT (ADMIN) -->
+      <!-- 17. VIEW: TAG & SUBCATEGORY MANAGEMENT (ADMIN - TBAC) -->
       <div id="view-admin-tags" class="view-content hidden space-y-8 max-w-7xl mx-auto">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -1697,10 +1728,6 @@
             <p class="text-xs text-gray-500 mt-1">Manage video search tags, assign tags to knowledge categories as subcategories, and configure tag-based access control (TBAC).</p>
           </div>
           <div class="flex items-center gap-2">
-            <button onclick="openAddCategoryModal()" class="px-3.5 py-2 border border-outline-variant bg-white text-gray-700 text-xs font-semibold rounded-lg hover:bg-slate-50 flex items-center gap-1.5 shadow-sm">
-              <span class="material-symbols-outlined text-sm">add_circle</span>
-              <span>Add Category</span>
-            </button>
             <button onclick="openAddTagModal()" class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-emerald-800 flex items-center gap-1.5 shadow-sm">
               <span class="material-symbols-outlined text-sm">new_label</span>
               <span>+ Add New Tag</span>
@@ -1708,7 +1735,7 @@
           </div>
         </div>
 
-        <!-- Metric KPI Cards -->
+        <!-- Metric KPI Cards (Pure Tags & TBAC) -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="bg-white p-5 rounded-xl border border-outline-variant shadow-sm flex items-center gap-4">
             <div class="w-12 h-12 rounded-xl bg-emerald-50 text-primary flex items-center justify-center font-bold">
@@ -1720,21 +1747,21 @@
             </div>
           </div>
           <div class="bg-white p-5 rounded-xl border border-outline-variant shadow-sm flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-              <span class="material-symbols-outlined text-2xl">category</span>
+            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-2xl">shield</span>
             </div>
             <div>
-              <div class="text-[11px] text-gray-500 font-medium">Academic Categories</div>
-              <div class="text-xl font-black text-gray-900" id="catStatCount">6 Categories</div>
+              <div class="text-[11px] text-gray-500 font-medium">TBAC Clearance Policies</div>
+              <div class="text-xl font-black text-gray-900">Enforced Real-time</div>
             </div>
           </div>
           <div class="bg-white p-5 rounded-xl border border-outline-variant shadow-sm flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
               <span class="material-symbols-outlined text-2xl">lock_open</span>
             </div>
             <div>
-              <div class="text-[11px] text-gray-500 font-medium">Tag & Taxonomy Policies</div>
-              <div class="text-xl font-black text-gray-900">Enforced Real-time</div>
+              <div class="text-[11px] text-gray-500 font-medium">Restricted & Confidential Tags</div>
+              <div class="text-xl font-black text-gray-900" id="tagConfidentialCount">Protected Scope</div>
             </div>
           </div>
         </div>
@@ -1775,14 +1802,6 @@
               </div>
               <select id="tagCategoryFilter" onchange="filterTagTable()" class="px-2.5 py-1.5 text-xs border border-outline-variant rounded-lg bg-white outline-none font-medium text-gray-700">
                 <option value="">All Categories</option>
-                <option value="Biotech">Biotech</option>
-                <option value="Swine">Swine</option>
-                <option value="QC-Lab">QC-Lab</option>
-                <option value="Operations">Operations</option>
-                <option value="Poultry">Poultry</option>
-                <option value="Aquatic">Aquatic</option>
-                <option value="Executive">Executive</option>
-                <option value="General">General</option>
               </select>
               <select id="tagClearanceFilter" onchange="filterTagTable()" class="px-2.5 py-1.5 text-xs border border-outline-variant rounded-lg bg-white outline-none font-medium text-gray-700">
                 <option value="">All Access Scopes</option>
@@ -1802,14 +1821,7 @@
               </span>
               <input id="quickTagName" type="text" placeholder="#new-tag" class="px-2.5 py-1.5 bg-white border border-outline-variant rounded-lg font-mono font-bold text-xs outline-none focus:ring-2 focus:ring-primary w-36">
               <select id="quickTagDept" class="px-2.5 py-1.5 bg-white border border-outline-variant rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-primary">
-                <option value="Biotech">Biotech</option>
-                <option value="Swine">Swine</option>
-                <option value="QC-Lab">QC-Lab</option>
-                <option value="Operations">Operations</option>
-                <option value="Poultry">Poultry</option>
-                <option value="Aquatic">Aquatic</option>
-                <option value="Executive">Executive</option>
-                <option value="General">General</option>
+                <!-- Populated dynamically with categories -->
               </select>
               <select id="quickTagClearance" class="px-2.5 py-1.5 bg-white border border-outline-variant rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary">
                 <option value="Standard">Public Access</option>
@@ -1845,45 +1857,101 @@
             </table>
           </div>
         </div>
+      </div>
 
-        <!-- SECTION 2: CATEGORY GOVERNANCE -->
-        <div class="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden p-6 space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="text-sm font-bold text-gray-900 flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-primary text-base">folder_special</span>
-                Academic & Operational Categories
-              </h3>
-              <p class="text-[11px] text-gray-500">Main taxonomy pillars for organizing company video assets.</p>
-            </div>
-            <button onclick="openAddCategoryModal()" class="px-3 py-1.5 bg-primary text-white text-xs font-bold rounded-lg hover:bg-emerald-800 flex items-center gap-1">
-              <span class="material-symbols-outlined text-sm">add</span>
-              <span>New Category</span>
+      <!-- 18. VIEW: DEDICATED CATEGORY MANAGEMENT (ADMIN - STITCH SCREEN d6e1c51306154919b88d6a9433b52c7c) -->
+      <div id="view-admin-categories" class="view-content hidden space-y-6 max-w-7xl mx-auto">
+        <!-- Page Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+              <span class="material-symbols-outlined text-2xl text-primary">domain</span>
+              <span>Category Management</span>
+            </h1>
+            <p class="text-xs text-gray-500 mt-1">Configure knowledge taxonomy pillars, video allocations, and organizational content categories (แยกขาดจากแท็กค้นหา).</p>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <button onclick="openAddCategoryModal()" class="px-4 py-2 bg-primary text-white font-bold text-xs rounded-lg hover:bg-emerald-800 flex items-center gap-1.5 shadow-sm transition-colors">
+              <span class="material-symbols-outlined text-sm">add_circle</span>
+              <span>+ Add Category</span>
             </button>
           </div>
+        </div>
 
-          <div id="adminCategoryGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-            <!-- Populated via JS -->
+        <!-- Bento Metrics Row (Top) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="bg-white rounded-xl p-5 border border-outline-variant shadow-xs flex items-center justify-between">
+            <div>
+              <div class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Total Categories</div>
+              <div class="text-2xl font-black text-gray-900 mt-1" id="adminCatKpiTotal">18</div>
+              <div class="text-[10px] text-emerald-600 font-bold flex items-center gap-0.5 mt-1">
+                <span class="material-symbols-outlined text-xs">check_circle</span> Active taxonomy pillars
+              </div>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-primary flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-2xl">domain</span>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl p-5 border border-outline-variant shadow-xs flex items-center justify-between">
+            <div>
+              <div class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Total Cataloged Videos</div>
+              <div class="text-2xl font-black text-gray-900 mt-1" id="adminCatKpiVideos">0</div>
+              <div class="text-[10px] text-gray-400 mt-1">Across all categories</div>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-2xl">video_library</span>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl p-5 border border-outline-variant shadow-xs flex items-center justify-between">
+            <div>
+              <div class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Policy Governance</div>
+              <div class="text-2xl font-black text-emerald-800 mt-1">100% Covered</div>
+              <div class="text-[10px] text-gray-400 mt-1">RBAC & PBAC Access Gates</div>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-2xl">verified_user</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Category Management Table Card -->
+        <div class="bg-white rounded-xl border border-outline-variant shadow-xs overflow-hidden">
+          <!-- Toolbar -->
+          <div class="p-4 border-b border-outline-variant flex flex-col sm:flex-row justify-between items-center gap-3 bg-slate-50/50">
+            <div class="relative w-full sm:w-80">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">search</span>
+              <input id="adminCategorySearchInput" oninput="filterCategoryManagementTable()" type="text" placeholder="Filter categories by name or description..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary outline-none">
+            </div>
+            <div class="text-xs text-gray-400">
+              Showing official enterprise knowledge categories
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="overflow-x-auto w-full">
+            <table class="w-full text-left border-collapse min-w-[800px]">
+              <thead class="bg-slate-50 border-b border-outline-variant text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                <tr>
+                  <th class="py-3 px-5">Category Name</th>
+                  <th class="py-3 px-5">Description & Knowledge Scope</th>
+                  <th class="py-3 px-5 text-center">Managed Videos</th>
+                  <th class="py-3 px-5">Default Clearance</th>
+                  <th class="py-3 px-5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminCategoryTableBody" class="divide-y divide-outline-variant text-xs text-gray-700">
+                <!-- Populated dynamically via renderCategoryManagementTable() -->
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      <!-- 18. VIEW: MANAGE CATEGORIES & PERSONNEL DIRECTORY (ADMIN) -->
+      <!-- ALIAS: VIEW MANAGE DEPARTMENTS (FOR BACKWARD COMPATIBILITY) -->
       <div id="view-admin-depts" class="view-content hidden space-y-6 max-w-7xl mx-auto">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 class="text-2xl font-black text-gray-900">Manage Categories & Personnel</h2>
-            <p class="text-xs text-gray-500 mt-1">Configure knowledge categories, inspect associated personnel, and oversee content repositories.</p>
-          </div>
-          <button onclick="openAddCategoryModal()" class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-emerald-800 flex items-center gap-1.5 shadow-sm">
-            <span class="material-symbols-outlined text-sm">add_circle</span>
-            <span>Add New Category</span>
-          </button>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="adminDeptGrid">
-          <!-- Populated via JS with categories and members list -->
-        </div>
+        <div id="adminDeptGrid" class="hidden"></div>
       </div>
 
       <!-- 19. VIEW: MEETING RECORDINGS (USER) -->
@@ -2569,6 +2637,10 @@
         <div>
           <label class="block font-bold text-gray-700 mb-1">Material Icon Name</label>
           <input id="modalCatIcon" type="text" placeholder="e.g. biotech, analytics, science, agriculture" class="w-full px-3 py-2 border border-outline-variant rounded-lg outline-none focus:ring-2 focus:ring-primary font-mono text-gray-800">
+        </div>
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Description (คำอธิบายหมวดหมู่)</label>
+          <textarea id="modalCatDesc" rows="3" placeholder="ระบุขอบเขตเนื้อหา วัตถุประสงค์ หรือองค์ความรู้ในหมวดหมู่นี้..." class="w-full px-3 py-2 border border-outline-variant rounded-lg outline-none focus:ring-2 focus:ring-primary resize-none text-gray-800"></textarea>
         </div>
       </div>
       <div class="p-4 border-t border-outline-variant bg-slate-50 flex justify-end gap-2 text-xs">

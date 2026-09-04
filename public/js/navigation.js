@@ -69,7 +69,17 @@ function navigateView(viewName) {
     loadTags();
     loadCategories();
   }
-  if (viewName === 'admin-depts') renderAdminDeptTable();
+  if (viewName === 'admin-categories') {
+    if (typeof loadCategories === 'function') {
+      loadCategories().then(() => {
+        if (typeof renderCategoryManagementTable === 'function') renderCategoryManagementTable();
+      });
+    }
+  }
+  if (viewName === 'admin-depts') {
+    navigateView('admin-categories');
+    return;
+  }
   if (viewName === 'admin-videos') renderVideoManagementTable();
   if (viewName === 'admin-events') {
     loadEvents().then(() => renderAdminEventsTable());

@@ -1,9 +1,74 @@
 // ==========================================
 // MODULE: KNOWLEDGE CATEGORIES & DEPARTMENTS (categories.js)
-// Categories Hub, Department tables, Video drill-downs, Townhall meetings
+// Categories Hub, Category tables, Video drill-downs, Townhall meetings
 // ==========================================
 
-// ---------------- SIDEBAR & DEPARTMENTS ----------------
+// ---------------- SIDEBAR CATEGORIES DROPDOWN ----------------
+
+function toggleSidebarCategoriesDropdown(event) {
+  if (event) event.stopPropagation();
+  const submenu = document.getElementById('sidebarCategoriesSubmenu');
+  const chevron = document.getElementById('sidebarCatChevron');
+  if (!submenu) return;
+
+  const isHidden = submenu.classList.contains('hidden');
+  if (isHidden) {
+    submenu.classList.remove('hidden');
+    if (chevron) chevron.classList.add('rotate-180');
+  } else {
+    submenu.classList.add('hidden');
+    if (chevron) chevron.classList.remove('rotate-180');
+  }
+}
+
+function renderSidebarCategories() {
+  const container = document.getElementById('sidebarCategoriesSubmenu');
+  if (!container) return;
+
+  const cats = state.categories || [];
+  if (cats.length === 0) {
+    container.innerHTML = '<div class="px-3 py-1 text-[11px] text-gray-400">Loading categories...</div>';
+    return;
+  }
+
+  const exploreAllHtml = `
+    <a href="#" onclick="navigateView('categories'); return false;" class="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-bold text-primary hover:bg-emerald-50 transition-colors mb-1 border-b border-outline-variant/40 pb-1">
+      <span class="material-symbols-outlined text-sm">grid_view</span>
+      <span>Browse All Categories</span>
+    </a>
+  `;
+
+  const itemsHtml = cats.map(c => `
+    <a href="#" onclick="openCategoryDetail('${c.name}'); return false;" class="flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs text-gray-600 hover:text-primary hover:bg-slate-100 transition-colors group">
+      <div class="flex items-center gap-2 truncate">
+        <span class="material-symbols-outlined text-sm text-gray-400 group-hover:text-primary transition-colors">${c.icon || 'folder'}</span>
+        <span class="truncate font-medium">${c.name}</span>
+      </div>
+      <span class="text-[10px] text-gray-400 font-bold bg-slate-100 group-hover:bg-emerald-100 group-hover:text-emerald-800 px-1.5 py-0.5 rounded-full shrink-0 transition-colors">${c.video_count || 0}</span>
+    </a>
+  `).join('');
+
+  container.innerHTML = exploreAllHtml + itemsHtml;
+}
+
+// ---------------- CATEGORY & DEPARTMENT DATA LOADERS ----------------
+
+async function loadCategories() {
+  try {
+    const res = await fetch('/api/categories');
+    const json = await res.json();
+    if (json.success) {
+      state.categories = json.data;
+      renderSidebarCategories();
+      renderCategoryManagementTable();
+      populateCategorySelects();
+      if (typeof renderCategorySubcategoryPills === 'function') renderCategorySubcategoryPills();
+      if (typeof renderCategoriesDirectory === 'function') renderCategoriesDirectory();
+    }
+  } catch (err) {
+    console.error('Failed to load categories', err);
+  }
+}
 
 async function loadDepartments() {
   try {
@@ -11,140 +76,140 @@ async function loadDepartments() {
     const json = await res.json();
     if (json.success) {
       state.departments = json.data;
-      renderDepartmentsSidebar();
       populateDepartmentSelects();
-      renderCategoriesDirectory();
     }
   } catch (err) {
     console.error('Failed to load departments', err);
   }
 }
 
-function renderDepartmentsSidebar() {
-  const container = document.getElementById('deptListContainer');
-  if (!container) return;
-  container.innerHTML = state.departments.map(d => `
-    <a href="#" onclick="openDepartmentHub('${d.name}'); return false;" class="flex items-center justify-between px-3 py-1.5 rounded text-xs text-gray-600 hover:text-primary hover:bg-slate-50 transition-colors">
-      <div class="flex items-center gap-2 truncate">
-        <span class="material-symbols-outlined text-sm text-gray-400">${d.icon || 'folder'}</span>
-        <span class="truncate">${d.name}</span>
-      </div>
-      <span class="text-[10px] text-gray-400 font-bold bg-slate-100 px-1.5 py-0.2 rounded">${d.video_count || 0}</span>
-    </a>
-  `).join('');
-}
+function populateCategorySelects() {
+  const selects = ['tagCategoryFilter', 'quickTagDept', 'modalTagDept', 'uploadVideoDept', 'editDrawerDept', 'videoDeptFilter'];
+  if (!state.categories) return;
 
-function populateDepartmentSelects() {
-  const selects = ['uploadVideoDept', 'modalDept', 'editDrawerDept', 'userDeptFilter', 'videoDeptFilter', 'reqTargetDept', 'modalTagDept'];
   selects.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const isFilter = id.includes('Filter');
-    let opts = isFilter ? '<option value="">All Departments</option>' : '';
-    opts += state.departments.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+    let opts = isFilter ? '<option value="">All Categories</option>' : '';
+    opts += state.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
     el.innerHTML = opts;
   });
 }
 
+function populateDepartmentSelects() {
+  populateCategorySelects();
+}
+
+// Backward compatibility alias for sidebar
+function renderDepartmentsSidebar() {
+  renderSidebarCategories();
+}
+
 function toggleDeptMenu() {
-  const container = document.getElementById('deptListContainer');
-  const chevron = document.getElementById('deptChevron');
-  if (container.classList.contains('hidden')) {
-    container.classList.remove('hidden');
-    chevron.style.transform = 'rotate(0deg)';
-  } else {
-    container.classList.add('hidden');
-    chevron.style.transform = 'rotate(-90deg)';
+  toggleSidebarCategoriesDropdown();
+}
+
+// ---------------- DEDICATED CATEGORY MANAGEMENT (ADMIN TABLE) ----------------
+
+function renderCategoryManagementTable() {
+  const tbody = document.getElementById('adminCategoryTableBody');
+  if (!tbody) return;
+
+  const cats = state.categories || [];
+  const q = (document.getElementById('adminCategorySearchInput')?.value || '').toLowerCase();
+
+  let list = cats;
+  if (q) {
+    list = list.filter(c => 
+      (c.name || '').toLowerCase().includes(q) || 
+      (c.description || '').toLowerCase().includes(q)
+    );
   }
-}
 
-function openDepartmentHub(deptName) {
-  state.selectedDepartment = deptName;
-  navigateView('department');
-  renderDepartmentHub(deptName);
-}
+  // Update Bento Metrics
+  const totalCatEl = document.getElementById('adminCatKpiTotal');
+  const totalVidEl = document.getElementById('adminCatKpiVideos');
+  const catStatCountEl = document.getElementById('catStatCount');
 
-function renderDepartmentHub(deptName) {
-  const dept = state.departments.find(d => d.name === deptName) || { name: deptName, code: 'BU', icon: 'domain', description: 'Business Unit Hub' };
-  
-  const iconEl = document.getElementById('deptHubIcon');
-  const codeEl = document.getElementById('deptHubCode');
-  const titleEl = document.getElementById('deptHubTitle');
-  const descEl = document.getElementById('deptHubDesc');
-  const countEl = document.getElementById('deptHubVideoCount');
-  const grid = document.getElementById('deptHubVideoGrid');
-
-  if (iconEl) iconEl.textContent = dept.code || dept.name.substring(0, 3).toUpperCase();
-  if (codeEl) codeEl.textContent = `Code: ${dept.code || 'BU'}`;
-  if (titleEl) titleEl.textContent = `${dept.name} Department`;
-  if (descEl) descEl.textContent = dept.description || `Specialized operations, field research, and protocol knowledge base for ${dept.name}.`;
-
-  const deptVideos = state.accessibleVideos.filter(v => v.department === deptName);
-  if (countEl) countEl.textContent = `${deptVideos.length} Authorized Videos`;
-
-  if (grid) {
-    if (deptVideos.length === 0) {
-      grid.innerHTML = `
-        <div class="col-span-full py-12 text-center bg-white rounded-2xl border border-dashed border-gray-300 p-8">
-          <span class="material-symbols-outlined text-4xl text-gray-300 mb-2">lock</span>
-          <h4 class="text-sm font-bold text-gray-700">No Videos Visible for ${deptName}</h4>
-          <p class="text-xs text-gray-400 mt-1 max-w-md mx-auto">
-            Videos in this department are restricted to ${deptName} employees or require specific access authorization.
-          </p>
-        </div>
-      `;
-    } else {
-      grid.innerHTML = deptVideos.map(v => createVideoCardHtml(v)).join('');
-    }
+  if (totalCatEl) totalCatEl.textContent = cats.length;
+  if (catStatCountEl) catStatCountEl.textContent = `${cats.length} Categories`;
+  if (totalVidEl) {
+    const totalVids = cats.reduce((acc, c) => acc + (c.video_count || 0), 0);
+    totalVidEl.textContent = totalVids;
   }
-}
 
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-xs text-gray-400">No categories found matching current criteria.</td></tr>`;
+    return;
+  }
 
-
-// ---------------- ACADEMIC CATEGORY MANAGEMENT ----------------
-
-function renderAdminCategoryTable() {
-  const grid = document.getElementById('adminCategoryGrid');
-  if (!grid) return;
-
-  grid.innerHTML = state.categories.map(c => `
-    <div class="p-4 rounded-xl border border-outline-variant bg-slate-50 flex items-center justify-between hover:bg-slate-100/70 transition-colors">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-white border border-outline-variant flex items-center justify-center font-bold text-primary">
-          <span class="material-symbols-outlined text-xl">${c.icon || 'category'}</span>
+  tbody.innerHTML = list.map(c => `
+    <tr class="hover:bg-slate-50 transition-colors group">
+      <td class="py-3.5 px-5">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-50 text-primary flex items-center justify-center font-bold shrink-0">
+            <span class="material-symbols-outlined text-lg">${c.icon || 'domain'}</span>
+          </div>
+          <div>
+            <div class="font-bold text-gray-900 text-xs">${c.name}</div>
+            <div class="text-[10px] text-gray-400 font-mono mt-0.5">CAT-${String(c.id).padStart(3, '0')}</div>
+          </div>
         </div>
-        <div>
-          <h4 class="font-bold text-xs text-gray-900">${c.name}</h4>
-          <span class="text-[10px] text-gray-400 font-semibold">${c.video_count || 0} cataloged videos</span>
+      </td>
+      <td class="py-3.5 px-5 text-gray-600 text-xs max-w-md">
+        <div class="line-clamp-2" title="${c.description || ''}">
+          ${c.description || 'Enterprise knowledge category for organizing videos, SOPs, and research documentation.'}
         </div>
-      </div>
-      <div class="flex items-center gap-1">
-        <button onclick="editCategoryPrompt(${c.id})" class="p-1 text-gray-400 hover:text-primary rounded hover:bg-white" title="Edit Category">
-          <span class="material-symbols-outlined text-sm">edit</span>
+      </td>
+      <td class="py-3.5 px-5 text-center">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          ${c.video_count || 0} videos
+        </span>
+      </td>
+      <td class="py-3.5 px-5">
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+          Public / Departmental
+        </span>
+      </td>
+      <td class="py-3.5 px-5 text-right whitespace-nowrap space-x-1">
+        <button onclick="openCategoryDrilldown('${c.name}')" class="p-1.5 text-gray-400 hover:text-primary rounded-lg hover:bg-slate-100 transition-colors" title="Drill-down Videos">
+          <span class="material-symbols-outlined text-base">analytics</span>
         </button>
-        <button onclick="deleteCategoryPrompt(${c.id})" class="p-1 text-gray-400 hover:text-rose-600 rounded hover:bg-white" title="Delete Category">
-          <span class="material-symbols-outlined text-sm">delete</span>
+        <button onclick="editCategoryPrompt(${c.id})" class="p-1.5 text-gray-400 hover:text-primary rounded-lg hover:bg-slate-100 transition-colors" title="Edit Category">
+          <span class="material-symbols-outlined text-base">edit</span>
         </button>
-      </div>
-    </div>
+        <button onclick="deleteCategoryPrompt(${c.id})" class="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-slate-100 transition-colors" title="Delete Category">
+          <span class="material-symbols-outlined text-base">delete</span>
+        </button>
+      </td>
+    </tr>
   `).join('');
 }
 
+function filterCategoryManagementTable() {
+  renderCategoryManagementTable();
+}
+
 function openAddCategoryModal() {
-  document.getElementById('categoryModalTitle').textContent = 'Add Academic Category';
+  document.getElementById('categoryModalTitle').textContent = 'Add Category (เพิ่มหมวดหมู่ความรู้)';
   document.getElementById('modalCatId').value = '';
   document.getElementById('modalCatName').value = '';
-  document.getElementById('modalCatIcon').value = 'category';
+  document.getElementById('modalCatIcon').value = 'domain';
+  const descEl = document.getElementById('modalCatDesc');
+  if (descEl) descEl.value = '';
   document.getElementById('categoryModal').classList.remove('hidden');
 }
 
 function editCategoryPrompt(catId) {
   const cat = state.categories.find(c => c.id === catId);
   if (!cat) return;
-  document.getElementById('categoryModalTitle').textContent = 'Edit Category';
+  document.getElementById('categoryModalTitle').textContent = 'Edit Category (แก้ไขหมวดหมู่ความรู้)';
   document.getElementById('modalCatId').value = cat.id;
   document.getElementById('modalCatName').value = cat.name;
-  document.getElementById('modalCatIcon').value = cat.icon || 'category';
+  document.getElementById('modalCatIcon').value = cat.icon || 'domain';
+  const descEl = document.getElementById('modalCatDesc');
+  if (descEl) descEl.value = cat.description || '';
   document.getElementById('categoryModal').classList.remove('hidden');
 }
 
@@ -155,7 +220,8 @@ function closeCategoryModal() {
 async function saveCategoryModalSubmit() {
   const id = document.getElementById('modalCatId').value;
   const name = document.getElementById('modalCatName').value.trim();
-  const icon = document.getElementById('modalCatIcon').value.trim() || 'category';
+  const icon = document.getElementById('modalCatIcon').value.trim() || 'domain';
+  const description = document.getElementById('modalCatDesc')?.value.trim() || '';
 
   if (!name) {
     showToast('Please enter category name', 'error');
@@ -168,13 +234,13 @@ async function saveCategoryModalSubmit() {
       res = await fetch(`/api/categories/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, icon })
+        body: JSON.stringify({ name, icon, description })
       });
     } else {
       res = await fetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, icon })
+        body: JSON.stringify({ name, icon, description })
       });
     }
 
@@ -182,7 +248,9 @@ async function saveCategoryModalSubmit() {
     if (json.success) {
       closeCategoryModal();
       await loadCategories();
-      showToast(id ? 'Category updated' : 'Category created successfully', 'success');
+      showToast(id ? 'Category updated successfully' : 'Category created successfully', 'success');
+    } else {
+      showToast(json.message || 'Failed to save category', 'error');
     }
   } catch (err) {
     showToast('Failed to save category', 'error');
@@ -190,13 +258,18 @@ async function saveCategoryModalSubmit() {
 }
 
 async function deleteCategoryPrompt(catId) {
-  if (!confirm('Are you sure you want to delete this category?')) return;
+  const cat = state.categories.find(c => c.id === catId);
+  const catName = cat ? cat.name : `ID #${catId}`;
+  if (!confirm(`Are you sure you want to delete category "${catName}"?`)) return;
+
   try {
     const res = await fetch(`/api/categories/${catId}`, { method: 'DELETE' });
     const json = await res.json();
     if (json.success) {
       await loadCategories();
-      showToast('Category deleted', 'success');
+      showToast('Category deleted successfully', 'success');
+    } else {
+      showToast(json.message || 'Failed to delete category', 'error');
     }
   } catch (err) {
     showToast('Failed to delete category', 'error');
@@ -376,10 +449,6 @@ function closeCategoryDrilldownModal() {
 
 function closeCategoryDrilldown() {
   closeCategoryDrilldownModal();
-}
-
-function openAddCategoryModal() {
-  openAddDeptModal();
 }
 
 function openAddDeptModal() {

@@ -1066,14 +1066,19 @@ function closePermissionMatrixModal() {
   document.getElementById('matrixModal').classList.add('hidden');
 }
 
-// ---------------- AUDIT LOGS & ACTION TRACE ----------------
+// ---------------- AUDIT LOGS & ACTION TRACE (STITCH DESIGN 395a8206f8004d51ab6fb069e032e214) ----------------
 
 async function filterAuditLogs() {
   const action = document.getElementById('auditActionFilter')?.value || 'ALL';
-  const search = document.getElementById('auditSearchInput')?.value.trim() || '';
+  const search = document.getElementById('auditActorFilter')?.value.trim() || '';
+  const date = document.getElementById('auditDateFilter')?.value || '';
 
-  let url = `/api/audit-logs?action=${encodeURIComponent(action)}`;
-  if (search) url += `&search=${encodeURIComponent(search)}`;
+  const params = [];
+  if (action && action !== 'ALL') params.push(`action=${encodeURIComponent(action)}`);
+  if (search) params.push(`search=${encodeURIComponent(search)}`);
+  if (date) params.push(`date=${encodeURIComponent(date)}`);
+
+  const url = `/api/audit-logs${params.length > 0 ? '?' + params.join('&') : ''}`;
 
   try {
     const res = await fetch(url);
@@ -1087,39 +1092,74 @@ async function filterAuditLogs() {
   }
 }
 
+function resetAuditFilters() {
+  const actionEl = document.getElementById('auditActionFilter');
+  const actorEl = document.getElementById('auditActorFilter');
+  const dateEl = document.getElementById('auditDateFilter');
+
+  if (actionEl) actionEl.value = 'ALL';
+  if (actorEl) actorEl.value = '';
+  if (dateEl) dateEl.value = '';
+
+  filterAuditLogs();
+}
+
 function renderAuditLogs() {
   const tbody = document.getElementById('auditLogsBody');
   if (!tbody) return;
 
   if (!state.auditLogs || state.auditLogs.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-xs text-gray-400">No audit logs matching current filter.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-xs text-gray-400">No audit logs matching current filter criteria.</td></tr>`;
     return;
   }
 
+  const actionIconMap = {
+    'AUTH_LOGIN': { icon: 'login', style: 'bg-blue-50 text-blue-700 border-blue-200' },
+    'AUTH_LOGOUT': { icon: 'logout', style: 'bg-slate-100 text-slate-700 border-slate-200' },
+    'VIDEO_UPLOAD': { icon: 'video_file', style: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+    'VIDEO_UPDATE': { icon: 'edit', style: 'bg-amber-50 text-amber-800 border-amber-200' },
+    'VIDEO_DELETE': { icon: 'delete', style: 'bg-rose-50 text-rose-700 border-rose-200' },
+    'CATEGORY_CREATE': { icon: 'create_new_folder', style: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+    'CATEGORY_UPDATE': { icon: 'folder_open', style: 'bg-amber-50 text-amber-800 border-amber-200' },
+    'CATEGORY_DELETE': { icon: 'folder_delete', style: 'bg-rose-50 text-rose-700 border-rose-200' },
+    'USER_UPDATE': { icon: 'manage_accounts', style: 'bg-purple-50 text-purple-700 border-purple-200' },
+    'USER_STATUS_TOGGLE': { icon: 'toggle_on', style: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+    'TAG_UPDATE': { icon: 'sell', style: 'bg-cyan-50 text-cyan-800 border-cyan-200' }
+  };
+
   tbody.innerHTML = state.auditLogs.map(l => {
-    let actionBadge = 'bg-slate-100 text-slate-700 border-slate-200';
-    if (l.action.includes('LOGIN') || l.action.includes('LOGOUT')) {
-      actionBadge = 'bg-blue-50 text-blue-700 border-blue-200';
-    } else if (l.action.includes('UPLOAD') || l.action.includes('CREATE')) {
-      actionBadge = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    } else if (l.action.includes('UPDATE') || l.action.includes('TOGGLE')) {
-      actionBadge = 'bg-amber-50 text-amber-800 border-amber-200';
-    } else if (l.action.includes('DELETE')) {
-      actionBadge = 'bg-rose-50 text-rose-700 border-rose-200';
-    }
+    const meta = actionIconMap[l.action] || { icon: 'info', style: 'bg-slate-100 text-slate-700 border-slate-200' };
+    const initial = (l.actor_name || 'U').substring(0, 2).toUpperCase();
 
     return `
       <tr class="hover:bg-slate-50 transition-colors">
-        <td class="py-3 px-4 font-mono text-[11px] text-gray-400 whitespace-nowrap">${l.created_at}</td>
-        <td class="py-3 px-4">
-          <div class="font-bold text-gray-900">${l.actor_name}</div>
-          <div class="text-[10px] text-gray-400">${l.actor_role}</div>
+        <td class="py-3 px-4 font-mono text-[11px] text-gray-500 whitespace-nowrap">
+          ${l.created_at || 'Just now'}
         </td>
         <td class="py-3 px-4">
-          <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${actionBadge}">${l.action}</span>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-[10px] font-bold border ${meta.style}">
+            <span class="material-symbols-outlined text-xs">${meta.icon}</span>
+            <span>${l.action}</span>
+          </span>
         </td>
-        <td class="py-3 px-4 font-semibold text-gray-800 text-xs">${l.target}</td>
-        <td class="py-3 px-4 text-gray-500 text-xs max-w-xs truncate" title="${l.details || ''}">${l.details || '-'}</td>
+        <td class="py-3 px-4">
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-[10px] font-bold shrink-0">
+              ${initial}
+            </div>
+            <div>
+              <div class="font-bold text-gray-900 text-xs">${l.actor_name || 'System User'}</div>
+              <div class="text-[10px] text-gray-400">${l.actor_role || 'Staff'}</div>
+            </div>
+          </div>
+        </td>
+        <td class="py-3 px-4 font-mono text-[11px] text-gray-500 whitespace-nowrap">
+          ${l.ip_address || '127.0.0.1'}
+        </td>
+        <td class="py-3 px-4 text-gray-600 text-xs max-w-sm truncate" title="${l.details || ''}">
+          <span class="font-semibold text-gray-800">${l.target ? `[${l.target}] ` : ''}</span>
+          <span>${l.details || '-'}</span>
+        </td>
         <td class="py-3 px-4 text-right">
           <button onclick="openLogDetailsModal(${l.id})" class="px-2.5 py-1 rounded bg-white border border-outline-variant hover:bg-slate-100 text-[11px] font-bold text-gray-700 transition-colors shadow-2xs">
             Inspect
@@ -1166,25 +1206,23 @@ function closeLogDetailsModal() {
   if (modal) modal.classList.add('hidden');
 }
 
+function exportAuditLogsCsv() {
+  const action = document.getElementById('auditActionFilter')?.value || 'ALL';
+  const search = document.getElementById('auditActorFilter')?.value.trim() || '';
+  const date = document.getElementById('auditDateFilter')?.value || '';
+
+  const params = [];
+  if (action && action !== 'ALL') params.push(`action=${encodeURIComponent(action)}`);
+  if (search) params.push(`search=${encodeURIComponent(search)}`);
+  if (date) params.push(`date=${encodeURIComponent(date)}`);
+
+  const url = `/api/audit-logs/export-csv${params.length > 0 ? '?' + params.join('&') : ''}`;
+  window.open(url, '_blank');
+  showToast('Exporting audit logs to CSV...', 'info');
+}
+
 function exportAuditLogs() {
-  const headers = ['Timestamp', 'Actor Name', 'Actor Role', 'Action', 'Target', 'Details'];
-  const rows = state.auditLogs.map(l => [
-    `"${l.created_at || ''}"`,
-    `"${l.actor_name || ''}"`,
-    `"${l.actor_role || ''}"`,
-    `"${l.action || ''}"`,
-    `"${l.target || ''}"`,
-    `"${(l.details || '').replace(/"/g, '""')}"`
-  ]);
-  const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement('a');
-  link.setAttribute('href', encodedUri);
-  link.setAttribute('download', `feedtech_audit_logs_${new Date().toISOString().slice(0, 10)}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  showToast('Audit logs exported to CSV successfully', 'success');
+  exportAuditLogsCsv();
 }
 
 

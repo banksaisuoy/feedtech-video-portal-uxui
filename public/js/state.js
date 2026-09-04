@@ -181,3 +181,31 @@ window.formatTimeAgo = function(dateString) {
   const diffDays = Math.floor(diffHours / 24);
   return `${diffDays}d ago`;
 };
+
+window.generateFallbackThumbnail = function(title, dept) {
+  const colors = {
+    Biotech: ['#047857', '#10b981'],
+    Swine: ['#b45309', '#f59e0b'],
+    'QC-Lab': ['#4338ca', '#6366f1'],
+    Operations: ['#0f766e', '#14b8a6'],
+    Poultry: ['#c2410c', '#f97316'],
+    Executive: ['#1e293b', '#334155'],
+    Default: ['#065f46', '#059669']
+  };
+  const [c1, c2] = colors[dept] || colors.Default;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+    <defs>
+      <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c2}"/>
+      </linearGradient>
+    </defs>
+    <rect width="800" height="450" fill="url(#g)"/>
+    <circle cx="400" cy="200" r="60" fill="rgba(255,255,255,0.15)"/>
+    <polygon points="385,175 425,200 385,225" fill="#ffffff"/>
+    <text x="400" y="310" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="bold" text-anchor="middle">${title || dept || 'Feedtech Video'}</text>
+    <text x="400" y="345" fill="rgba(255,255,255,0.85)" font-family="system-ui, -apple-system, sans-serif" font-size="16" text-anchor="middle">Feedtech Enterprise Portal</text>
+  </svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+};
+

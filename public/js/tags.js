@@ -329,20 +329,7 @@ async function loadTags() {
   }
 }
 
-async function loadCategories() {
-  try {
-    const res = await fetch('/api/categories');
-    const json = await res.json();
-    if (json.success) {
-      state.categories = json.data;
-      const countEl = document.getElementById('catStatCount');
-      if (countEl) countEl.textContent = `${state.categories.length} Categories`;
-      renderAdminCategoryTable();
-    }
-  } catch (err) {
-    console.error('Failed to load categories', err);
-  }
-}
+// Note: loadCategories() is defined in categories.js and manages sidebar, table, and selects
 
 
 function renderCategorySubcategoryPills() {
