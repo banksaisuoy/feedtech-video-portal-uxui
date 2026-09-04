@@ -336,11 +336,7 @@ function renderHomeVideos() {
 
     const rowsHtml = cats.map(c => {
       // Find accessible videos in this category
-      const cVideos = allAcc.filter(v => 
-        (v.department && v.department.toLowerCase() === c.name.toLowerCase()) || 
-        (v.category && v.category.toLowerCase() === c.name.toLowerCase()) ||
-        (v.tags && v.tags.toLowerCase().includes(c.name.toLowerCase()))
-      );
+      const cVideos = allAcc.filter(v => v.category && v.category.toLowerCase() === c.name.toLowerCase());
 
       // Render category row if there are videos or show a placeholder
       const cardsHtml = cVideos.length > 0 
@@ -389,10 +385,10 @@ function renderRecommendedVideos() {
   if (!container) return;
 
   let list = state.accessibleVideos;
-  if (state.recommendedFilter === 'biotech') list = list.filter(v => v.department === 'Biotech');
+  if (state.recommendedFilter === 'biotech') list = list.filter(v => v.category === 'Biotech');
   if (state.recommendedFilter === 'safety') list = list.filter(v => v.tags.includes('safety') || v.tags.includes('protocols'));
   if (state.recommendedFilter === 'automation') list = list.filter(v => v.tags.includes('automation') || v.tags.includes('silo'));
-  if (state.recommendedFilter === 'supply') list = list.filter(v => v.department === 'Raw Material');
+  if (state.recommendedFilter === 'supply') list = list.filter(v => v.category === 'Supply Chain');
 
   // Prioritize recommended
   list = [...list].sort((a, b) => {
@@ -563,33 +559,24 @@ function renderCategoriesDirectory(filterTab = 'all') {
   const container = document.getElementById('categoriesGrid');
   if (!container) return;
 
-  let cats = [
-    { title: 'Research & Whitepapers', icon: 'menu_book', color: 'bg-emerald-50 text-emerald-700', count: '4 Assets', desc: 'Cellular growth formulas, genetics, and peer-reviewed feed essays.', type: 'academic' },
-    { title: 'Field Trials & Crop Reports', icon: 'analytics', color: 'bg-blue-50 text-blue-700', count: '3 Assets', desc: 'Drone surveys, multispectral yield metrics, and regional tests.', type: 'academic' },
-    { title: 'Training & Safety Protocols', icon: 'school', color: 'bg-amber-50 text-amber-700', count: '2 Assets', desc: 'Spectrometry calibration, biohazard control, and OSHA lab safety.', type: 'operations' },
-    { title: 'Townhall & Executive Briefs', icon: 'campaign', color: 'bg-purple-50 text-purple-700', count: '2 Assets', desc: 'Corporate direction, regional market expansion, and grain futures.', type: 'executive' },
-    { title: 'Mill & SCADA Operations', icon: 'precision_manufacturing', color: 'bg-rose-50 text-rose-700', count: '3 Assets', desc: 'Automated silo controls, conveyor lines, and smart batching.', type: 'operations' },
-    { title: 'Vendor Standards & Audits', icon: 'handshake', color: 'bg-teal-50 text-teal-700', count: '1 Asset', desc: 'Supplier quality certifications and raw ingredient assay criteria.', type: 'operations' },
-    { title: 'Corporate Events & Symposia', icon: 'event', color: 'bg-indigo-50 text-indigo-700', count: '4 Conferences', desc: 'Annual summits, keynote livestreams, and panel recordings.', type: 'events' },
-    { title: 'Meeting Recordings', icon: 'meeting_room', color: 'bg-fuchsia-50 text-fuchsia-700', count: '6 Townhalls', desc: 'Internal executive townhalls, technical synces, and team briefings.', type: 'meetings' }
-  ];
-
-  if (filterTab === 'academic') {
-    cats = cats.filter(c => c.type === 'academic');
+  const cats = state.categories || [];
+  if (cats.length === 0) {
+    container.innerHTML = '<div class="col-span-full py-12 text-center text-xs text-gray-400">No categories configured.</div>';
+    return;
   }
 
   container.innerHTML = cats.map(c => `
-    <div class="bg-white rounded-xl border border-outline-variant p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group" onclick="handleCategoryCardClick('${c.title}', '${c.type}')">
+    <div class="bg-white rounded-xl border border-outline-variant p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group" onclick="openCategoryDetail('${c.name}')">
       <div class="space-y-3">
         <div class="flex items-center justify-between">
-          <div class="w-10 h-10 rounded-xl ${c.color} flex items-center justify-center font-bold">
-            <span class="material-symbols-outlined text-xl">${c.icon}</span>
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-xl">${c.icon || 'category'}</span>
           </div>
-          <span class="text-xs font-bold text-gray-400">${c.count}</span>
+          <span class="text-xs font-bold text-gray-400">${c.video_count || 0} Videos</span>
         </div>
         <div>
-          <h3 class="font-bold text-sm text-gray-900 group-hover:text-primary transition-colors">${c.title}</h3>
-          <p class="text-xs text-gray-500 mt-1 leading-relaxed">${c.desc}</p>
+          <h3 class="font-bold text-sm text-gray-900 group-hover:text-primary transition-colors">${c.name}</h3>
+          <p class="text-xs text-gray-500 mt-1 leading-relaxed">${c.description || `Curated knowledge videos under ${c.name}.`}</p>
         </div>
       </div>
       <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-xs text-primary font-bold">

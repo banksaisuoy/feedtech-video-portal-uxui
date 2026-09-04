@@ -1896,13 +1896,13 @@ app.get('/api/events/:id', (req, res) => {
 
 app.post('/api/events', (req, res) => {
   try {
-    const { title, description, date, time, location, speaker, speaker_role, department, clearance_level, banner_url, video_url, status, materials_url } = req.body;
+    const { title, description, date, time, location, speaker, speaker_role, department, category, content_type, clearance_level, banner_url, video_url, status, materials_url } = req.body;
     if (!title || !date || !location) {
       return res.status(400).json({ success: false, message: 'Title, date, and location are required' });
     }
     const stmt = db.prepare(`
-      INSERT INTO events (title, description, date, time, location, speaker, speaker_role, department, clearance_level, banner_url, video_url, status, materials_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO events (title, description, date, time, location, speaker, speaker_role, department, category, content_type, clearance_level, banner_url, video_url, status, materials_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const info = stmt.run(
       title,
@@ -1913,6 +1913,8 @@ app.post('/api/events', (req, res) => {
       speaker || 'Feedtech Speaker',
       speaker_role || 'Speaker',
       department || 'General',
+      category || 'Corporate Knowledge',
+      content_type || 'Corporate Event',
       clearance_level || 'Standard',
       banner_url || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200',
       video_url || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
@@ -1936,14 +1938,14 @@ app.post('/api/events', (req, res) => {
 app.put('/api/events/:id', (req, res) => {
   try {
     const id = req.params.id;
-    const { title, description, date, time, location, speaker, speaker_role, department, clearance_level, banner_url, video_url, status, materials_url } = req.body;
+    const { title, description, date, time, location, speaker, speaker_role, department, category, content_type, clearance_level, banner_url, video_url, status, materials_url } = req.body;
     const stmt = db.prepare(`
       UPDATE events 
-      SET title = ?, description = ?, date = ?, time = ?, location = ?, speaker = ?, speaker_role = ?, department = ?, clearance_level = ?, banner_url = ?, video_url = ?, status = ?, materials_url = ?
+      SET title = ?, description = ?, date = ?, time = ?, location = ?, speaker = ?, speaker_role = ?, department = ?, category = ?, content_type = ?, clearance_level = ?, banner_url = ?, video_url = ?, status = ?, materials_url = ?
       WHERE id = ?
     `);
     stmt.run(
-      title, description, date, time, location, speaker, speaker_role, department, clearance_level, banner_url, video_url, status, materials_url, id
+      title, description, date, time, location, speaker, speaker_role, department, category, content_type, clearance_level, banner_url, video_url, status, materials_url, id
     );
     const updated = db.prepare("SELECT * FROM events WHERE id = ?").get(id);
 

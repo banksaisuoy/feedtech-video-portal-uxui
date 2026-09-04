@@ -110,6 +110,7 @@ window.setPortalLanguage = function(lang) {
     'nav-home': 'home',
     'nav-history': 'history',
     'nav-favorites': 'favorites',
+    'nav-events': 'events',
     'nav-categories': 'categories',
     'nav-admin-dashboard': 'adminDashboard',
     'nav-admin-users': 'adminUsers',

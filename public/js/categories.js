@@ -91,7 +91,7 @@ async function loadDepartments() {
 }
 
 function populateCategorySelects() {
-  const selects = ['tagCategoryFilter', 'quickTagDept', 'modalTagDept', 'uploadVideoCategory', 'editDrawerCategory', 'modalEventDept', 'adminEventDeptFilter'];
+  const selects = ['tagCategoryFilter', 'quickTagDept', 'modalTagDept', 'uploadVideoCategory', 'editDrawerCategory'];
   if (!state.categories) return;
 
   selects.forEach(id => {
@@ -102,19 +102,13 @@ function populateCategorySelects() {
     opts += state.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
     el.innerHTML = opts;
   });
-}
 
-function populateDepartmentSelects() {
-  const selects = ['uploadVideoDept', 'editDrawerDept', 'uploadDeptFilter', 'drawerDeptFilter', 'userDeptFilter', 'modalDept'];
-  const departments = state.departments || [];
-  selects.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const isFilter = id.includes('Filter');
-    let opts = isFilter ? '<option value="">All Departments</option>' : '';
-    opts += departments.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
-    el.innerHTML = opts;
-  });
+  const eventCategory = document.getElementById('modalEventCategory');
+  if (eventCategory) {
+    const current = eventCategory.value;
+    eventCategory.innerHTML = state.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    if (current) eventCategory.value = current;
+  }
 }
 
 // ---------------- CONTENT TYPE / FORMAT MANAGEMENT ----------------
@@ -847,7 +841,7 @@ function populateDepartmentSelects() {
     if (curr) modalDept.value = curr;
   }
 
-  ['uploadVideoDept', 'editDrawerDept', 'videoDeptFilter'].forEach(id => {
+  ['uploadVideoDept', 'editDrawerDept', 'videoDeptFilter', 'modalEventDept'].forEach(id => {
     const select = document.getElementById(id);
     if (!select) return;
     const current = select.value;
@@ -863,6 +857,12 @@ function populateDepartmentSelects() {
   const drawerDeptFilter = document.getElementById('drawerDeptFilter');
   if (drawerDeptFilter) {
     drawerDeptFilter.innerHTML = `<option value="">All Departments</option>` + depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+  }
+  const eventDeptFilter = document.getElementById('adminEventDeptFilter');
+  if (eventDeptFilter) {
+    const curr = eventDeptFilter.value;
+    eventDeptFilter.innerHTML = `<option value="">All Departments</option>` + depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+    eventDeptFilter.value = curr;
   }
 }
 

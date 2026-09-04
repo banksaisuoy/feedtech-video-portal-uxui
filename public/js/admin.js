@@ -1490,10 +1490,10 @@ function renderAdminEventsTable() {
   const tbody = document.getElementById('adminEventsTableBody');
   if (!tbody) return;
 
-  // Populate category filter
+  // Populate the event department filter from organizational departments.
   const deptFilter = document.getElementById('adminEventDeptFilter');
   if (deptFilter && deptFilter.options.length <= 1) {
-    deptFilter.innerHTML = `<option value="">All Categories</option>` + (state.categories || state.departments || []).map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+    deptFilter.innerHTML = `<option value="">All Departments</option>` + (state.departments || []).map(d => `<option value="${d.name}">${d.name}</option>`).join('');
   }
 
   // Populate KPI counts
@@ -1589,8 +1589,10 @@ function openAddEventModal() {
 
   const deptSel = document.getElementById('modalEventDept');
   if (deptSel) {
-    deptSel.innerHTML = (state.categories || state.departments || []).map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+    deptSel.innerHTML = (state.departments || []).map(d => `<option value="${d.name}">${d.name}</option>`).join('');
   }
+  const categorySel = document.getElementById('modalEventCategory');
+  if (categorySel) categorySel.value = state.categories?.[0]?.name || 'Corporate Knowledge';
 
   document.getElementById('eventModal').classList.remove('hidden');
 }
@@ -1615,8 +1617,10 @@ function openEditEventModal(eventId) {
 
   const deptSel = document.getElementById('modalEventDept');
   if (deptSel) {
-    deptSel.innerHTML = (state.categories || state.departments || []).map(d => `<option value="${d.name}" ${d.name === e.department ? 'selected' : ''}>${d.name}</option>`).join('');
+    deptSel.innerHTML = (state.departments || []).map(d => `<option value="${d.name}" ${d.name === e.department ? 'selected' : ''}>${d.name}</option>`).join('');
   }
+  const categorySel = document.getElementById('modalEventCategory');
+  if (categorySel) categorySel.value = e.category || 'Corporate Knowledge';
 
   document.getElementById('eventModal').classList.remove('hidden');
 }
@@ -1634,6 +1638,7 @@ async function saveEventModalSubmit() {
   const speaker = document.getElementById('modalEventSpeaker').value.trim();
   const speaker_role = document.getElementById('modalEventSpeakerRole').value.trim();
   const department = document.getElementById('modalEventDept').value;
+  const category = document.getElementById('modalEventCategory')?.value || 'Corporate Knowledge';
   const clearance_level = document.getElementById('modalEventLevel').value;
   const status = document.getElementById('modalEventStatus').value;
   const description = document.getElementById('modalEventDesc').value.trim();
@@ -1645,7 +1650,7 @@ async function saveEventModalSubmit() {
     return;
   }
 
-  const payload = { title, date, time, location, speaker, speaker_role, department, clearance_level, status, description, banner_url, video_url };
+  const payload = { title, date, time, location, speaker, speaker_role, department, category, content_type: 'Corporate Event', clearance_level, status, description, banner_url, video_url };
 
   try {
     const url = id ? `/api/events/${id}` : '/api/events';
