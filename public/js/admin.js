@@ -955,9 +955,9 @@ async function loadAdminDashboard() {
 async function submitUploadVideo() {
   const video_url = document.getElementById('uploadVideoUrl').value.trim();
   const title = document.getElementById('uploadVideoTitle').value.trim();
-  const department = document.getElementById('uploadVideoDept').value;
+  const category = document.getElementById('uploadVideoDept').value;
+  const department = state.currentUser?.department || 'General';
   const description = document.getElementById('uploadVideoDesc').value.trim();
-  const category = document.getElementById('uploadVideoCategory')?.value || '';
   const content_type = document.getElementById('uploadVideoContentType')?.value || 'Research & Whitepaper';
   const duration = document.getElementById('uploadVideoDuration')?.value?.trim() || '10:00';
   const tags = document.getElementById('uploadVideoTags').value.trim();
@@ -976,8 +976,8 @@ async function submitUploadVideo() {
   const allowed_user_ids = access_mode === 'include' ? selectedArray : [];
   const excluded_user_ids = access_mode === 'exclude' ? selectedArray : [];
 
-  if (!title || !department) {
-    showToast('Please specify a title and department', 'error');
+  if (!title || !category) {
+    showToast('Please specify a title and category', 'error');
     return;
   }
 

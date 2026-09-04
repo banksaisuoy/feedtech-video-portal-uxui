@@ -91,7 +91,7 @@ async function loadDepartments() {
 }
 
 function populateCategorySelects() {
-  const selects = ['tagCategoryFilter', 'quickTagDept', 'modalTagDept', 'uploadVideoCategory', 'editDrawerCategory'];
+  const selects = ['tagCategoryFilter', 'quickTagDept', 'modalTagDept', 'uploadVideoDept', 'uploadVideoCategory', 'editDrawerCategory'];
   if (!state.categories) return;
 
   selects.forEach(id => {
@@ -841,7 +841,7 @@ function populateDepartmentSelects() {
     if (curr) modalDept.value = curr;
   }
 
-  ['uploadVideoDept', 'editDrawerDept', 'videoDeptFilter', 'modalEventDept'].forEach(id => {
+  ['editDrawerDept', 'videoDeptFilter', 'modalEventDept'].forEach(id => {
     const select = document.getElementById(id);
     if (!select) return;
     const current = select.value;
