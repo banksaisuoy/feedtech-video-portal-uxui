@@ -1418,10 +1418,10 @@ function renderAdminEventsTable() {
   const tbody = document.getElementById('adminEventsTableBody');
   if (!tbody) return;
 
-  // Populate department filter
+  // Populate category filter
   const deptFilter = document.getElementById('adminEventDeptFilter');
   if (deptFilter && deptFilter.options.length <= 1) {
-    deptFilter.innerHTML = `<option value="">All Departments</option>` + state.departments.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+    deptFilter.innerHTML = `<option value="">All Categories</option>` + (state.categories || state.departments || []).map(d => `<option value="${d.name}">${d.name}</option>`).join('');
   }
 
   // Populate KPI counts
@@ -1517,7 +1517,7 @@ function openAddEventModal() {
 
   const deptSel = document.getElementById('modalEventDept');
   if (deptSel) {
-    deptSel.innerHTML = state.departments.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+    deptSel.innerHTML = (state.categories || state.departments || []).map(d => `<option value="${d.name}">${d.name}</option>`).join('');
   }
 
   document.getElementById('eventModal').classList.remove('hidden');
@@ -1543,7 +1543,7 @@ function openEditEventModal(eventId) {
 
   const deptSel = document.getElementById('modalEventDept');
   if (deptSel) {
-    deptSel.innerHTML = state.departments.map(d => `<option value="${d.name}" ${d.name === e.department ? 'selected' : ''}>${d.name}</option>`).join('');
+    deptSel.innerHTML = (state.categories || state.departments || []).map(d => `<option value="${d.name}" ${d.name === e.department ? 'selected' : ''}>${d.name}</option>`).join('');
   }
 
   document.getElementById('eventModal').classList.remove('hidden');

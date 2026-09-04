@@ -38,15 +38,22 @@ function renderSidebarCategories() {
     </a>
   `;
 
-  const itemsHtml = cats.map(c => `
-    <a href="#" onclick="openCategoryDetail('${c.name}'); return false;" class="flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs text-gray-600 hover:text-primary hover:bg-slate-100 transition-colors group">
-      <div class="flex items-center gap-2 truncate">
-        <span class="material-symbols-outlined text-sm text-gray-400 group-hover:text-primary transition-colors">${c.icon || 'folder'}</span>
-        <span class="truncate font-medium">${c.name}</span>
-      </div>
-      <span class="text-[10px] text-gray-400 font-bold bg-slate-100 group-hover:bg-emerald-100 group-hover:text-emerald-800 px-1.5 py-0.5 rounded-full shrink-0 transition-colors">${c.video_count || 0}</span>
-    </a>
-  `).join('');
+  const itemsHtml = cats.map(c => {
+    const isImg = c.icon && (c.icon.startsWith('data:') || c.icon.startsWith('http') || c.icon.startsWith('/'));
+    const iconHtml = isImg 
+      ? `<img src="${c.icon}" class="w-4 h-4 object-contain rounded shrink-0" alt="${c.name}">` 
+      : `<span class="material-symbols-outlined text-sm text-gray-400 group-hover:text-primary transition-colors">${c.icon || 'folder'}</span>`;
+
+    return `
+      <a href="#" onclick="openCategoryDetail('${c.name}'); return false;" class="flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs text-gray-600 hover:text-primary hover:bg-slate-100 transition-colors group">
+        <div class="flex items-center gap-2 truncate">
+          ${iconHtml}
+          <span class="truncate font-medium">${c.name}</span>
+        </div>
+        <span class="text-[10px] text-gray-400 font-bold bg-slate-100 group-hover:bg-emerald-100 group-hover:text-emerald-800 px-1.5 py-0.5 rounded-full shrink-0 transition-colors">${c.video_count || 0}</span>
+      </a>
+    `;
+  }).join('');
 
   container.innerHTML = exploreAllHtml + itemsHtml;
 }
@@ -84,7 +91,7 @@ async function loadDepartments() {
 }
 
 function populateCategorySelects() {
-  const selects = ['tagCategoryFilter', 'quickTagDept', 'modalTagDept', 'uploadVideoDept', 'editDrawerDept', 'videoDeptFilter'];
+  const selects = ['tagCategoryFilter', 'quickTagDept', 'modalTagDept', 'uploadVideoDept', 'editDrawerDept', 'videoDeptFilter', 'userDeptFilter', 'modalDept', 'modalEventDept', 'adminEventDeptFilter'];
   if (!state.categories) return;
 
   selects.forEach(id => {
@@ -144,12 +151,18 @@ function renderCategoryManagementTable() {
     return;
   }
 
-  tbody.innerHTML = list.map(c => `
+  tbody.innerHTML = list.map(c => {
+    const isImg = c.icon && (c.icon.startsWith('data:') || c.icon.startsWith('http') || c.icon.startsWith('/'));
+    const iconHtml = isImg 
+      ? `<img src="${c.icon}" class="w-6 h-6 object-contain rounded" alt="${c.name}">` 
+      : `<span class="material-symbols-outlined text-lg">${c.icon || 'domain'}</span>`;
+
+    return `
     <tr class="hover:bg-slate-50 transition-colors group">
       <td class="py-3.5 px-5">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-emerald-50 text-primary flex items-center justify-center font-bold shrink-0">
-            <span class="material-symbols-outlined text-lg">${c.icon || 'domain'}</span>
+          <div class="w-9 h-9 rounded-xl bg-emerald-50 text-primary flex items-center justify-center font-bold shrink-0 overflow-hidden">
+            ${iconHtml}
           </div>
           <div>
             <div class="font-bold text-gray-900 text-xs">${c.name}</div>
@@ -169,7 +182,7 @@ function renderCategoryManagementTable() {
       </td>
       <td class="py-3.5 px-5">
         <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-          Public / Departmental
+          Public / Internal
         </span>
       </td>
       <td class="py-3.5 px-5 text-right whitespace-nowrap space-x-1">
@@ -184,11 +197,87 @@ function renderCategoryManagementTable() {
         </button>
       </td>
     </tr>
-  `).join('');
+  `}).join('');
 }
 
 function filterCategoryManagementTable() {
   renderCategoryManagementTable();
+}
+
+function selectPresetCatIcon(iconName) {
+  const hiddenInput = document.getElementById('modalCatIcon');
+  if (hiddenInput) hiddenInput.value = iconName;
+
+  updateCatIconPreview(iconName);
+
+  document.querySelectorAll('.preset-icon-btn').forEach(btn => {
+    const span = btn.querySelector('.material-symbols-outlined')?.textContent?.trim();
+    if (span === iconName) {
+      btn.classList.add('border-primary', 'bg-emerald-50', 'text-primary', 'ring-2', 'ring-primary/20');
+      btn.classList.remove('border-outline-variant', 'bg-white', 'text-gray-700');
+    } else {
+      btn.classList.remove('border-primary', 'bg-emerald-50', 'text-primary', 'ring-2', 'ring-primary/20');
+      btn.classList.add('border-outline-variant', 'bg-white', 'text-gray-700');
+    }
+  });
+
+  const fileInput = document.getElementById('modalCatIconFile');
+  if (fileInput) fileInput.value = '';
+  const urlInput = document.getElementById('modalCatIconUrl');
+  if (urlInput) urlInput.value = '';
+}
+
+function handleCustomCatIconUpload(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    const hiddenInput = document.getElementById('modalCatIcon');
+    if (hiddenInput) hiddenInput.value = dataUrl;
+    updateCatIconPreview(dataUrl);
+
+    document.querySelectorAll('.preset-icon-btn').forEach(btn => {
+      btn.classList.remove('border-primary', 'bg-emerald-50', 'text-primary', 'ring-2', 'ring-primary/20');
+      btn.classList.add('border-outline-variant', 'bg-white', 'text-gray-700');
+    });
+    const urlInput = document.getElementById('modalCatIconUrl');
+    if (urlInput) urlInput.value = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleCatIconUrlInput(url) {
+  const clean = (url || '').trim();
+  if (!clean) return;
+  const hiddenInput = document.getElementById('modalCatIcon');
+  if (hiddenInput) hiddenInput.value = clean;
+  updateCatIconPreview(clean);
+
+  document.querySelectorAll('.preset-icon-btn').forEach(btn => {
+    btn.classList.remove('border-primary', 'bg-emerald-50', 'text-primary', 'ring-2', 'ring-primary/20');
+    btn.classList.add('border-outline-variant', 'bg-white', 'text-gray-700');
+  });
+  const fileInput = document.getElementById('modalCatIconFile');
+  if (fileInput) fileInput.value = '';
+}
+
+function updateCatIconPreview(iconValue) {
+  const symbolEl = document.getElementById('catIconPreviewSymbol');
+  const imgEl = document.getElementById('catIconPreviewImg');
+  if (!symbolEl || !imgEl) return;
+
+  const isImg = iconValue && (iconValue.startsWith('data:') || iconValue.startsWith('http') || iconValue.startsWith('/'));
+  if (isImg) {
+    imgEl.src = iconValue;
+    imgEl.classList.remove('hidden');
+    symbolEl.classList.add('hidden');
+  } else {
+    symbolEl.textContent = iconValue || 'domain';
+    symbolEl.classList.remove('hidden');
+    imgEl.classList.add('hidden');
+  }
 }
 
 function openAddCategoryModal() {
@@ -198,18 +287,40 @@ function openAddCategoryModal() {
   document.getElementById('modalCatIcon').value = 'domain';
   const descEl = document.getElementById('modalCatDesc');
   if (descEl) descEl.value = '';
+
+  selectPresetCatIcon('domain');
+  const fileInput = document.getElementById('modalCatIconFile');
+  if (fileInput) fileInput.value = '';
+  const urlInput = document.getElementById('modalCatIconUrl');
+  if (urlInput) urlInput.value = '';
+
   document.getElementById('categoryModal').classList.remove('hidden');
 }
 
 function editCategoryPrompt(catId) {
   const cat = state.categories.find(c => c.id === catId);
   if (!cat) return;
-  document.getElementById('categoryModalTitle').textContent = 'Edit Category (แก้ไขหมวดหมู่ความรู้)';
+  document.getElementById('categoryModalTitle').textContent = `Edit Category: ${cat.name}`;
   document.getElementById('modalCatId').value = cat.id;
   document.getElementById('modalCatName').value = cat.name;
   document.getElementById('modalCatIcon').value = cat.icon || 'domain';
   const descEl = document.getElementById('modalCatDesc');
   if (descEl) descEl.value = cat.description || '';
+
+  const iconVal = cat.icon || 'domain';
+  const isImg = iconVal.startsWith('data:') || iconVal.startsWith('http') || iconVal.startsWith('/');
+  if (isImg) {
+    updateCatIconPreview(iconVal);
+    const urlInput = document.getElementById('modalCatIconUrl');
+    if (urlInput && iconVal.startsWith('http')) urlInput.value = iconVal;
+    document.querySelectorAll('.preset-icon-btn').forEach(btn => {
+      btn.classList.remove('border-primary', 'bg-emerald-50', 'text-primary', 'ring-2', 'ring-primary/20');
+      btn.classList.add('border-outline-variant', 'bg-white', 'text-gray-700');
+    });
+  } else {
+    selectPresetCatIcon(iconVal);
+  }
+
   document.getElementById('categoryModal').classList.remove('hidden');
 }
 
@@ -452,44 +563,15 @@ function closeCategoryDrilldown() {
 }
 
 function openAddDeptModal() {
-  document.getElementById('deptModalTitle').textContent = 'Add Business Unit / Department';
-  document.getElementById('modalDeptName').value = '';
-  document.getElementById('modalDeptCode').value = '';
-  document.getElementById('modalDeptIcon').value = 'domain';
-  document.getElementById('modalDeptDesc').value = '';
-  document.getElementById('deptModal').classList.remove('hidden');
+  openAddCategoryModal();
 }
 
 function closeDeptModal() {
-  document.getElementById('deptModal').classList.add('hidden');
+  closeCategoryModal();
 }
 
 async function saveDeptModalSubmit() {
-  const name = document.getElementById('modalDeptName').value.trim();
-  const code = document.getElementById('modalDeptCode').value.trim();
-  const icon = document.getElementById('modalDeptIcon').value.trim() || 'domain';
-  const description = document.getElementById('modalDeptDesc').value.trim();
-
-  if (!name || !code) {
-    showToast('Name and Code are required', 'error');
-    return;
-  }
-
-  try {
-    const res = await fetch('/api/departments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, code, icon, description })
-    });
-    const json = await res.json();
-    if (json.success) {
-      closeDeptModal();
-      await loadDepartments();
-      showToast('Department added successfully', 'success');
-    }
-  } catch (err) {
-    showToast('Failed to add department', 'error');
-  }
+  await saveCategoryModalSubmit();
 }
 
 // ---------------- MEETING RECORDINGS ----------------

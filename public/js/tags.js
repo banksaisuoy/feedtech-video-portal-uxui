@@ -173,8 +173,20 @@ function openAddUserModal() {
   document.getElementById('modalEmail').value = '';
   document.getElementById('modalRole').value = 'Staff Member';
   document.getElementById('modalTags').value = '#general, #standard';
-  document.getElementById('modalDept').value = state.departments[0]?.name || 'Biotech';
-  document.getElementById('modalLevel').value = 'Standard';
+
+  // Populate category options
+  const modalDept = document.getElementById('modalDept');
+  if (modalDept && state.categories) {
+    modalDept.innerHTML = state.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    modalDept.value = state.categories[0]?.name || 'Biotech';
+  }
+
+  const roleSelect = document.getElementById('modalRoleSelect');
+  if (roleSelect) roleSelect.value = 'user';
+
+  const levelEl = document.getElementById('modalLevel');
+  if (levelEl) levelEl.value = 'Standard';
+
   renderTagPicker('userModalTagsContainer', 'modalTags', true);
   document.getElementById('userModal').classList.remove('hidden');
 }
@@ -187,10 +199,24 @@ function editUserPrompt(userId) {
   document.getElementById('modalEmpId').value = u.emp_id || '';
   document.getElementById('modalName').value = u.name;
   document.getElementById('modalEmail').value = u.email;
-  document.getElementById('modalRole').value = u.role || 'Staff Member';
+  document.getElementById('modalRole').value = u.role || (u.is_admin ? 'System Administrator' : 'Staff Member');
   document.getElementById('modalTags').value = u.allowed_tags || '#general';
-  document.getElementById('modalDept').value = u.department;
-  document.getElementById('modalLevel').value = u.permission_level;
+
+  // Populate category options
+  const modalDept = document.getElementById('modalDept');
+  if (modalDept && state.categories) {
+    modalDept.innerHTML = state.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    modalDept.value = u.department || state.categories[0]?.name;
+  }
+
+  const roleSelect = document.getElementById('modalRoleSelect');
+  if (roleSelect) {
+    roleSelect.value = (u.is_admin === 1 || u.role === 'System Administrator') ? 'admin' : 'user';
+  }
+
+  const levelEl = document.getElementById('modalLevel');
+  if (levelEl) levelEl.value = u.permission_level || (u.is_admin ? 'Highly Confidential' : 'Standard');
+
   renderTagPicker('userModalTagsContainer', 'modalTags', true);
   document.getElementById('userModal').classList.remove('hidden');
 }
@@ -212,9 +238,11 @@ async function saveUserModalSubmit() {
   const name = document.getElementById('modalName').value.trim();
   const email = document.getElementById('modalEmail').value.trim();
   const department = document.getElementById('modalDept').value;
-  const role = document.getElementById('modalRole').value.trim();
+  const roleSelect = document.getElementById('modalRoleSelect')?.value || 'user';
+  const isAdmin = roleSelect === 'admin';
+  const role = isAdmin ? 'System Administrator' : (document.getElementById('modalRole')?.value.trim() || 'Staff Member');
   const allowed_tags = document.getElementById('modalTags').value.trim();
-  const permission_level = document.getElementById('modalLevel').value;
+  const permission_level = isAdmin ? 'Highly Confidential' : 'Standard';
   const emp_id = document.getElementById('modalEmpId').value.trim();
 
   if (!name || !email || !allowed_tags) {
@@ -228,13 +256,13 @@ async function saveUserModalSubmit() {
       res = await fetch(`/api/users/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, department, role, allowed_tags, permission_level })
+        body: JSON.stringify({ name, email, department, role, allowed_tags, permission_level, is_admin: isAdmin ? 1 : 0 })
       });
     } else {
       res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emp_id, name, email, department, role, allowed_tags, permission_level })
+        body: JSON.stringify({ emp_id, name, email, department, role, allowed_tags, permission_level, is_admin: isAdmin ? 1 : 0 })
       });
     }
 
