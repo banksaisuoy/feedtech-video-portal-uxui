@@ -6,6 +6,9 @@
 window.state = {
   currentUser: null,
   currentLanguage: localStorage.getItem('feedtech_portal_lang') || 'en',
+  isLoggedIn: localStorage.getItem('feedtech_logged_in') === 'true',
+  activeWatchVideo: null,
+  previousView: 'home',
   users: [],
   videos: [],
   categories: [],
@@ -40,7 +43,8 @@ window.translations = {
     adminDepts: 'Manage Categories',
     adminTags: 'Categories & Tags',
     adminVideos: 'Video Management',
-    adminMatrix: 'Security & Audit Logs',
+    adminMatrix: 'Access Control Matrix',
+    adminLogs: 'System Audit Logs',
     settings: 'Settings & Language',
     viewOnlyBadge: 'View-Only Mode (Non-Admin)',
     adminModeBadge: 'Administrator Privileges Active',
@@ -64,7 +68,8 @@ window.translations = {
     adminUsers: 'จัดการผู้ใช้งาน',
     adminTags: 'หมวดหมู่และแท็กย่อย',
     adminVideos: 'จัดการคลังวิดีโอ',
-    adminMatrix: 'ความปลอดภัยและประวัติสิทธิ์',
+    adminMatrix: 'ตารางสิทธิ์การเข้าถึง',
+    adminLogs: 'บันทึกประวัติระบบ',
     settings: 'การตั้งค่าหน้าเว็บ & ภาษา',
     viewOnlyBadge: 'พนักงานทั่วไป (ดูได้อย่างเดียว)',
     adminModeBadge: 'สิทธิ์ผู้ดูแลระบบ (Admin Active)',
@@ -108,7 +113,8 @@ window.setPortalLanguage = function(lang) {
     'nav-admin-users': 'adminUsers',
     'nav-admin-tags': 'adminTags',
     'nav-admin-videos': 'adminVideos',
-    'nav-admin-matrix': 'adminMatrix'
+    'nav-admin-matrix': 'adminMatrix',
+    'nav-admin-logs': 'adminLogs'
   };
 
   Object.entries(mapNav).forEach(([id, tKey]) => {

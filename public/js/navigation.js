@@ -30,6 +30,10 @@ function navigateView(viewName) {
     return;
   }
 
+  if (state.activeView !== 'watch' && viewName === 'watch') {
+    state.previousView = state.activeView || 'home';
+  }
+
   state.activeView = viewName;
   
   // Hide all view panels
@@ -44,6 +48,8 @@ function navigateView(viewName) {
   const target = document.getElementById(`view-${viewName}`);
   if (target) {
     target.classList.remove('hidden');
+    const mainContainer = document.getElementById('mainViewContainer');
+    if (mainContainer) mainContainer.scrollTop = 0;
   }
 
   // Highlight active sidebar item
@@ -53,6 +59,9 @@ function navigateView(viewName) {
   }
 
   // View specific loaders
+  if (viewName === 'admin-dashboard') {
+    if (typeof loadAdminDashboard === 'function') loadAdminDashboard();
+  }
   if (viewName === 'admin-users') renderUserTable();
   if (viewName === 'admin-tags') {
     loadTags();
@@ -64,7 +73,9 @@ function navigateView(viewName) {
     loadEvents().then(() => renderAdminEventsTable());
   }
   if (viewName === 'admin-upload') renderTagPicker('uploadTagsContainer', 'uploadVideoTags', false);
-  if (viewName === 'admin-logs') loadAuditLogs();
+  if (viewName === 'admin-logs') {
+    if (typeof loadAuditLogs === 'function') loadAuditLogs();
+  }
   if (viewName === 'admin-matrix') loadAccessMatrix();
   if (viewName === 'home') renderHomeVideos();
   if (viewName === 'recommended') renderRecommendedVideos();
@@ -76,6 +87,12 @@ function navigateView(viewName) {
   }
   if (viewName === 'events') loadEvents();
   if (viewName === 'categories') renderCategoriesDirectory();
+}
+
+function goBackFromWatchPage() {
+  const vidPlayer = document.getElementById('watchVideoPlayer');
+  if (vidPlayer) vidPlayer.pause();
+  navigateView(state.previousView || 'home');
 }
 
 function togglePortalAdminMode() {

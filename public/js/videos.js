@@ -432,9 +432,10 @@ function createVideoCardHtml(v) {
   const favIcon = v.is_favorite ? 'favorite' : 'favorite_border';
   const favClass = v.is_favorite ? 'text-rose-500 fill' : 'text-white hover:text-rose-400';
   const progressPercent = v.watch_progress || 0;
+  const tagList = (v.tags || '').split(',').map(t => t.trim()).filter(Boolean).slice(0, 2);
 
   return `
-    <div class="group bg-white rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col cursor-pointer" onclick="openVideoPlayerModal(${v.id})">
+    <div class="group bg-white rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col cursor-pointer" onclick="openVideoWatchPage(${v.id})">
       <!-- Thumbnail with Overlay -->
       <div class="relative aspect-video w-full bg-slate-900 overflow-hidden">
         <img src="${v.thumbnail_url || 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
@@ -461,23 +462,221 @@ function createVideoCardHtml(v) {
       <div class="p-4 flex-1 flex flex-col justify-between space-y-2.5">
         <div>
           <div class="flex items-center justify-between gap-2 mb-1.5">
-            <span class="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">${v.department}</span>
+            <span class="text-[10px] font-bold text-emerald-900 bg-emerald-100/90 px-2 py-0.5 rounded truncate max-w-[150px]">${v.category || 'General'}</span>
             ${getPermissionBadgeMarkup(v)}
           </div>
           <h4 class="text-xs font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
             ${v.title}
           </h4>
+          <div class="flex flex-wrap gap-1 mt-1.5">
+            ${tagList.map(t => `<span class="text-[9px] font-mono text-gray-500 bg-slate-100 px-1.5 py-0.2 rounded">${t}</span>`).join('')}
+          </div>
         </div>
 
         <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-gray-400">
           <span class="flex items-center gap-1">
-            <span class="material-symbols-outlined text-xs">visibility</span> ${v.views} views
+            <span class="material-symbols-outlined text-xs">visibility</span> ${v.views.toLocaleString()} views
           </span>
           <span class="truncate max-w-[120px]">${v.uploaded_by || 'Staff'}</span>
         </div>
       </div>
     </div>
   `;
+}
+
+// ---------------- DEDICATED FULL-PAGE WATCH VIEW (YOUTUBE-STYLE) ----------------
+
+async function openVideoWatchPage(videoId) {
+  try {
+    const res = await fetch(`/api/videos/${videoId}`);
+    const json = await res.json();
+    if (!json.success) {
+      showToast('Cannot load video: ' + json.message, 'error');
+      return;
+    }
+    const v = json.data;
+    state.selectedVideo = v;
+    state.activeWatchVideo = v;
+
+    // Navigate to watch view
+    navigateView('watch');
+
+    // Populate Breadcrumbs
+    const bcCat = document.getElementById('watchBreadcrumbCategory');
+    const bcTitle = document.getElementById('watchBreadcrumbTitle');
+    if (bcCat) bcCat.textContent = v.category || 'Category';
+    if (bcTitle) bcTitle.textContent = v.title;
+
+    // Populate Video Player
+    const player = document.getElementById('watchVideoPlayer');
+    const source = document.getElementById('watchVideoSource');
+    if (player && source) {
+      player.pause();
+      source.src = v.video_url || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+      player.poster = v.thumbnail_url || '';
+      player.load();
+      player.play().catch(() => {});
+    }
+
+    // Populate Title & Metadata
+    const titleEl = document.getElementById('watchVideoTitle');
+    const authorEl = document.getElementById('watchAuthorName');
+    const authorAvatar = document.getElementById('watchAuthorAvatar');
+    const statsEl = document.getElementById('watchVideoStats');
+    const catBadge = document.getElementById('watchCategoryBadge');
+    const tagsContainer = document.getElementById('watchTagsContainer');
+    const descEl = document.getElementById('watchVideoDesc');
+    const favIcon = document.getElementById('watchFavIcon');
+    const favText = document.getElementById('watchFavText');
+
+    if (titleEl) titleEl.textContent = v.title;
+    if (authorEl) authorEl.textContent = v.uploaded_by || 'Feedtech Knowledge Base';
+    if (authorAvatar) {
+      const initials = (v.uploaded_by || 'FT').split(' ').map(s => s[0]).join('').substring(0, 2).toUpperCase();
+      authorAvatar.textContent = initials;
+    }
+    if (statsEl) statsEl.textContent = `${v.views.toLocaleString()} views • Uploaded on ${v.uploaded_at || 'Recent'}`;
+    if (catBadge) catBadge.textContent = v.category || 'General';
+    if (descEl) descEl.textContent = v.description || 'No detailed whitepaper abstract provided.';
+
+    // Tags
+    if (tagsContainer) {
+      const tagsList = (v.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+      tagsContainer.innerHTML = tagsList.map(t => `
+        <span onclick="handleTagSearch('${t}')" class="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer border border-slate-200 transition-colors">
+          ${t}
+        </span>
+      `).join('');
+    }
+
+    // Favorite state
+    if (favIcon && favText) {
+      favIcon.textContent = v.is_favorite ? 'favorite' : 'favorite_border';
+      favIcon.className = v.is_favorite ? 'material-symbols-outlined text-base text-rose-500 fill' : 'material-symbols-outlined text-base text-gray-500';
+      favText.textContent = v.is_favorite ? 'Favorited' : 'Favorite';
+    }
+
+    // Comments & Related
+    renderWatchComments(v.comments || []);
+    renderWatchRelatedVideos(v);
+
+    // Record watch history
+    await saveWatchProgress(v.id, 15, 100);
+
+  } catch (err) {
+    showToast('Failed to open video watch page', 'error');
+  }
+}
+
+function renderWatchComments(comments) {
+  const listEl = document.getElementById('watchCommentsList');
+  const countEl = document.getElementById('watchCommentCount');
+  if (countEl) countEl.textContent = `${comments.length} notes`;
+
+  if (!listEl) return;
+  if (comments.length === 0) {
+    listEl.innerHTML = `<div class="py-6 text-center text-xs text-gray-400">No notes or discussion comments yet. Be the first to add one!</div>`;
+    return;
+  }
+
+  listEl.innerHTML = comments.map(c => `
+    <div class="pt-3 flex gap-3 items-start">
+      <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0">
+        ${(c.user_name || 'U').substring(0, 2).toUpperCase()}
+      </div>
+      <div class="flex-1">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-gray-900">${c.user_name}</span>
+          <span class="text-[10px] text-gray-400 font-mono">${c.user_role || ''}</span>
+          <span class="text-[10px] text-gray-400">• ${c.created_at || 'Just now'}</span>
+        </div>
+        <p class="text-xs text-gray-700 mt-1 leading-relaxed">${c.comment}</p>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderWatchRelatedVideos(currentVideo) {
+  const container = document.getElementById('watchRelatedList');
+  if (!container) return;
+
+  const pool = (state.accessibleVideos && state.accessibleVideos.length > 0) ? state.accessibleVideos : (state.allVideos || []);
+  const otherVideos = pool.filter(v => v.id !== currentVideo.id);
+  
+  const related = otherVideos.sort((a, b) => {
+    const aMatch = (a.category === currentVideo.category ? 2 : 0);
+    const bMatch = (b.category === currentVideo.category ? 2 : 0);
+    return bMatch - aMatch;
+  }).slice(0, 8);
+
+  if (related.length === 0) {
+    container.innerHTML = `<div class="py-8 text-center text-xs text-gray-400">No additional related videos found.</div>`;
+    return;
+  }
+
+  container.innerHTML = related.map(v => `
+    <div class="flex gap-3 group cursor-pointer p-2 hover:bg-slate-100 rounded-xl transition-colors border border-transparent hover:border-outline-variant/60" onclick="openVideoWatchPage(${v.id})">
+      <div class="relative w-36 aspect-video rounded-lg overflow-hidden shrink-0 bg-slate-900 shadow-2xs">
+        <img src="${v.thumbnail_url || 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=400'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+        <span class="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] font-bold px-1 py-0.5 rounded">${v.duration}</span>
+      </div>
+      <div class="flex flex-col justify-between py-0.5 flex-1 min-w-0">
+        <div>
+          <span class="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded truncate inline-block max-w-[110px]">${v.category || 'General'}</span>
+          <h4 class="text-xs font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-2 leading-snug mt-1">${v.title}</h4>
+        </div>
+        <div class="text-[10px] text-gray-400 flex items-center justify-between pt-1">
+          <span>${v.views.toLocaleString()} views</span>
+          <span class="truncate max-w-[70px]">${v.uploaded_by || ''}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function submitWatchComment() {
+  const input = document.getElementById('watchCommentInput');
+  const comment = input ? input.value.trim() : '';
+  if (!comment || !state.activeWatchVideo) return;
+
+  try {
+    const res = await fetch(`/api/videos/${state.activeWatchVideo.id}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comment })
+    });
+    const json = await res.json();
+    if (json.success) {
+      input.value = '';
+      if (!state.activeWatchVideo.comments) state.activeWatchVideo.comments = [];
+      state.activeWatchVideo.comments.unshift(json.data);
+      renderWatchComments(state.activeWatchVideo.comments);
+      showToast('Research note added successfully', 'success');
+    }
+  } catch (err) {
+    showToast('Failed to post comment', 'error');
+  }
+}
+
+function toggleWatchFavorite() {
+  if (state.activeWatchVideo) {
+    toggleFavorite(state.activeWatchVideo.id);
+    const favIcon = document.getElementById('watchFavIcon');
+    const favText = document.getElementById('watchFavText');
+    state.activeWatchVideo.is_favorite = !state.activeWatchVideo.is_favorite;
+    if (favIcon && favText) {
+      favIcon.textContent = state.activeWatchVideo.is_favorite ? 'favorite' : 'favorite_border';
+      favIcon.className = state.activeWatchVideo.is_favorite ? 'material-symbols-outlined text-base text-rose-500 fill' : 'material-symbols-outlined text-base text-gray-500';
+      favText.textContent = state.activeWatchVideo.is_favorite ? 'Favorited' : 'Favorite';
+    }
+  }
+}
+
+function shareWatchVideo() {
+  if (state.activeWatchVideo) {
+    navigator.clipboard.writeText(window.location.origin + '?video=' + state.activeWatchVideo.video_id);
+    showToast('Video shareable link copied to clipboard!', 'success');
+  }
 }
 
 // ---------------- VIDEO PLAYER MODAL ----------------

@@ -390,4 +390,111 @@ function switchProfileTab(tabName) {
   });
 }
 
+// ---------------- DEDICATED LOGIN & LOGOUT SYSTEM ----------------
+
+async function checkAuthSession() {
+  const loginScreen = document.getElementById('loginScreen');
+  const simulationBar = document.getElementById('simulationControlBar');
+  
+  if (!state.isLoggedIn) {
+    if (loginScreen) loginScreen.classList.remove('hidden');
+    if (simulationBar) simulationBar.classList.add('hidden');
+    return false;
+  } else {
+    if (loginScreen) loginScreen.classList.add('hidden');
+    if (simulationBar) simulationBar.classList.remove('hidden');
+    return true;
+  }
+}
+
+async function handleLoginFormSubmit(e) {
+  if (e) e.preventDefault();
+  const username = document.getElementById('loginUsername')?.value.trim();
+  const password = document.getElementById('loginPassword')?.value.trim();
+  const errorBox = document.getElementById('loginErrorMessage');
+  const errorText = document.getElementById('loginErrorText');
+
+  if (!username || !password) {
+    if (errorBox && errorText) {
+      errorText.textContent = 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน';
+      errorBox.classList.remove('hidden');
+    }
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const json = await res.json();
+    if (json.success) {
+      state.isLoggedIn = true;
+      localStorage.setItem('feedtech_logged_in', 'true');
+      state.currentUser = json.data;
+
+      if (errorBox) errorBox.classList.add('hidden');
+      const loginScreen = document.getElementById('loginScreen');
+      if (loginScreen) loginScreen.classList.add('hidden');
+      const simulationBar = document.getElementById('simulationControlBar');
+      if (simulationBar) simulationBar.classList.remove('hidden');
+
+      renderCurrentUserUI();
+      await loadAccessibleVideos();
+      await loadAllVideos();
+      
+      const isAdmin = (json.data.is_admin === 1 || json.data.role === 'System Administrator');
+      if (isAdmin) {
+        navigateView('admin-dashboard');
+      } else {
+        navigateView('home');
+      }
+      showToast(json.message || `ยินดีต้อนรับ ${json.data.name}`, 'success');
+    } else {
+      if (errorBox && errorText) {
+        errorText.textContent = json.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+        errorBox.classList.remove('hidden');
+      }
+    }
+  } catch (err) {
+    if (errorBox && errorText) {
+      errorText.textContent = 'ไม่สามารถเชื่อมต่อระบบยืนยันตัวตนได้';
+      errorBox.classList.remove('hidden');
+    }
+  }
+}
+
+async function quickDemoLogin(role) {
+  const usernameInput = document.getElementById('loginUsername');
+  const passwordInput = document.getElementById('loginPassword');
+  if (role === 'admin') {
+    if (usernameInput) usernameInput.value = 'admin';
+    if (passwordInput) passwordInput.value = 'admin';
+  } else {
+    if (usernameInput) usernameInput.value = 'user';
+    if (passwordInput) passwordInput.value = 'user';
+  }
+  await handleLoginFormSubmit();
+}
+
+async function handleLogout() {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST' });
+  } catch (e) {
+    console.error('Logout error', e);
+  }
+
+  state.isLoggedIn = false;
+  localStorage.removeItem('feedtech_logged_in');
+  
+  const loginScreen = document.getElementById('loginScreen');
+  if (loginScreen) loginScreen.classList.remove('hidden');
+  const simulationBar = document.getElementById('simulationControlBar');
+  if (simulationBar) simulationBar.classList.add('hidden');
+
+  closeProfileModal();
+  showToast('ออกจากระบบเรียบร้อยแล้ว (Logged out successfully)', 'info');
+}
+
 

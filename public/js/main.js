@@ -13,6 +13,9 @@ async function init() {
   // Initialize Language in UI
   setPortalLanguage(savedLang);
 
+  // Check Login Status
+  const isAuthed = await checkAuthSession();
+
   // Load baseline core data
   await loadDepartments();
   await loadUsers();
@@ -23,8 +26,12 @@ async function init() {
   await loadTags();
   await loadEvents();
 
-  // Set active default view
-  navigateView('home');
+  if (isAuthed) {
+    const isAdmin = state.currentUser && (state.currentUser.is_admin === 1 || state.currentUser.role === 'System Administrator');
+    navigateView(isAdmin ? 'admin-dashboard' : 'home');
+  } else {
+    navigateView('home');
+  }
 
   // Wire up Global Escape key for modals & drawer
   document.addEventListener('keydown', (e) => {

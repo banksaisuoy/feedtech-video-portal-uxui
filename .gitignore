@@ -5,4 +5,5 @@ yarn-debug.log*
 Thumbs.db
 *.sqlite-journal
 .env
-.env.local
+*.env.local
+*.bak

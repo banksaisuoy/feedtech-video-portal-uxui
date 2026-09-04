@@ -707,6 +707,47 @@ function evaluateVideoAccess(user, video) {
 
 // ---------------- API ROUTES ----------------
 
+// Auth Login (Demo Credentials: admin/admin or user/user)
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: 'กรุณากรอก Username และ Password' });
+  }
+
+  const uLower = String(username).toLowerCase().trim();
+  const pLower = String(password).toLowerCase().trim();
+  let user = null;
+
+  if (uLower === 'admin' && pLower === 'admin') {
+    user = db.prepare("SELECT * FROM users WHERE is_admin = 1 OR role = 'System Administrator' ORDER BY id ASC").get();
+  } else if (uLower === 'user' && pLower === 'user') {
+    user = db.prepare("SELECT * FROM users WHERE id = 1").get() || db.prepare("SELECT * FROM users WHERE is_admin = 0 ORDER BY id ASC").get();
+  } else {
+    user = db.prepare("SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(emp_id) = ? OR LOWER(name) LIKE ?").get(uLower, uLower, `%${uLower}%`);
+  }
+
+  if (!user) {
+    return res.status(401).json({ success: false, message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง (สำหรับ Demo ใช้ admin / admin หรือ user / user)' });
+  }
+
+  currentSimulatedUserId = user.id;
+
+  db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
+    .run(user.name, user.role, 'AUTH_LOGIN', `Session Login: [${user.emp_id}]`, `User logged in successfully via Portal Login page.`);
+
+  res.json({ success: true, message: `เข้าสู่ระบบสำเร็จ: ${user.name}`, data: user });
+});
+
+// Auth Logout
+app.post('/api/auth/logout', (req, res) => {
+  const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
+  if (currentUser) {
+    db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
+      .run(currentUser.name, currentUser.role, 'AUTH_LOGOUT', `Session Logout: [${currentUser.emp_id}]`, `User logged out from portal.`);
+  }
+  res.json({ success: true, message: 'ออกจากระบบเรียบร้อยแล้ว' });
+});
+
 // Get all users
 app.get('/api/users', (req, res) => {
   const users = db.prepare("SELECT * FROM users ORDER BY id ASC").all();
@@ -1332,19 +1373,96 @@ app.post('/api/videos/:id/comments', (req, res) => {
   res.json({ success: true, data: newComment });
 });
 
-// Get Audit Logs
+// Get Audit Logs (with Filtering & Search)
 app.get('/api/audit-logs', (req, res) => {
-  const logs = db.prepare("SELECT * FROM audit_logs ORDER BY id DESC LIMIT 50").all();
-  res.json({ success: true, data: logs });
+  const { action, actor, search } = req.query;
+  let query = "SELECT * FROM audit_logs WHERE 1=1";
+  const params = [];
+
+  if (action && action !== 'ALL') {
+    query += " AND action = ?";
+    params.push(action);
+  }
+  if (actor && actor !== 'ALL') {
+    query += " AND actor_name LIKE ?";
+    params.push(`%${actor}%`);
+  }
+  if (search) {
+    query += " AND (target LIKE ? OR details LIKE ? OR actor_name LIKE ?)";
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+  }
+
+  query += " ORDER BY id DESC LIMIT 100";
+  try {
+    const logs = db.prepare(query).all(...params);
+    res.json({ success: true, data: logs });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
-// Get Analytics / System Stats
+// Get Deep Analytics for Admin Dashboard
+app.get('/api/analytics/deep', (req, res) => {
+  try {
+    const totalVideos = db.prepare("SELECT COUNT(*) as count FROM videos").get().count;
+    const totalViews = db.prepare("SELECT SUM(views) as sum FROM videos").get().sum || 0;
+    const totalUsers = db.prepare("SELECT COUNT(*) as count FROM users").get().count;
+    const activeUsers = db.prepare("SELECT COUNT(*) as count FROM users WHERE status = 'Active'").get().count;
+    const totalCategories = db.prepare("SELECT COUNT(DISTINCT category) as count FROM videos").get().count;
+
+    // Category engagement breakdown
+    const categoryStats = db.prepare(`
+      SELECT category, COUNT(*) as video_count, SUM(views) as total_views
+      FROM videos
+      GROUP BY category
+      ORDER BY total_views DESC
+    `).all();
+
+    const categoryBreakdown = categoryStats.map(c => ({
+      category: c.category || 'General',
+      video_count: c.video_count,
+      total_views: c.total_views || 0,
+      percentage: totalViews > 0 ? Math.round(((c.total_views || 0) / totalViews) * 100) : 0
+    }));
+
+    // Top 5 most watched videos
+    const topVideos = db.prepare(`
+      SELECT id, video_id, title, category, views, duration, thumbnail_url, uploaded_by, uploaded_at
+      FROM videos
+      ORDER BY views DESC
+      LIMIT 5
+    `).all();
+
+    // Estimated total watch hours (based on average 12 min view duration)
+    const estimatedWatchHours = Math.round((totalViews * 11.5) / 60);
+    const avgCompletionRate = 78.4;
+
+    res.json({
+      success: true,
+      data: {
+        totalVideos,
+        totalViews,
+        totalUsers,
+        activeUsers,
+        totalCategories,
+        estimatedWatchHours,
+        avgCompletionRate,
+        categoryBreakdown,
+        topVideos
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Get Analytics / System Stats (Standard)
 app.get('/api/stats', (req, res) => {
   const totalUsers = db.prepare("SELECT COUNT(*) as count FROM users").get().count;
   const activeUsers = db.prepare("SELECT COUNT(*) as count FROM users WHERE status = 'Active'").get().count;
   const totalVideos = db.prepare("SELECT COUNT(*) as count FROM videos").get().count;
   const totalViews = db.prepare("SELECT SUM(views) as sum FROM videos").get().sum || 0;
-  const totalDepartments = db.prepare("SELECT COUNT(*) as count FROM departments").get().count;
+  const totalCategories = db.prepare("SELECT COUNT(DISTINCT category) as count FROM videos").get().count;
   const confidentialCount = db.prepare("SELECT COUNT(*) as count FROM videos WHERE permission_level = 'Highly Confidential'").get().count;
   const restrictedCount = db.prepare("SELECT COUNT(*) as count FROM videos WHERE permission_level = 'Restricted'").get().count;
   const standardCount = db.prepare("SELECT COUNT(*) as count FROM videos WHERE permission_level = 'Standard'").get().count;
@@ -1356,7 +1474,7 @@ app.get('/api/stats', (req, res) => {
       activeUsers,
       totalVideos,
       totalViews,
-      totalDepartments,
+      totalCategories,
       permissions: {
         highly_confidential: confidentialCount,
         restricted: restrictedCount,

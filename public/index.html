@@ -77,8 +77,76 @@
 </head>
 <body class="bg-background text-on-surface font-sans antialiased h-screen flex flex-col overflow-hidden">
 
+  <!-- DEDICATED LOGIN SCREEN (DEMO AUTHENTICATION) -->
+  <div id="loginScreen" class="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl overflow-hidden p-8 space-y-6 animate-in fade-in zoom-in-95 duration-200">
+      
+      <!-- Brand & Header -->
+      <div class="text-center space-y-2">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-500/20 mb-2">
+          <span class="material-symbols-outlined text-3xl">play_circle</span>
+        </div>
+        <h1 class="text-2xl font-black text-gray-900 tracking-tight">Feedtech Portal</h1>
+        <p class="text-xs text-gray-500">Enterprise Video Knowledge & Streaming Platform</p>
+      </div>
+
+      <!-- Quick Demo Access Shortcuts -->
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+        <div class="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm text-primary">bolt</span>
+          <span>Quick Demo Access (คลิกเพื่อทดสอบทันที)</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="quickDemoLogin('admin')" class="py-2 px-3 bg-white border border-slate-300 hover:border-primary hover:bg-emerald-50/50 rounded-lg text-xs font-bold text-gray-800 flex items-center justify-center gap-1.5 transition-all shadow-xs">
+            <span class="text-base">👑</span>
+            <span>Demo Admin</span>
+          </button>
+          <button type="button" onclick="quickDemoLogin('user')" class="py-2 px-3 bg-white border border-slate-300 hover:border-primary hover:bg-emerald-50/50 rounded-lg text-xs font-bold text-gray-800 flex items-center justify-center gap-1.5 transition-all shadow-xs">
+            <span class="text-base">👤</span>
+            <span>Demo User</span>
+          </button>
+        </div>
+        <p class="text-[10px] text-gray-400 text-center">รหัสสาธิต: แอดมิน (admin / admin) • พนักงาน (user / user)</p>
+      </div>
+
+      <!-- Credentials Form -->
+      <form id="loginForm" onsubmit="handleLoginFormSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1" for="loginUsername">Username / รหัสพนักงาน</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">person</span>
+            <input id="loginUsername" type="text" placeholder="admin หรือ user" required class="w-full pl-9 pr-3 py-2.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-gray-900 font-semibold">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1" for="loginPassword">Password / รหัสผ่าน</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">lock</span>
+            <input id="loginPassword" type="password" placeholder="••••••••" required class="w-full pl-9 pr-3 py-2.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-gray-900 font-semibold">
+          </div>
+        </div>
+
+        <div id="loginErrorMessage" class="hidden p-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center gap-2">
+          <span class="material-symbols-outlined text-sm">error</span>
+          <span id="loginErrorText"></span>
+        </div>
+
+        <button type="submit" id="loginSubmitBtn" class="w-full py-2.5 px-4 bg-primary text-white font-bold rounded-lg hover:bg-emerald-800 transition-colors shadow-sm flex items-center justify-center gap-2 text-xs">
+          <span class="material-symbols-outlined text-sm">login</span>
+          <span>Sign In / เข้าสู่ระบบ</span>
+        </button>
+      </form>
+
+      <!-- Footer Info -->
+      <div class="pt-2 border-t border-slate-100 text-center text-[11px] text-gray-400">
+        Charoen Pokphand Foods • Feedtech Research & Video Portal
+      </div>
+    </div>
+  </div>
+
   <!-- TOP SIMULATION CONTROL BAR -->
-  <div class="bg-[#0f172a] text-white px-4 py-2 flex flex-wrap items-center justify-between text-xs z-50 border-b border-slate-700 shadow-md">
+  <div id="simulationControlBar" class="bg-[#0f172a] text-white px-4 py-2 flex flex-wrap items-center justify-between text-xs z-50 border-b border-slate-700 shadow-md">
     <div class="flex items-center gap-3">
       <div class="flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full font-semibold border border-emerald-500/30">
         <span class="material-symbols-outlined text-sm">security</span>
@@ -100,7 +168,7 @@
     <div class="flex items-center gap-4 mt-1 sm:mt-0">
       <div id="personaDetails" class="hidden md:flex items-center gap-2 text-slate-300">
         <span class="px-2 py-0.5 rounded text-[11px] font-bold" id="personaLevelBadge">Standard</span>
-        <span id="personaDeptText" class="text-slate-400">Dept: Biotech | Role: Lead Scientist</span>
+        <span id="personaDeptText" class="text-slate-400">Role: Lead Scientist | Access: Categories & Tags</span>
       </div>
       <button onclick="openPermissionMatrixModal()" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-3 py-1 rounded transition-colors shadow-sm">
         <span class="material-symbols-outlined text-xs">grid_view</span>
@@ -150,6 +218,12 @@
           <div id="navUserRole" class="text-[10px] text-gray-500 font-mono truncate max-w-[140px]">Tags: #biotech</div>
         </div>
       </div>
+
+      <!-- Logout Button -->
+      <button onclick="handleLogout()" class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 transition-colors shadow-2xs" title="ออกจากระบบ (Logout)">
+        <span class="material-symbols-outlined text-base">logout</span>
+        <span class="hidden sm:inline">Logout</span>
+      </button>
     </div>
   </header>
 
@@ -206,9 +280,9 @@
               <span class="material-symbols-outlined text-xl">group</span>
               <span>User Management</span>
             </a>
-            <a href="#" onclick="navigateView('admin-matrix'); return false;" id="nav-admin-matrix" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
-              <span class="material-symbols-outlined text-xl">security</span>
-              <span>Security & Audit Logs</span>
+            <a href="#" onclick="navigateView('admin-logs'); return false;" id="nav-admin-logs" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors">
+              <span class="material-symbols-outlined text-xl">receipt_long</span>
+              <span>System Audit Logs</span>
             </a>
           </nav>
         </div>
@@ -229,6 +303,133 @@
     <!-- MAIN SCROLLABLE CONTENT VIEW CONTAINER -->
     <main id="mainViewContainer" class="flex-1 bg-slate-50 overflow-y-auto p-6 md:p-8">
       
+      <!-- DEDICATED FULL-PAGE VIDEO WATCH PAGE (YOUTUBE-STYLE) -->
+      <div id="view-watch" class="view-content hidden space-y-6 max-w-7xl mx-auto pb-12">
+        <!-- Back Navigation & Breadcrumbs -->
+        <div class="flex items-center justify-between gap-4">
+          <button type="button" onclick="goBackFromWatchPage()" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-white border border-outline-variant hover:bg-slate-100 text-xs font-bold text-gray-700 transition-colors shadow-2xs">
+            <span class="material-symbols-outlined text-base">arrow_back</span>
+            <span>Back to Portal</span>
+          </button>
+          <div class="flex items-center gap-2 text-xs text-gray-400">
+            <span id="watchBreadcrumbCategory" class="font-semibold text-primary">Research & Whitepaper</span>
+            <span>/</span>
+            <span id="watchBreadcrumbTitle" class="truncate max-w-[240px] text-gray-600">Video Title</span>
+          </div>
+        </div>
+
+        <!-- 2-Column Responsive Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          <!-- LEFT COLUMN (8 Cols): Large Video Player, Metadata, Description & Comments -->
+          <div class="lg:col-span-8 space-y-5">
+            <!-- Video Player (16:9) -->
+            <div class="w-full aspect-video rounded-2xl bg-black overflow-hidden shadow-md relative group border border-slate-800">
+              <video id="watchVideoPlayer" controls class="w-full h-full object-cover" poster="">
+                <source id="watchVideoSource" src="" type="video/mp4">
+                Your browser does not support HTML5 video streaming.
+              </video>
+            </div>
+
+            <!-- Video Title & Author Action Row -->
+            <div class="space-y-3">
+              <h1 id="watchVideoTitle" class="text-xl md:text-2xl font-black text-gray-900 leading-tight">
+                Loading video...
+              </h1>
+
+              <div class="flex flex-wrap items-center justify-between gap-3 pt-1 border-b border-outline-variant pb-4">
+                <!-- Author Info -->
+                <div class="flex items-center gap-3">
+                  <div id="watchAuthorAvatar" class="w-10 h-10 rounded-full bg-primary text-white font-bold flex items-center justify-center text-sm shadow-xs">
+                    FT
+                  </div>
+                  <div>
+                    <div id="watchAuthorName" class="font-bold text-xs text-gray-900 leading-none">Feedtech Knowledge Base</div>
+                    <div id="watchVideoStats" class="text-[11px] text-gray-500 mt-1">1,240 views • Published on 2026-09-02</div>
+                  </div>
+                </div>
+
+                <!-- Action Buttons: Favorite & Share -->
+                <div class="flex items-center gap-2">
+                  <button type="button" id="watchFavBtn" onclick="toggleWatchFavorite()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-outline-variant bg-white hover:bg-slate-50 text-xs font-bold text-gray-700 transition-colors shadow-2xs">
+                    <span class="material-symbols-outlined text-base text-rose-500" id="watchFavIcon">favorite_border</span>
+                    <span id="watchFavText">Favorite</span>
+                  </button>
+                  <button type="button" onclick="shareWatchVideo()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-outline-variant bg-white hover:bg-slate-50 text-xs font-bold text-gray-700 transition-colors shadow-2xs">
+                    <span class="material-symbols-outlined text-base text-gray-600">share</span>
+                    <span>Share</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Description & Categories/Tags Box -->
+            <div class="bg-white rounded-xl border border-outline-variant p-4 md:p-5 shadow-xs space-y-3">
+              <!-- Category badge and tags pills -->
+              <div class="flex flex-wrap items-center gap-2">
+                <span id="watchCategoryBadge" class="px-2.5 py-1 rounded-md text-xs font-bold bg-primary/10 text-primary border border-primary/20">
+                  Category
+                </span>
+                <div id="watchTagsContainer" class="flex flex-wrap gap-1.5">
+                  <!-- Tag pills rendered dynamically -->
+                </div>
+              </div>
+
+              <!-- Detailed whitepaper description -->
+              <p id="watchVideoDesc" class="text-xs text-gray-600 leading-relaxed whitespace-pre-line">
+                Video whitepaper abstract and description details.
+              </p>
+            </div>
+
+            <!-- Discussion & Research Notes Section -->
+            <div class="bg-white rounded-xl border border-outline-variant p-4 md:p-5 shadow-xs space-y-4">
+              <div class="flex items-center justify-between border-b border-outline-variant pb-3">
+                <h3 class="font-bold text-sm text-gray-900 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-base text-primary">chat</span>
+                  <span>Research Discussion & Notes</span>
+                </h3>
+                <span id="watchCommentCount" class="text-xs text-gray-400 font-semibold">0 notes</span>
+              </div>
+
+              <!-- Add Comment Input -->
+              <div class="flex gap-3 items-start">
+                <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0">
+                  ME
+                </div>
+                <div class="flex-1 space-y-2">
+                  <input id="watchCommentInput" type="text" placeholder="Add a research note or discussion comment..." class="w-full px-3.5 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none text-gray-800 font-medium">
+                  <div class="flex justify-end">
+                    <button type="button" onclick="submitWatchComment()" class="px-4 py-1.5 bg-primary text-white font-bold rounded-lg hover:bg-emerald-800 text-xs transition-colors shadow-2xs">
+                      Post Note
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Comments Feed -->
+              <div id="watchCommentsList" class="space-y-3 divide-y divide-outline-variant pt-2">
+                <!-- Populated dynamically via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN (4 Cols): Related Videos Playlist (Up Next) -->
+          <div class="lg:col-span-4 space-y-3">
+            <div class="flex items-center justify-between px-1">
+              <h3 class="font-bold text-sm text-gray-900 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-base text-primary">playlist_play</span>
+                <span>Related Videos</span>
+              </h3>
+              <span class="text-[11px] text-gray-400 font-mono">YouTube Style</span>
+            </div>
+
+            <div id="watchRelatedList" class="space-y-2.5">
+              <!-- Populated dynamically via JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 1. VIEW: HOME DASHBOARD -->
       <div id="view-home" class="view-content space-y-8 max-w-7xl mx-auto">
         <!-- Security Status & Permission Summary Banner -->
@@ -812,52 +1013,105 @@
           </div>
         </div>
 
-        <!-- KPI Cards Grid -->
+        <!-- Deep Analytics KPI Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="bg-white p-5 rounded-xl border border-outline-variant shadow-sm flex flex-col gap-2">
             <div class="flex justify-between items-start">
+              <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Watch Hours</span>
+              <span class="material-symbols-outlined text-primary bg-emerald-50 p-2 rounded-lg text-xl">timer</span>
+            </div>
+            <span class="text-3xl font-black text-gray-900 mt-1" id="adminKpiWatchHours">2,613 hrs</span>
+            <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+              <span class="material-symbols-outlined text-[16px]">trending_up</span>
+              <span>+18.4% engagement surge</span>
+            </span>
+          </div>
+
+          <div class="bg-white p-5 rounded-xl border border-outline-variant shadow-sm flex flex-col gap-2">
+            <div class="flex justify-between items-start">
+              <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Video Views</span>
+              <span class="material-symbols-outlined text-blue-600 bg-blue-50 p-2 rounded-lg text-xl">visibility</span>
+            </div>
+            <span class="text-3xl font-black text-gray-900 mt-1" id="adminKpiViews">13,634</span>
+            <span class="text-xs text-blue-600 font-semibold flex items-center gap-1 mt-0.5">
+              <span class="material-symbols-outlined text-[16px]">play_arrow</span>
+              <span>Across all categories</span>
+            </span>
+          </div>
+
+          <div class="bg-white p-5 rounded-xl border border-outline-variant shadow-sm flex flex-col gap-2">
+            <div class="flex justify-between items-start">
+              <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Avg Completion Rate</span>
+              <span class="material-symbols-outlined text-amber-600 bg-amber-50 p-2 rounded-lg text-xl">monitoring</span>
+            </div>
+            <span class="text-3xl font-black text-gray-900 mt-1" id="adminKpiCompletion">78.4%</span>
+            <span class="text-xs text-amber-600 font-semibold flex items-center gap-1 mt-0.5">
+              <span class="material-symbols-outlined text-[16px]">check_circle</span>
+              <span>High retention index</span>
+            </span>
+          </div>
+
+          <div class="bg-white p-5 rounded-xl border border-outline-variant shadow-sm flex flex-col gap-2">
+            <div class="flex justify-between items-start">
               <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Videos</span>
-              <span class="material-symbols-outlined text-primary bg-emerald-50 p-2 rounded-lg text-xl">video_library</span>
+              <span class="material-symbols-outlined text-purple-600 bg-purple-50 p-2 rounded-lg text-xl">video_library</span>
             </div>
-            <span class="text-3xl font-black text-gray-900 mt-1">1,248</span>
-            <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
-              <span class="material-symbols-outlined text-[16px]">trending_up</span>
-              <span>+12% from last month</span>
+            <span class="text-3xl font-black text-gray-900 mt-1" id="adminKpiVideos">23</span>
+            <span class="text-xs text-purple-600 font-semibold flex items-center gap-1 mt-0.5" id="adminKpiUsers">
+              <span>11 Active Researchers</span>
             </span>
           </div>
+        </div>
 
-          <div class="bg-white p-5 rounded-xl border border-outline-variant shadow-sm flex flex-col gap-2">
-            <div class="flex justify-between items-start">
-              <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Users</span>
-              <span class="material-symbols-outlined text-secondary bg-emerald-50 p-2 rounded-lg text-xl">group</span>
+        <!-- Deep Analytics: Category Distribution & Top Videos Leaderboard -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Category Engagement Breakdown (5 cols) -->
+          <div class="lg:col-span-5 bg-white border border-outline-variant rounded-xl p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-outline-variant pb-3">
+              <div>
+                <h3 class="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-base text-primary">pie_chart</span>
+                  <span>Category Engagement Breakdown</span>
+                </h3>
+                <p class="text-[11px] text-gray-400">Total viewership distributed by academic category</p>
+              </div>
+              <span class="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded">Real-time</span>
             </div>
-            <span class="text-3xl font-black text-gray-900 mt-1">450</span>
-            <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
-              <span class="material-symbols-outlined text-[16px]">trending_up</span>
-              <span>+5 new this week</span>
-            </span>
+
+            <div id="adminCategoryAnalyticsList" class="space-y-3.5 pt-1">
+              <!-- Populated dynamically via loadAdminDashboard() -->
+            </div>
           </div>
 
-          <div class="bg-white p-5 rounded-xl border border-outline-variant shadow-sm flex flex-col gap-2">
-            <div class="flex justify-between items-start">
-              <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Views</span>
-              <span class="material-symbols-outlined text-rose-600 bg-rose-50 p-2 rounded-lg text-xl">visibility</span>
+          <!-- Top Performing Videos Leaderboard (7 cols) -->
+          <div class="lg:col-span-7 bg-white border border-outline-variant rounded-xl p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-outline-variant pb-3">
+              <div>
+                <h3 class="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-base text-primary">leaderboard</span>
+                  <span>Top Performing Videos (Most Watched)</span>
+                </h3>
+                <p class="text-[11px] text-gray-400">Content ranked by total employee views and engagement</p>
+              </div>
+              <button onclick="navigateView('admin-videos')" class="text-xs font-bold text-primary hover:underline">View All Videos</button>
             </div>
-            <span class="text-3xl font-black text-gray-900 mt-1">3.4k</span>
-            <span class="text-xs text-gray-400 font-medium flex items-center gap-1 mt-0.5">
-              <span>Consistent engagement</span>
-            </span>
-          </div>
 
-          <div class="bg-white p-5 rounded-xl border border-outline-variant shadow-sm flex flex-col gap-2">
-            <div class="flex justify-between items-start">
-              <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Active Departments</span>
-              <span class="material-symbols-outlined text-amber-600 bg-amber-50 p-2 rounded-lg text-xl">domain</span>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-outline-variant">
+                    <th class="py-2 px-3">#</th>
+                    <th class="py-2 px-3">Video Title</th>
+                    <th class="py-2 px-3">Category</th>
+                    <th class="py-2 px-3">Views</th>
+                    <th class="py-2 px-3">Duration</th>
+                  </tr>
+                </thead>
+                <tbody id="adminTopVideosList" class="divide-y divide-outline-variant text-xs">
+                  <!-- Populated dynamically via loadAdminDashboard() -->
+                </tbody>
+              </table>
             </div>
-            <span class="text-3xl font-black text-gray-900 mt-1">17</span>
-            <span class="text-xs text-gray-400 font-medium flex items-center gap-1 mt-0.5">
-              <span>Across 3 regions</span>
-            </span>
           </div>
         </div>
 
@@ -1185,50 +1439,40 @@
                 </div>
               </div>
 
-              <!-- Thumbnail Controls -->
-              <div class="sm:col-span-7 space-y-2.5 text-xs">
-                <div>
-                  <label class="block font-semibold text-gray-700 mb-1 text-[11px]">Thumbnail Image URL / ลิงก์รูปหน้าปก</label>
-                  <div class="flex gap-2">
-                    <input id="uploadThumbnailUrl" type="url" oninput="updateUploadThumbnailPreview(this.value)" placeholder="https://images.unsplash.com/... or paste image URL" value="https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=800&q=80" class="flex-1 px-3 py-1.5 border border-outline-variant rounded-lg bg-white outline-none focus:ring-2 focus:ring-primary text-xs font-mono text-gray-700">
-                    <button type="button" onclick="autoGenerateThumbnail()" class="px-3 py-1.5 bg-primary text-white font-bold rounded-lg hover:bg-emerald-800 transition-colors flex items-center gap-1 shrink-0 text-xs shadow-2xs" title="Auto-suggest based on selected department">
-                      <span class="material-symbols-outlined text-sm">auto_awesome</span>
-                      <span>Auto</span>
-                    </button>
+              <!-- Thumbnail Controls (2 Direct Options: Local File + Video Frame Capture) -->
+              <div class="sm:col-span-7 space-y-3 text-xs">
+                
+                <!-- Action Buttons Row -->
+                <div class="space-y-2">
+                  <span class="text-[11px] font-bold text-gray-700 block">เลือกแหล่งที่มาของหน้าปก:</span>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <!-- Option 1: Upload from Device -->
+                    <div>
+                      <input type="file" id="uploadThumbFileInput" accept="image/*" class="hidden" onchange="handleThumbnailFileSelect(this, 'uploadThumbnailUrl', 'uploadThumbnailPreview')">
+                      <button type="button" onclick="document.getElementById('uploadThumbFileInput').click()" class="w-full py-2 px-3 bg-white border border-slate-300 hover:border-primary hover:bg-emerald-50 text-gray-800 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs">
+                        <span class="material-symbols-outlined text-base text-primary">upload_file</span>
+                        <span>เลือกรูปจากเครื่อง</span>
+                      </button>
+                    </div>
+
+                    <!-- Option 2: Capture Frame at Second -->
+                    <div class="flex items-center gap-1.5">
+                      <div class="relative flex-1">
+                        <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-mono">วินาที:</span>
+                        <input id="uploadThumbSecInput" type="number" min="0" step="1" value="5" placeholder="5" class="w-full pl-12 pr-2 py-1.5 text-xs border border-outline-variant rounded-lg bg-white outline-none focus:ring-1 focus:ring-primary font-mono text-gray-800 font-bold">
+                      </div>
+                      <button type="button" onclick="captureThumbnailFromVideoTime('uploadThumbSecInput', 'uploadVideoUrl', 'uploadThumbnailUrl', 'uploadThumbnailPreview')" class="py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold flex items-center gap-1 transition-colors shrink-0 shadow-2xs" title="ดึงภาพเฟรมจากวิดีโอ ณ วินาทีที่ระบุ">
+                        <span class="material-symbols-outlined text-sm">screenshot</span>
+                        <span>ดึงเฟรม</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                <!-- One-click Domain Presets Gallery -->
+                <!-- Custom URL input -->
                 <div>
-                  <div class="flex items-center justify-between mb-1.5">
-                    <span class="text-[11px] font-bold text-gray-600">Quick Domain Presets (เลือกรูปตามสายงาน):</span>
-                  </div>
-                  <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5" id="uploadPresetThumbs">
-                    <button type="button" onclick="setUploadThumbnailPreset('Biotech')" class="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary focus:border-primary transition-all group" title="Biotech & Genetics">
-                      <img src="https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=300&q=80" onerror="this.onerror=null; this.src=generateFallbackThumbnail('Biotech', 'Biotech')" class="w-full h-full object-cover">
-                      <span class="absolute inset-x-0 bottom-0 bg-black/70 text-[9px] text-white text-center font-semibold py-0.5 truncate">Biotech</span>
-                    </button>
-                    <button type="button" onclick="setUploadThumbnailPreset('Swine')" class="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary focus:border-primary transition-all group" title="Swine & Nutrition">
-                      <img src="https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&w=300&q=80" onerror="this.onerror=null; this.src=generateFallbackThumbnail('Swine', 'Swine')" class="w-full h-full object-cover">
-                      <span class="absolute inset-x-0 bottom-0 bg-black/70 text-[9px] text-white text-center font-semibold py-0.5 truncate">Swine</span>
-                    </button>
-                    <button type="button" onclick="setUploadThumbnailPreset('QC-Lab')" class="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary focus:border-primary transition-all group" title="QC-Lab & Assay">
-                      <img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=300&q=80" onerror="this.onerror=null; this.src=generateFallbackThumbnail('QC-Lab', 'QC-Lab')" class="w-full h-full object-cover">
-                      <span class="absolute inset-x-0 bottom-0 bg-black/70 text-[9px] text-white text-center font-semibold py-0.5 truncate">QC-Lab</span>
-                    </button>
-                    <button type="button" onclick="setUploadThumbnailPreset('Operations')" class="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary focus:border-primary transition-all group" title="Operations & SCADA">
-                      <img src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=300&q=80" onerror="this.onerror=null; this.src=generateFallbackThumbnail('Operations', 'Operations')" class="w-full h-full object-cover">
-                      <span class="absolute inset-x-0 bottom-0 bg-black/70 text-[9px] text-white text-center font-semibold py-0.5 truncate">Operations</span>
-                    </button>
-                    <button type="button" onclick="setUploadThumbnailPreset('Poultry')" class="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary focus:border-primary transition-all group" title="Poultry & Layers">
-                      <img src="https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=300&q=80" onerror="this.onerror=null; this.src=generateFallbackThumbnail('Poultry', 'Poultry')" class="w-full h-full object-cover">
-                      <span class="absolute inset-x-0 bottom-0 bg-black/70 text-[9px] text-white text-center font-semibold py-0.5 truncate">Poultry</span>
-                    </button>
-                    <button type="button" onclick="setUploadThumbnailPreset('Executive')" class="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary focus:border-primary transition-all group" title="Townhall & Executive">
-                      <img src="https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=300&q=80" onerror="this.onerror=null; this.src=generateFallbackThumbnail('Executive', 'Executive')" class="w-full h-full object-cover">
-                      <span class="absolute inset-x-0 bottom-0 bg-black/70 text-[9px] text-white text-center font-semibold py-0.5 truncate">Executive</span>
-                    </button>
-                  </div>
+                  <label class="block font-semibold text-gray-600 mb-1 text-[11px]">หรือระบุลิงก์รูปภาพ (Image URL):</label>
+                  <input id="uploadThumbnailUrl" type="url" oninput="updateUploadThumbnailPreview(this.value)" placeholder="https://... หรือจะถูกแปลงจากไฟล์/เฟรมอัตโนมัติ" class="w-full px-3 py-1.5 border border-outline-variant rounded-lg bg-white outline-none focus:ring-2 focus:ring-primary text-xs font-mono text-gray-700">
                 </div>
               </div>
             </div>
@@ -1333,33 +1577,71 @@
         </div>
       </div>
 
-      <!-- 16. VIEW: AUDIT LOGS (ADMIN) -->
-      <div id="view-admin-logs" class="view-content hidden space-y-6 max-w-5xl mx-auto">
+      <!-- 16. VIEW: PURE AUDIT & COMPLIANCE LOGS (ADMIN) -->
+      <div id="view-admin-logs" class="view-content hidden space-y-6 max-w-7xl mx-auto">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 class="text-2xl font-black text-gray-900">Audit & Compliance Logs</h2>
-            <p class="text-xs text-gray-500 mt-1">Immutable activity trail tracking role adjustments, video uploads, status toggles, and permission checks.</p>
+            <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+              <span class="material-symbols-outlined text-2xl text-primary">receipt_long</span>
+              <span>Dedicated System Audit Logs</span>
+            </h2>
+            <p class="text-xs text-gray-500 mt-1">ประวัติกิจกรรมและการกระทำทั้งหมดในระบบ (ทั้ง Admin และ User): บันทึกการเข้าสู่ระบบ, การดูคลิป, อัปโหลด, แก้ไขข้อมูล และการกดปุ่มต่างๆ</p>
           </div>
-          <button onclick="exportAuditLogs()" class="px-3.5 py-2 border border-outline-variant bg-white text-gray-700 text-xs font-semibold rounded-lg hover:bg-slate-50 flex items-center gap-1.5 shadow-sm">
-            <span class="material-symbols-outlined text-sm">download</span>
-            <span>Export Logs (CSV)</span>
+          <div class="flex items-center gap-2">
+            <button onclick="exportAuditLogs()" class="px-3.5 py-2 border border-outline-variant bg-white text-gray-700 text-xs font-semibold rounded-lg hover:bg-slate-50 flex items-center gap-1.5 shadow-sm">
+              <span class="material-symbols-outlined text-sm">download</span>
+              <span>Export CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="bg-white rounded-xl border border-outline-variant p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3 flex-1 min-w-[280px]">
+            <!-- Action Filter -->
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-bold text-gray-500">ประเภทเหตุการณ์:</span>
+              <select id="auditActionFilter" onchange="filterAuditLogs()" class="px-3 py-1.5 text-xs font-semibold border border-outline-variant rounded-lg bg-white outline-none focus:ring-1 focus:ring-primary">
+                <option value="ALL">เหตุการณ์ทั้งหมด (All Actions)</option>
+                <option value="AUTH_LOGIN">🔑 เข้าสู่ระบบ (AUTH_LOGIN)</option>
+                <option value="AUTH_LOGOUT">🚪 ออกจากระบบ (AUTH_LOGOUT)</option>
+                <option value="VIDEO_UPLOAD">🎬 อัปโหลดวิดีโอ (VIDEO_UPLOAD)</option>
+                <option value="VIDEO_UPDATE">✏️ แก้ไขวิดีโอ (VIDEO_UPDATE)</option>
+                <option value="VIDEO_DELETE">🗑️ ลบวิดีโอ (VIDEO_DELETE)</option>
+                <option value="USER_UPDATE">👤 เปลี่ยนสิทธิ์ผู้ใช้ (USER_UPDATE)</option>
+                <option value="USER_STATUS_TOGGLE">🔄 สลับสถานะผู้ใช้ (STATUS_TOGGLE)</option>
+                <option value="TAG_UPDATE">🏷️ ปรับปรุงแท็ก (TAG_UPDATE)</option>
+              </select>
+            </div>
+
+            <!-- Search input -->
+            <div class="relative flex-1 max-w-md">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">search</span>
+              <input id="auditSearchInput" oninput="filterAuditLogs()" type="text" placeholder="ค้นหาตามชื่อผู้กระทำ, เป้าหมาย, หรือปุ่มที่กด..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary outline-none">
+            </div>
+          </div>
+
+          <button onclick="document.getElementById('auditActionFilter').value = 'ALL'; document.getElementById('auditSearchInput').value = ''; filterAuditLogs();" class="text-xs font-bold text-gray-500 hover:text-primary transition-colors">
+            รีเซ็ตตัวกรอง
           </button>
         </div>
 
+        <!-- Pure Audit Logs Table -->
         <div class="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
               <thead>
                 <tr class="bg-slate-50 text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-outline-variant">
-                  <th class="py-3 px-4">Timestamp</th>
-                  <th class="py-3 px-4">Actor</th>
-                  <th class="py-3 px-4">Action</th>
-                  <th class="py-3 px-4">Target</th>
-                  <th class="py-3 px-4">Details</th>
+                  <th class="py-3 px-4">วัน-เวลา (Timestamp)</th>
+                  <th class="py-3 px-4">ผู้กระทำ (Actor)</th>
+                  <th class="py-3 px-4">ประเภทกิจกรรม (Action)</th>
+                  <th class="py-3 px-4">เป้าหมาย (Target)</th>
+                  <th class="py-3 px-4">รายละเอียด (Details)</th>
+                  <th class="py-3 px-4 text-right">ตรวจสอบ</th>
                 </tr>
               </thead>
               <tbody id="auditLogsBody" class="divide-y divide-outline-variant text-xs text-gray-700">
-                <!-- Populated dynamically -->
+                <!-- Populated dynamically via renderAuditLogs() -->
               </tbody>
             </table>
           </div>
@@ -1702,21 +1984,44 @@
 
     <div class="flex-1 overflow-y-auto p-6 space-y-5">
       <input type="hidden" id="editDrawerVideoId">
+      <input type="hidden" id="editDrawerVideoUrl">
       
-      <!-- Video Preview & Thumbnail Box -->
-      <div class="space-y-2">
-        <div class="w-full aspect-video rounded-xl bg-slate-900 overflow-hidden relative group">
+      <!-- Video Preview & Thumbnail Box (2 Direct Sources) -->
+      <div class="space-y-2.5 bg-slate-50 p-3.5 rounded-xl border border-outline-variant">
+        <div class="flex items-center justify-between text-[11px] font-bold text-gray-700">
+          <span>Video Thumbnail Management</span>
+          <span class="text-gray-400 font-mono">16:9</span>
+        </div>
+
+        <div class="w-full aspect-video rounded-xl bg-slate-900 overflow-hidden relative group border border-slate-700">
           <img id="editDrawerThumb" src="" onerror="this.onerror=null; this.src=generateFallbackThumbnail('Video Cover', 'Biotech')" class="w-full h-full object-cover">
           <div class="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] px-2 py-0.5 rounded font-bold" id="editDrawerDuration">12:04</div>
         </div>
-        <div>
-          <label class="block text-[11px] font-bold text-gray-700 mb-1 flex items-center justify-between">
-            <span>Thumbnail Image URL / ลิงก์หน้าปก</span>
-            <button type="button" onclick="autoGenerateDrawerThumbnail()" class="text-[10px] text-primary hover:underline font-bold flex items-center gap-0.5">
-              <span class="material-symbols-outlined text-xs">auto_awesome</span> Suggest Cover
+
+        <!-- 2 Sources: Upload File or Capture Frame -->
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <!-- Option 1: File from Device -->
+          <div>
+            <input type="file" id="editDrawerThumbFileInput" accept="image/*" class="hidden" onchange="handleThumbnailFileSelect(this, 'editDrawerThumbUrl', 'editDrawerThumb')">
+            <button type="button" onclick="document.getElementById('editDrawerThumbFileInput').click()" class="w-full py-1.5 px-2 bg-white border border-slate-300 hover:border-primary hover:bg-emerald-50 rounded-lg text-[11px] font-bold text-gray-700 flex items-center justify-center gap-1 shadow-2xs">
+              <span class="material-symbols-outlined text-sm text-primary">upload_file</span>
+              <span>เลือกจากเครื่อง</span>
             </button>
-          </label>
-          <input id="editDrawerThumbUrl" type="url" oninput="document.getElementById('editDrawerThumb').src = this.value" placeholder="https://..." class="w-full px-3 py-1.5 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-mono text-gray-700">
+          </div>
+
+          <!-- Option 2: Capture Frame -->
+          <div class="flex items-center gap-1">
+            <input id="editDrawerThumbSec" type="number" min="0" step="1" value="5" placeholder="5" class="w-14 px-2 py-1 text-xs border border-outline-variant rounded-lg bg-white outline-none font-mono text-center font-bold text-gray-800">
+            <button type="button" onclick="captureThumbnailFromVideoTime('editDrawerThumbSec', 'editDrawerVideoUrl', 'editDrawerThumbUrl', 'editDrawerThumb')" class="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 shadow-2xs">
+              <span class="material-symbols-outlined text-sm">screenshot</span>
+              <span>ดึงเฟรม</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-600 mb-1">Thumbnail Image URL</label>
+          <input id="editDrawerThumbUrl" type="url" oninput="document.getElementById('editDrawerThumb').src = this.value" placeholder="https://..." class="w-full px-3 py-1.5 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-mono text-gray-700 bg-white">
         </div>
       </div>
 
@@ -1890,6 +2195,68 @@
       <div class="p-4 border-t border-outline-variant bg-slate-50 flex justify-end gap-2 text-xs">
         <button onclick="closeUserModal()" class="px-4 py-2 border border-outline-variant text-gray-600 rounded-lg hover:bg-slate-200">Cancel</button>
         <button onclick="saveUserModalSubmit()" class="px-5 py-2 bg-primary text-white font-bold rounded-lg hover:bg-emerald-800 shadow-sm">Save User</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: USER VIDEO ACCESS INSPECTOR (ดูว่า User คนนี้ดูคลิปไหนได้บ้าง) -->
+  <div id="userAccessModal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full border border-outline-variant shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-150">
+      <div class="px-6 py-4 border-b border-outline-variant bg-slate-50 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-emerald-100 text-primary flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-lg">policy</span>
+          </div>
+          <div>
+            <h3 id="userAccessModalTitle" class="text-sm font-bold text-gray-900">User Video Access Inspector</h3>
+            <p id="userAccessModalSubtitle" class="text-[11px] text-gray-500 font-mono">Checking video authorizations...</p>
+          </div>
+        </div>
+        <button onclick="closeUserAccessModal()" class="text-gray-400 hover:text-gray-700">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- User Policy Summary Card -->
+      <div class="p-4 bg-emerald-50/50 border-b border-emerald-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div>
+          <span class="text-gray-500">สิทธิ์การเข้าถึงวิดีโอ:</span>
+          <b id="userAccessSummaryRate" class="text-emerald-800 ml-1">21 / 23 Videos Allowed</b>
+        </div>
+        <div id="userAccessTagsList" class="flex flex-wrap gap-1">
+          <!-- Tags -->
+        </div>
+      </div>
+
+      <!-- Videos Access List -->
+      <div class="flex-1 overflow-y-auto p-4 divide-y divide-outline-variant text-xs space-y-2.5" id="userAccessVideosList">
+        <!-- Populated dynamically via inspectUserVideoAccess() -->
+      </div>
+
+      <div class="p-4 border-t border-outline-variant bg-slate-50 flex justify-end">
+        <button onclick="closeUserAccessModal()" class="px-5 py-1.5 bg-slate-200 hover:bg-slate-300 text-gray-700 font-bold rounded-lg text-xs transition-colors">
+          Close Inspector
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AUDIT LOG DETAILS INSPECTOR -->
+  <div id="logDetailsModal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full border border-outline-variant shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div class="px-6 py-4 border-b border-outline-variant bg-slate-50 flex items-center justify-between">
+        <h3 id="logDetailsTitle" class="text-sm font-bold text-gray-900 font-mono">Audit Log Details</h3>
+        <button onclick="closeLogDetailsModal()" class="text-gray-400 hover:text-gray-700">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="p-6" id="logDetailsBody">
+        <!-- Log details filled dynamically -->
+      </div>
+      <div class="p-4 border-t border-outline-variant bg-slate-50 flex justify-end">
+        <button onclick="closeLogDetailsModal()" class="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-gray-700 font-bold rounded-lg text-xs transition-colors">
+          Close
+        </button>
       </div>
     </div>
   </div>
