@@ -900,16 +900,11 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 class="text-2xl font-black text-gray-900">Categories Hub</h2>
-            <p class="text-xs text-gray-500 mt-1">Central directory of scientific knowledge categories, symposia, and recorded sessions.</p>
+            <p class="text-xs text-gray-500 mt-1">Central directory of knowledge categories for videos stored in the NAS library.</p>
           </div>
           <!-- Filter Tabs inside Categories Directory -->
           <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-outline-variant text-xs">
             <button onclick="filterCategoriesTab('all')" id="catTab-all" class="cat-tab-btn px-3 py-1.5 rounded-lg font-bold bg-white text-primary shadow-xs">All Categories</button>
-            <button onclick="filterCategoriesTab('academic')" id="catTab-academic" class="cat-tab-btn px-3 py-1.5 rounded-lg font-semibold text-gray-600 hover:text-gray-900">Scientific R&D</button>
-            <button onclick="filterCategoriesTab('meetings')" id="catTab-meetings" class="cat-tab-btn px-3 py-1.5 rounded-lg font-semibold text-gray-600 hover:text-gray-900 flex items-center gap-1">
-              <span class="material-symbols-outlined text-sm">meeting_room</span>
-              <span>Meeting Recordings</span>
-            </button>
             <select id="categoryContentTypeFilter" onchange="filterCategoriesByContentType(this.value)" class="px-3 py-1.5 rounded-lg bg-white border border-outline-variant text-gray-700 font-semibold outline-none">
               <option value="">All Content Types</option>
             </select>

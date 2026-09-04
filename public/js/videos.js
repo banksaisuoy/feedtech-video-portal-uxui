@@ -567,7 +567,13 @@ function renderCategoriesDirectory(filterTab = 'all') {
     return;
   }
 
-  container.innerHTML = cats.map(c => {
+  const visibleCategories = cats.filter(c => !contentType || visibleVideos.some(v => v.category === c.name));
+  if (visibleCategories.length === 0) {
+    container.innerHTML = '<div class="col-span-full py-12 text-center text-xs text-gray-400">No categories contain this Content Type.</div>';
+    return;
+  }
+
+  container.innerHTML = visibleCategories.map(c => {
     const videoCount = visibleVideos.filter(v => v.category === c.name).length;
     return `
     <div class="bg-white rounded-xl border border-outline-variant p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group" onclick="openCategoryDetail('${c.name}')">
