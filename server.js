@@ -581,6 +581,24 @@ try {
 try {
   db.exec(`ALTER TABLE videos ADD COLUMN excluded_user_ids TEXT DEFAULT '[]';`);
 } catch (e) {}
+try {
+  db.exec(`ALTER TABLE videos ADD COLUMN is_featured INTEGER DEFAULT 0;`);
+} catch (e) {}
+try {
+  db.exec(`ALTER TABLE videos ADD COLUMN is_recommended INTEGER DEFAULT 0;`);
+} catch (e) {}
+
+// Seed / update initial featured highlight and recommended videos
+try {
+  const featCount = db.prepare("SELECT COUNT(*) as count FROM videos WHERE is_featured = 1").get().count;
+  if (featCount === 0) {
+    db.prepare("UPDATE videos SET is_featured = 1 WHERE video_id IN ('VID-8921', 'VID-8918', 'VID-8915')").run();
+  }
+  const recCount = db.prepare("SELECT COUNT(*) as count FROM videos WHERE is_recommended = 1").get().count;
+  if (recCount === 0) {
+    db.prepare("UPDATE videos SET is_recommended = 1 WHERE video_id IN ('VID-8921', 'VID-8920', 'VID-8917', 'VID-8913')").run();
+  }
+} catch (e) {}
 
 // Seed / Update user tags for tag-based access control
 try {
@@ -1203,7 +1221,8 @@ app.put('/api/videos/:id', (req, res) => {
     title, description, department, category, permission_level, tags, 
     thumbnail_url,
     is_hidden, allow_downloads, enable_comments,
-    access_mode, allowed_user_ids, excluded_user_ids
+    access_mode, allowed_user_ids, excluded_user_ids,
+    is_featured, is_recommended
   } = req.body;
 
   try {
@@ -1221,7 +1240,9 @@ app.put('/api/videos/:id', (req, res) => {
           enable_comments = COALESCE(?, enable_comments),
           access_mode = COALESCE(?, access_mode),
           allowed_user_ids = COALESCE(?, allowed_user_ids),
-          excluded_user_ids = COALESCE(?, excluded_user_ids)
+          excluded_user_ids = COALESCE(?, excluded_user_ids),
+          is_featured = COALESCE(?, is_featured),
+          is_recommended = COALESCE(?, is_recommended)
       WHERE id = ? OR video_id = ?
     `).run(
       title, description, department, category, permission_level, tags, 
@@ -1230,6 +1251,8 @@ app.put('/api/videos/:id', (req, res) => {
       access_mode,
       allowed_user_ids !== undefined ? (typeof allowed_user_ids === 'string' ? allowed_user_ids : JSON.stringify(allowed_user_ids)) : null,
       excluded_user_ids !== undefined ? (typeof excluded_user_ids === 'string' ? excluded_user_ids : JSON.stringify(excluded_user_ids)) : null,
+      is_featured !== undefined ? (is_featured ? 1 : 0) : null,
+      is_recommended !== undefined ? (is_recommended ? 1 : 0) : null,
       videoId, videoId
     );
 
@@ -1237,9 +1260,49 @@ app.put('/api/videos/:id', (req, res) => {
 
     const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
     db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
-      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'VIDEO_METADATA_UPDATE', updated.video_id, `Updated video [${updated.title}] access mode to ${updated.access_mode || 'public'}`);
+      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'VIDEO_METADATA_UPDATE', updated.video_id, `Updated video [${updated.title}] metadata`);
 
     res.json({ success: true, message: 'Video updated successfully', data: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Quick Toggle Featured Highlight (Pin to Home Page)
+app.patch('/api/videos/:id/toggle-featured', (req, res) => {
+  const videoId = req.params.id;
+  try {
+    const video = db.prepare("SELECT * FROM videos WHERE id = ? OR video_id = ?").get(videoId, videoId);
+    if (!video) return res.status(404).json({ success: false, message: 'Video not found' });
+
+    const nextVal = video.is_featured === 1 ? 0 : 1;
+    db.prepare("UPDATE videos SET is_featured = ? WHERE id = ?").run(nextVal, video.id);
+
+    const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
+    db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
+      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'VIDEO_PIN_TOGGLE', video.video_id, `${nextVal === 1 ? 'Pinned video to Home Highlights' : 'Unpinned video from Home Highlights'}: [${video.title}]`);
+
+    res.json({ success: true, message: nextVal === 1 ? 'Pinned to Featured Highlights' : 'Unpinned from Highlights', is_featured: nextVal, data: { ...video, is_featured: nextVal } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Quick Toggle Recommended Video
+app.patch('/api/videos/:id/toggle-recommended', (req, res) => {
+  const videoId = req.params.id;
+  try {
+    const video = db.prepare("SELECT * FROM videos WHERE id = ? OR video_id = ?").get(videoId, videoId);
+    if (!video) return res.status(404).json({ success: false, message: 'Video not found' });
+
+    const nextVal = video.is_recommended === 1 ? 0 : 1;
+    db.prepare("UPDATE videos SET is_recommended = ? WHERE id = ?").run(nextVal, video.id);
+
+    const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
+    db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
+      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'VIDEO_RECOMMEND_TOGGLE', video.video_id, `${nextVal === 1 ? 'Marked as Recommended video' : 'Unmarked from Recommended'}: [${video.title}]`);
+
+    res.json({ success: true, message: nextVal === 1 ? 'Marked as Recommended' : 'Removed from Recommended', is_recommended: nextVal, data: { ...video, is_recommended: nextVal } });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

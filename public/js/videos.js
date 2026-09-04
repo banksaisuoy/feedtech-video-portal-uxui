@@ -47,13 +47,231 @@ function getPermissionBadgeMarkup(videoOrLevel) {
   }
 }
 
+// Carousel state variables
+state.featuredSlides = [];
+state.featuredCurrentIndex = 0;
+state.featuredTimer = null;
+state.isFeaturedPaused = false;
+
+function renderFeaturedCarousel() {
+  const container = document.getElementById('featuredSlidesContainer');
+  const dotsContainer = document.getElementById('featuredDotsContainer');
+  const prevBtn = document.getElementById('featuredPrevBtn');
+  const nextBtn = document.getElementById('featuredNextBtn');
+  const countBadge = document.getElementById('featuredCountBadge');
+  const carouselEl = document.getElementById('homeFeaturedCarousel');
+  if (!container) return;
+
+  // 1. Filter featured videos from accessible videos
+  let featured = (state.accessibleVideos || []).filter(v => v.is_featured === 1);
+  // Fallback: If no video is marked as featured, pick top 3 videos by views
+  if (featured.length === 0) {
+    featured = [...(state.accessibleVideos || [])].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 3);
+  }
+
+  state.featuredSlides = featured;
+  if (state.featuredSlides.length === 0) {
+    if (carouselEl) carouselEl.classList.add('hidden');
+    return;
+  }
+  if (carouselEl) carouselEl.classList.remove('hidden');
+
+  // Keep index within bounds
+  if (state.featuredCurrentIndex >= featured.length) {
+    state.featuredCurrentIndex = 0;
+  }
+
+  // 2. Render Slides
+  container.innerHTML = featured.map((v, idx) => {
+    const isActive = idx === state.featuredCurrentIndex;
+    return `
+      <div id="featuredSlide-${idx}" class="featured-slide absolute inset-0 transition-opacity duration-700 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'}">
+        <!-- Background Image with Ambient Cover -->
+        <img src="${v.thumbnail_url || 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1200'}" alt="${v.title}" class="w-full h-full object-cover select-none">
+        
+        <!-- Dark Multi-Stop Gradient Overlay -->
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/20"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/50 to-transparent"></div>
+
+        <!-- Slide Overlay Content (Bottom Left) -->
+        <div class="absolute bottom-0 left-0 right-0 p-6 md:p-10 z-10 max-w-3xl space-y-3">
+          <!-- Badges Bar -->
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-1 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-xs flex items-center gap-1 shadow-sm">
+              <span class="material-symbols-outlined text-xs fill">push_pin</span>
+              <span>Pinned Highlight</span>
+            </span>
+            <span class="px-2.5 py-1 rounded-md bg-primary text-white font-bold text-xs uppercase tracking-wider shadow-sm">
+              ${v.category || v.department || 'Portal Video'}
+            </span>
+            <span class="px-2 py-0.5 rounded bg-black/60 text-white font-mono text-xs border border-white/10">
+              ${v.duration || '10:00'}
+            </span>
+            ${getPermissionBadgeMarkup(v)}
+          </div>
+
+          <!-- Video Title -->
+          <h2 class="text-xl sm:text-2xl md:text-3xl font-black text-white line-clamp-2 leading-tight drop-shadow-md cursor-pointer hover:text-emerald-400 transition-colors" onclick="openVideoWatchPage(${v.id})">
+            ${v.title}
+          </h2>
+
+          <!-- Video Description -->
+          <p class="text-xs sm:text-sm text-slate-300 line-clamp-2 max-w-2xl leading-relaxed drop-shadow">
+            ${v.description || 'Enterprise video resource available for authorized personnel in Feedtech Innovation Portal.'}
+          </p>
+
+          <!-- Interactive Actions -->
+          <div class="flex items-center gap-3 pt-2">
+            <button type="button" onclick="openVideoWatchPage(${v.id})" class="px-5 py-2.5 bg-primary hover:bg-emerald-600 text-white rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/40 hover:scale-102 transition-all cursor-pointer">
+              <span class="material-symbols-outlined fill text-lg">play_arrow</span>
+              <span>ดูวิดีโอไฮไลท์ (Watch Now)</span>
+            </button>
+            <button type="button" onclick="openVideoPlayerModal(${v.id})" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold text-xs sm:text-sm flex items-center gap-1.5 backdrop-blur transition-all border border-white/10 cursor-pointer">
+              <span class="material-symbols-outlined text-base">picture_in_picture_alt</span>
+              <span>Quick Preview</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // 3. Render Dots
+  if (dotsContainer) {
+    if (featured.length > 1) {
+      dotsContainer.innerHTML = featured.map((_, idx) => `
+        <button type="button" onclick="goToFeaturedSlide(${idx})" class="transition-all duration-300 rounded-full cursor-pointer ${idx === state.featuredCurrentIndex ? 'w-8 h-2.5 bg-primary shadow-md' : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/80'}" title="Highlight ${idx + 1}"></button>
+      `).join('');
+      dotsContainer.classList.remove('hidden');
+    } else {
+      dotsContainer.innerHTML = '';
+      dotsContainer.classList.add('hidden');
+    }
+  }
+
+  // 4. Update Prev / Next Buttons Visibility
+  if (prevBtn && nextBtn) {
+    if (featured.length > 1) {
+      prevBtn.classList.remove('hidden');
+      nextBtn.classList.remove('hidden');
+    } else {
+      prevBtn.classList.add('hidden');
+      nextBtn.classList.add('hidden');
+    }
+  }
+
+  // 5. Update Badge text
+  if (countBadge) {
+    if (featured.length > 1) {
+      countBadge.textContent = `${state.featuredCurrentIndex + 1} / ${featured.length} Highlights`;
+    } else {
+      countBadge.textContent = 'Pinned Highlight';
+    }
+  }
+
+  // 6. Start Autoplay if more than 1 slide
+  if (featured.length > 1) {
+    startFeaturedAutoplay();
+  } else {
+    stopFeaturedAutoplay();
+  }
+}
+
+function updateFeaturedSlideView() {
+  const slides = document.querySelectorAll('.featured-slide');
+  slides.forEach((el, idx) => {
+    if (idx === state.featuredCurrentIndex) {
+      el.classList.remove('opacity-0', 'pointer-events-none', 'z-0');
+      el.classList.add('opacity-100', 'z-10');
+    } else {
+      el.classList.remove('opacity-100', 'z-10');
+      el.classList.add('opacity-0', 'pointer-events-none', 'z-0');
+    }
+  });
+
+  const dotsContainer = document.getElementById('featuredDotsContainer');
+  if (dotsContainer) {
+    const dots = dotsContainer.querySelectorAll('button');
+    dots.forEach((dot, idx) => {
+      if (idx === state.featuredCurrentIndex) {
+        dot.className = 'w-8 h-2.5 bg-primary shadow-md transition-all duration-300 rounded-full cursor-pointer';
+      } else {
+        dot.className = 'w-2.5 h-2.5 bg-white/40 hover:bg-white/80 transition-all duration-300 rounded-full cursor-pointer';
+      }
+    });
+  }
+
+  const countBadge = document.getElementById('featuredCountBadge');
+  if (countBadge && state.featuredSlides.length > 1) {
+    countBadge.textContent = `${state.featuredCurrentIndex + 1} / ${state.featuredSlides.length} Highlights`;
+  }
+}
+
+function nextFeaturedSlide() {
+  if (!state.featuredSlides || state.featuredSlides.length <= 1) return;
+  state.featuredCurrentIndex = (state.featuredCurrentIndex + 1) % state.featuredSlides.length;
+  updateFeaturedSlideView();
+}
+
+function prevFeaturedSlide() {
+  if (!state.featuredSlides || state.featuredSlides.length <= 1) return;
+  state.featuredCurrentIndex = (state.featuredCurrentIndex - 1 + state.featuredSlides.length) % state.featuredSlides.length;
+  updateFeaturedSlideView();
+}
+
+function goToFeaturedSlide(idx) {
+  if (!state.featuredSlides || idx < 0 || idx >= state.featuredSlides.length) return;
+  state.featuredCurrentIndex = idx;
+  updateFeaturedSlideView();
+}
+
+function startFeaturedAutoplay() {
+  stopFeaturedAutoplay();
+  state.featuredTimer = setInterval(() => {
+    if (!state.isFeaturedPaused) {
+      nextFeaturedSlide();
+    }
+  }, 5000);
+}
+
+function stopFeaturedAutoplay() {
+  if (state.featuredTimer) {
+    clearInterval(state.featuredTimer);
+    state.featuredTimer = null;
+  }
+}
+
+function pauseFeaturedCarousel() {
+  state.isFeaturedPaused = true;
+}
+
+function resumeFeaturedCarousel() {
+  state.isFeaturedPaused = false;
+}
+
+window.renderFeaturedCarousel = renderFeaturedCarousel;
+window.nextFeaturedSlide = nextFeaturedSlide;
+window.prevFeaturedSlide = prevFeaturedSlide;
+window.goToFeaturedSlide = goToFeaturedSlide;
+window.pauseFeaturedCarousel = pauseFeaturedCarousel;
+window.resumeFeaturedCarousel = resumeFeaturedCarousel;
+
 function renderHomeVideos() {
   const allAcc = state.accessibleVideos;
 
-  // 1. Recommended (Top 4 based on views & relevance)
+  // 0. Render Pinned Hero Carousel
+  renderFeaturedCarousel();
+
+  // 1. Recommended (Prioritize is_recommended = 1, then sort by views)
   const recEl = document.getElementById('homeRecommendedGrid');
   if (recEl) {
-    const recVideos = [...allAcc].sort((a, b) => b.views - a.views).slice(0, 4);
+    const recVideos = [...allAcc].sort((a, b) => {
+      if ((b.is_recommended || 0) !== (a.is_recommended || 0)) {
+        return (b.is_recommended || 0) - (a.is_recommended || 0);
+      }
+      return (b.views || 0) - (a.views || 0);
+    }).slice(0, 4);
+
     recEl.innerHTML = recVideos.length > 0 
       ? recVideos.map(v => createVideoCardHtml(v)).join('')
       : `<div class="col-span-full py-8 text-center text-xs text-gray-400">No recommended videos available under current permissions.</div>`;
@@ -102,7 +320,6 @@ function renderHomeVideos() {
 }
 
 function renderBiotechVideos() {
-  // Aliased to renderHomeVideos
   renderHomeVideos();
 }
 
@@ -115,6 +332,14 @@ function renderRecommendedVideos() {
   if (state.recommendedFilter === 'safety') list = list.filter(v => v.tags.includes('safety') || v.tags.includes('protocols'));
   if (state.recommendedFilter === 'automation') list = list.filter(v => v.tags.includes('automation') || v.tags.includes('silo'));
   if (state.recommendedFilter === 'supply') list = list.filter(v => v.department === 'Raw Material');
+
+  // Prioritize recommended
+  list = [...list].sort((a, b) => {
+    if ((b.is_recommended || 0) !== (a.is_recommended || 0)) {
+      return (b.is_recommended || 0) - (a.is_recommended || 0);
+    }
+    return (b.views || 0) - (a.views || 0);
+  });
 
   if (list.length === 0) {
     container.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-gray-400">No recommended items under this filter.</div>`;
@@ -440,6 +665,12 @@ function createVideoCardHtml(v) {
       <div class="relative aspect-video w-full bg-slate-900 overflow-hidden">
         <img src="${v.thumbnail_url || 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
         
+        <!-- Badges on Thumbnail -->
+        <div class="absolute top-2 left-2 flex flex-col gap-1 items-start">
+          ${v.is_featured ? `<span class="px-1.5 py-0.5 rounded bg-amber-500/90 text-slate-900 font-black text-[9px] flex items-center gap-0.5 shadow-sm"><span class="material-symbols-outlined text-[11px] fill">push_pin</span> PINNED</span>` : ''}
+          ${v.is_recommended ? `<span class="px-1.5 py-0.5 rounded bg-emerald-600/90 text-white font-bold text-[9px] flex items-center gap-0.5 shadow-sm"><span class="material-symbols-outlined text-[11px] fill">star</span> REC</span>` : ''}
+        </div>
+
         <!-- Duration Badge -->
         <span class="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
           ${v.duration}

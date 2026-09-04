@@ -283,6 +283,16 @@ function renderVideoManagementTable() {
         <div class="text-[10px] text-gray-400 truncate max-w-[140px]">${v.tags || ''}</div>
       </td>
       <td class="py-3 px-4">${getPermissionBadgeMarkup(v)}</td>
+      <td class="py-3 px-4 text-center whitespace-nowrap">
+        <div class="inline-flex items-center gap-1 bg-slate-100/80 p-1 rounded-lg border border-slate-200">
+          <button type="button" onclick="toggleVideoHighlight(${v.id}, event)" class="p-1 rounded transition-all ${v.is_featured ? 'text-amber-700 bg-amber-200/90 font-bold shadow-xs' : 'text-gray-400 hover:text-amber-600 hover:bg-white'}" title="${v.is_featured ? '📌 วิดีโอไฮไลท์หน้าแรก (คลิกเพื่อยกเลิก)' : 'คลิกเพื่อปักหมุดไฮไลท์หน้าแรก'}">
+            <span class="material-symbols-outlined text-sm ${v.is_featured ? 'fill' : ''}">push_pin</span>
+          </button>
+          <button type="button" onclick="toggleVideoRecommended(${v.id}, event)" class="p-1 rounded transition-all ${v.is_recommended ? 'text-emerald-800 bg-emerald-200/90 font-bold shadow-xs' : 'text-gray-400 hover:text-emerald-700 hover:bg-white'}" title="${v.is_recommended ? '⭐ คลิปแนะนำ (คลิกเพื่อยกเลิก)' : 'คลิกเพื่อตั้งเป็นคลิปแนะนำ'}">
+            <span class="material-symbols-outlined text-sm ${v.is_recommended ? 'fill' : ''}">star</span>
+          </button>
+        </div>
+      </td>
       <td class="py-3 px-4 text-[11px] text-gray-500">${v.views || 0} views</td>
       <td class="py-3 px-4 text-[11px] text-gray-600">${v.uploaded_by || 'Admin'}</td>
       <td class="py-3 px-4 text-right space-x-1">
@@ -300,6 +310,52 @@ function renderVideoManagementTable() {
 function filterVideoTable() {
   renderVideoManagementTable();
 }
+
+async function toggleVideoHighlight(videoId, event) {
+  if (event) event.stopPropagation();
+  try {
+    const res = await fetch(`/api/videos/${videoId}/toggle-featured`, { method: 'PATCH' });
+    const json = await res.json();
+    if (json.success) {
+      const v = state.allVideos.find(x => x.id === videoId);
+      if (v) v.is_featured = json.is_featured;
+      const accV = state.accessibleVideos.find(x => x.id === videoId);
+      if (accV) accV.is_featured = json.is_featured;
+      
+      renderVideoManagementTable();
+      if (typeof renderFeaturedCarousel === 'function') renderFeaturedCarousel();
+      showToast(json.is_featured ? '📌 ปักหมุดเป็นวิดีโอไฮไลท์หน้าแรกแล้ว' : 'ปลดหมุดวิดีโอไฮไลท์แล้ว', 'info');
+    }
+  } catch (err) {
+    console.error('Failed to toggle featured highlight:', err);
+    showToast('Failed to toggle featured highlight', 'error');
+  }
+}
+
+async function toggleVideoRecommended(videoId, event) {
+  if (event) event.stopPropagation();
+  try {
+    const res = await fetch(`/api/videos/${videoId}/toggle-recommended`, { method: 'PATCH' });
+    const json = await res.json();
+    if (json.success) {
+      const v = state.allVideos.find(x => x.id === videoId);
+      if (v) v.is_recommended = json.is_recommended;
+      const accV = state.accessibleVideos.find(x => x.id === videoId);
+      if (accV) accV.is_recommended = json.is_recommended;
+      
+      renderVideoManagementTable();
+      if (typeof renderHomeVideos === 'function') renderHomeVideos();
+      if (typeof renderRecommendedVideos === 'function') renderRecommendedVideos();
+      showToast(json.is_recommended ? '⭐ ตั้งเป็นคลิปแนะนำสำหรับคุณแล้ว' : 'ปลดคลิปแนะนำแล้ว', 'info');
+    }
+  } catch (err) {
+    console.error('Failed to toggle recommended:', err);
+    showToast('Failed to toggle recommended', 'error');
+  }
+}
+
+window.toggleVideoHighlight = toggleVideoHighlight;
+window.toggleVideoRecommended = toggleVideoRecommended;
 
 // PBAC Person Picker Selection State
 state.selectedUploadPersons = new Set();
@@ -493,6 +549,12 @@ function openEditDrawer(videoId) {
   }
   document.getElementById('editDrawerTags').value = v.tags || '';
   document.getElementById('editDrawerIsHidden').checked = (v.is_hidden === 1);
+  if (document.getElementById('editDrawerIsFeatured')) {
+    document.getElementById('editDrawerIsFeatured').checked = (v.is_featured === 1);
+  }
+  if (document.getElementById('editDrawerIsRecommended')) {
+    document.getElementById('editDrawerIsRecommended').checked = (v.is_recommended === 1);
+  }
   renderTagPicker('editDrawerTagsContainer', 'editDrawerTags', false);
 
   // Set Access Mode and populate Person Picker in Drawer
@@ -541,6 +603,8 @@ async function saveEditDrawerChanges() {
   const category = document.getElementById('editDrawerCategory')?.value || department;
   const tags = document.getElementById('editDrawerTags').value.trim();
   const is_hidden = document.getElementById('editDrawerIsHidden').checked ? 1 : 0;
+  const is_featured = document.getElementById('editDrawerIsFeatured')?.checked ? 1 : 0;
+  const is_recommended = document.getElementById('editDrawerIsRecommended')?.checked ? 1 : 0;
   const thumbnail_url = document.getElementById('editDrawerThumbUrl')?.value.trim() || undefined;
 
   let access_mode = 'public';
@@ -568,6 +632,8 @@ async function saveEditDrawerChanges() {
         tags, 
         thumbnail_url,
         is_hidden,
+        is_featured,
+        is_recommended,
         access_mode,
         allowed_user_ids,
         excluded_user_ids
@@ -578,7 +644,9 @@ async function saveEditDrawerChanges() {
       closeEditDrawer();
       await loadAllVideos();
       await loadAccessibleVideos();
-      showToast(`Video access permissions saved (${access_mode.toUpperCase()})`, 'success');
+      if (typeof renderFeaturedCarousel === 'function') renderFeaturedCarousel();
+      if (typeof renderHomeVideos === 'function') renderHomeVideos();
+      showToast(`Video updated successfully (Highlight: ${is_featured ? 'ON' : 'OFF'}, Rec: ${is_recommended ? 'ON' : 'OFF'})`, 'success');
     }
   } catch (err) {
     showToast('Failed to save changes', 'error');
