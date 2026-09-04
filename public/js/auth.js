@@ -178,12 +178,11 @@ function renderCurrentUserUI() {
   const modalEmailDept = document.getElementById('modalProfileEmailDept');
   const modalClearance = document.getElementById('modalProfileClearanceBadge');
   const modalAdminBadge = document.getElementById('modalProfileAdminBadge');
-  const modalTagsList = document.getElementById('modalProfileTagsList');
   const profileEmpId = document.getElementById('profileEmpId');
   const profileDept = document.getElementById('profileDept');
   const profileVidCount = document.getElementById('profileVidCount');
   const profileAdminStatus = document.getElementById('profileAdminStatus');
-  const profileTagsDetail = document.getElementById('profileAllowedTagsDetail');
+  const rawTags = (u.allowed_tags || '').split(',').map(tag => tag.trim()).filter(Boolean);
 
   const initials = u.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   if (modalAvatar) {
@@ -191,16 +190,16 @@ function renderCurrentUserUI() {
     modalAvatar.style.backgroundColor = u.avatar_color || '#10b981';
   }
   if (modalName) modalName.textContent = u.name;
-  if (modalEmailDept) modalEmailDept.textContent = `${u.email} • ${u.department} Department`;
+  if (modalEmailDept) {
+    const execTag = (u.is_executive_board === 1 || u.department === 'Executive Board') ? ' • ⭐ Executive Board' : '';
+    modalEmailDept.textContent = `${u.email} • ${u.department}${execTag}`;
+  }
   if (modalClearance) {
-    modalClearance.textContent = u.permission_level;
-    if (u.permission_level === 'Highly Confidential') {
-      modalClearance.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/80 text-white border border-white/20';
-    } else if (u.permission_level === 'Restricted') {
-      modalClearance.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/80 text-white border border-white/20';
-    } else {
-      modalClearance.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/80 text-white border border-white/20';
-    }
+    const isBoard = (u.is_executive_board === 1 || u.department === 'Executive Board');
+    modalClearance.textContent = isBoard ? '⭐ Executive Board' : (u.permission_level || 'Authorized Active');
+    modalClearance.className = isBoard
+      ? 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-amber-950 border border-amber-300'
+      : 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/80 text-white border border-white/20';
   }
   if (modalAdminBadge) {
     if (isAdmin) {
@@ -212,26 +211,12 @@ function renderCurrentUserUI() {
     }
   }
   if (profileEmpId) profileEmpId.textContent = u.emp_id || 'EMP-1001';
-  if (profileDept) profileDept.textContent = u.department;
+  if (profileDept) {
+    const isBoard = (u.is_executive_board === 1 || u.department === 'Executive Board');
+    profileDept.innerHTML = `${u.department || 'General'} ${isBoard ? '<span class="text-[10px] text-amber-600 block">⭐ Executive Board</span>' : ''}`;
+  }
   if (profileVidCount) profileVidCount.textContent = `${state.accessibleVideos ? state.accessibleVideos.length : 0} / ${state.allVideos ? state.allVideos.length : 10}`;
   if (profileAdminStatus) profileAdminStatus.textContent = isAdmin ? 'Administrator (Full)' : 'View-Only (Non-Admin)';
-
-  const rawTags = (u.allowed_tags || '#general').split(',').map(t => t.trim()).filter(Boolean);
-  if (modalTagsList) {
-    modalTagsList.innerHTML = rawTags.map(t => `
-      <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ${t === '*' ? 'bg-purple-300 text-purple-900 font-bold' : (t.includes('confidential') ? 'bg-rose-300 text-rose-950' : 'bg-white/20 text-white')}">
-        ${t}
-      </span>
-    `).join('');
-  }
-  if (profileTagsDetail) {
-    profileTagsDetail.innerHTML = rawTags.map(t => `
-      <button onclick="closeProfileModal(); handleTagSearch('${t}');" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold ${t === '*' ? 'bg-purple-100 text-purple-800 border border-purple-200 hover:bg-purple-200' : (t.includes('confidential') ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100' : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200')} transition-colors" title="Click to filter videos by this tag">
-        <span>${t}</span>
-        <span class="material-symbols-outlined text-xs opacity-60">search</span>
-      </button>
-    `).join('');
-  }
 
   // Render Allowed Tags Chips in Banner
   const bannerTagsContainer = document.getElementById('bannerUserTagsContainer');

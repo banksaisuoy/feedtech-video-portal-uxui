@@ -216,33 +216,33 @@ if (countEvents.count === 0) {
   );
 }
 
-// Seed Initial Departments if empty
-const countDepts = db.prepare("SELECT COUNT(*) as count FROM departments").get();
-if (countDepts.count === 0) {
-  const depts = [
-    { name: 'Biotech', code: 'BIO', icon: 'science', description: 'Biotechnology & Genetic Research' },
-    { name: 'Swine', code: 'SWN', icon: 'pets', description: 'Swine Nutrition & Genetics' },
-    { name: 'Aquatic', code: 'AQU', icon: 'water', description: 'Aquaculture & Shrimp Feed Formulation' },
-    { name: 'Poultry', code: 'PLT', icon: 'egg', description: 'Broiler & Layer Feed Innovation' },
-    { name: 'QC-Lab', code: 'QCL', icon: 'biotech', description: 'Quality Control & Chemical Assay' },
-    { name: 'Dairy', code: 'DRY', icon: 'local_cafe', description: 'Dairy Cattle Feed & Milk Yield' },
-    { name: 'Dairy Process', code: 'DPR', icon: 'factory', description: 'Dairy Processing & Preservation' },
-    { name: 'Extension Research', code: 'EXR', icon: 'travel_explore', description: 'Field Trial & Farm Extensions' },
-    { name: 'Nutrition', code: 'NUT', icon: 'restaurant', description: 'Advanced Feed Nutrient Synthesis' },
-    { name: 'Oversea', code: 'OVR', icon: 'public', description: 'Global Business & Oversea Mills' },
-    { name: 'Premix', code: 'PMX', icon: 'grain', description: 'Micro-ingredient & Vitamin Premix' },
-    { name: 'Raw Material', code: 'RMT', icon: 'inventory_2', description: 'Grain, Soy & Protein Procurement' },
-    { name: 'Ruminant', code: 'RUM', icon: 'grass', description: 'Beef & Ruminant Feed Management' },
-    { name: 'Ruminant Pathongchai', code: 'RPT', icon: 'location_on', description: 'Pathongchai Ruminant Complex' },
-    { name: 'Supplier', code: 'SUP', icon: 'handshake', description: 'Vendor Standards & Raw Material Audit' },
-    { name: 'Conference', code: 'CNF', icon: 'groups', description: 'Internal Technical Seminars & Keynotes' },
-    { name: 'China', code: 'CHN', icon: 'language', description: 'China Regional Operations & Agri-Tech' }
-  ];
+// Migration: Ensure users table has is_executive_board column
+try {
+  db.prepare("ALTER TABLE users ADD COLUMN is_executive_board INTEGER DEFAULT 0").run();
+} catch (e) {}
 
-  const insertDept = db.prepare("INSERT INTO departments (name, code, icon, description) VALUES (?, ?, ?, ?)");
-  for (const d of depts) {
+// Populate / Refresh Corporate Departments (Independent organizational units for users)
+const corporateDepartments = [
+  { name: 'Executive Board', code: 'EXEC', icon: 'business_center', description: 'Corporate leadership, C-Suite executives, and Board of Directors.' },
+  { name: 'Research & Development (R&D)', code: 'RND', icon: 'science', description: 'Biotechnology research, molecular assays, and feed formulation innovation.' },
+  { name: 'Feed Mill Operations', code: 'OPS', icon: 'precision_manufacturing', description: 'Feed milling operations, SCADA automation, and factory engineering.' },
+  { name: 'Quality Assurance & QC-Lab', code: 'QAC', icon: 'verified', description: 'Chemical spectrometry, feed quality testing, and safety protocols.' },
+  { name: 'Veterinary & Animal Health', code: 'VAH', icon: 'medical_services', description: 'Swine, poultry, and aquatic disease control and veterinary advisory.' },
+  { name: 'Animal Nutrition Science', code: 'ANS', icon: 'psychiatry', description: 'Precision feed formulation, nutrient synthesis, and digestibility trials.' },
+  { name: 'Supply Chain & Procurement', code: 'SCP', icon: 'inventory', description: 'Raw material procurement, grain commodities, and vendor quality audits.' },
+  { name: 'Information Technology & Digital', code: 'ITD', icon: 'terminal', description: 'Enterprise video cloud, farm IoT automation, and software engineering.' }
+];
+
+try {
+  // Purge old duplicate category names from departments table
+  db.prepare("DELETE FROM departments WHERE name IN ('Biotech', 'Swine', 'Aquatic', 'Poultry', 'QC-Lab', 'Dairy', 'Dairy Process', 'Extension Research', 'Nutrition', 'Oversea', 'Premix', 'Raw Material', 'Ruminant', 'Ruminant Pathongchai', 'Supplier', 'Conference', 'China')").run();
+  
+  const insertDept = db.prepare("INSERT OR IGNORE INTO departments (name, code, icon, description) VALUES (?, ?, ?, ?)");
+  for (const d of corporateDepartments) {
     insertDept.run(d.name, d.code, d.icon, d.description);
   }
+} catch (e) {
+  console.error('Error seeding corporate departments:', e.message);
 }
 
 // Seed Content Types if empty
@@ -264,30 +264,60 @@ if (countCT.count === 0) {
   }
 }
 
-// Clean categories table: Remove content types from categories so categories only contains Knowledge Domains
+// Ensure official Knowledge Categories (18 Categories)
+const officialCategories = [
+  ['Biotech', 'science', 'Biotechnology, cellular growth assays, genetic research, and formulation science.'],
+  ['Swine', 'pets', 'Swine health, nursery piglet immunology, PRRS management, and herd biosecurity.'],
+  ['Poultry', 'egg', 'Broiler feed conversion, layer flock nutrition, and modern poultry automation.'],
+  ['Aquatic', 'water', 'Shrimp and aquaculture feeding technologies, pond water chemistry, and probiotic treatments.'],
+  ['Dairy Process', 'factory', 'Dairy cattle feed optimization, milk yield preservation, and automated milking logistics.'],
+  ['Operations', 'precision_manufacturing', 'Feed mill automation, SCADA controls, and plant engineering.'],
+  ['Ruminant', 'grass', 'Beef cattle and sheep forage management, silage fermentation, and rumen metabolism.'],
+  ['Feed Formulation', 'menu_book', 'Precision least-cost formulation models, amino acid balancing, and premix blending.'],
+  ['QC-Lab', 'biotech', 'Spectrometry chemical assays, NIR calibration curves, and mycotoxin detection.'],
+  ['Automation', 'smart_toy', 'Smart factory automation, sensor telemetry, and automated packaging lines.'],
+  ['Commodity', 'grain', 'Global grain market intelligence, corn/soybean meal pricing, and commodity risk hedging.'],
+  ['Food Safety', 'health_and_safety', 'HACCP compliance, feed-to-food biosecurity, and pathogen containment audits.'],
+  ['Precision Nutrition', 'query_stats', 'Dynamic microbiome modulation, enzyme supplementation, and digestive kinetics.'],
+  ['Animal Welfare', 'favorite', 'Ethical livestock care protocols, stress reduction feeding, and welfare certification.'],
+  ['Farm IoT', 'sensors', 'Environmental sensors, climate control algorithms, and smart feeding telemetry.'],
+  ['Supply Chain', 'local_shipping', 'Raw material bulk freight logistics, silo inventory management, and distribution.'],
+  ['Pet Food', 'cruelty_free', 'Companion animal nutrition, high-palatability kibble extrusion, and dental treats.'],
+  ['Sustainable Feed', 'eco', 'Insect meal protein alternatives, circular economy ingredients, and carbon footprint reduction.']
+];
+
 try {
   db.prepare(`
     DELETE FROM categories WHERE name IN (
-      'Research & Whitepaper',
-      'Field Trials & Reports',
-      'Training & Safety Protocols',
-      'Townhall & Executive Updates',
-      'Lab Demos & Assay Procedures',
-      'Production & Mill Operations',
-      'Corporate Events & Symposia',
-      'Meeting Recordings'
+      'Research & Whitepaper', 'Field Trials & Reports', 'Training & Safety Protocols',
+      'Townhall & Executive Updates', 'Lab Demos & Assay Procedures', 'Production & Mill Operations',
+      'Corporate Events & Symposia', 'Meeting Recordings'
     )
   `).run();
 
-  // Sync Knowledge Categories from departments and key domains
-  const deptsForCats = db.prepare("SELECT name, icon, description FROM departments").all();
-  const insertCatSync = db.prepare("INSERT OR IGNORE INTO categories (name, icon, description) VALUES (?, ?, ?)");
-  for (const d of deptsForCats) {
-    insertCatSync.run(d.name, d.icon, d.description || `Knowledge domain for ${d.name}`);
+  const insertCat = db.prepare("INSERT OR IGNORE INTO categories (name, icon, description) VALUES (?, ?, ?)");
+  for (const [name, icon, desc] of officialCategories) {
+    insertCat.run(name, icon, desc);
   }
-  insertCatSync.run('Operations', 'precision_manufacturing', 'Feed mill automation, SCADA controls, and plant engineering.');
 } catch (e) {
   console.error('Error syncing categories:', e.message);
+}
+
+// Update existing users to have authentic Departments and is_executive_board
+try {
+  db.prepare("UPDATE users SET department = 'Executive Board', is_executive_board = 1, is_admin = 1 WHERE name LIKE '%Kittisak%' OR email LIKE '%admin%'").run();
+  db.prepare("UPDATE users SET department = 'Executive Board', is_executive_board = 1 WHERE name LIKE '%Nuntana%'").run();
+  db.prepare("UPDATE users SET department = 'Research & Development (R&D)', is_executive_board = 1 WHERE name LIKE '%Thanawat%'").run();
+  db.prepare("UPDATE users SET department = 'Research & Development (R&D)', is_executive_board = 0 WHERE name LIKE '%Alice%'").run();
+  db.prepare("UPDATE users SET department = 'Feed Mill Operations', is_executive_board = 0 WHERE name LIKE '%John Doe%'").run();
+  db.prepare("UPDATE users SET department = 'Quality Assurance & QC-Lab', is_executive_board = 0 WHERE name LIKE '%Maria Wong%'").run();
+  db.prepare("UPDATE users SET department = 'Animal Nutrition Science', is_executive_board = 0 WHERE name LIKE '%Somchai%'").run();
+  db.prepare("UPDATE users SET department = 'Veterinary & Animal Health', is_executive_board = 0 WHERE name LIKE '%Ananya%'").run();
+  db.prepare("UPDATE users SET department = 'Supply Chain & Procurement', is_executive_board = 0 WHERE name LIKE '%David Miller%'").run();
+  db.prepare("UPDATE users SET department = 'Information Technology & Digital', is_executive_board = 0 WHERE name LIKE '%James Wilson%'").run();
+  db.prepare("UPDATE users SET department = 'Quality Assurance & QC-Lab', is_executive_board = 0 WHERE name LIKE '%Lisa Chen%'").run();
+} catch (e) {
+  console.error('Error migrating user departments:', e.message);
 }
 
 // Seed Users if empty
@@ -837,7 +867,7 @@ app.post('/api/current-user/switch', (req, res) => {
 
 // Create new user
 app.post('/api/users', (req, res) => {
-  const { emp_id, name, email, department, role, permission_level, is_admin, status, allowed_tags } = req.body;
+  const { emp_id, name, email, department, role, permission_level, is_admin, status, allowed_tags, is_executive_board } = req.body;
   if (!name || !email || !department) {
     return res.status(400).json({ success: false, message: 'Missing required fields' });
   }
@@ -848,24 +878,25 @@ app.post('/api/users', (req, res) => {
     const avatar_color = colors[Math.floor(Math.random() * colors.length)];
 
     const result = db.prepare(`
-      INSERT INTO users (emp_id, name, email, department, role, permission_level, is_admin, status, avatar_color, allowed_tags)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (emp_id, name, email, department, role, permission_level, is_admin, status, avatar_color, allowed_tags, is_executive_board)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       autoEmpId,
       name,
       email,
       department,
-      role || 'Employee',
+      role || 'Authorized Staff',
       permission_level || 'Standard',
       is_admin ? 1 : 0,
       status || 'Active',
       avatar_color,
-      allowed_tags || '#general, #standard'
+      allowed_tags || '#general',
+      is_executive_board ? 1 : 0
     );
 
     const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
     db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
-      .run(currentUser ? currentUser.name : 'System Admin', currentUser ? currentUser.role : 'Admin', 'USER_CREATE', name, `Created user ${autoEmpId} with allowed tags: [${allowed_tags || '#general'}]`);
+      .run(currentUser ? currentUser.name : 'System Admin', currentUser ? currentUser.role : 'Admin', 'USER_CREATE', name, `Created user ${autoEmpId} in department ${department} (Exec Board: ${is_executive_board ? 'Yes' : 'No'})`);
 
     const newUser = db.prepare("SELECT * FROM users WHERE id = ?").get(result.lastInsertRowid);
     res.json({ success: true, message: 'User created successfully', data: newUser });
@@ -877,7 +908,7 @@ app.post('/api/users', (req, res) => {
 // Update user
 app.put('/api/users/:id', (req, res) => {
   const userId = req.params.id;
-  const { name, email, department, role, permission_level, is_admin, status, allowed_tags } = req.body;
+  const { name, email, department, role, permission_level, is_admin, status, allowed_tags, is_executive_board } = req.body;
 
   try {
     db.prepare(`
@@ -889,15 +920,27 @@ app.put('/api/users/:id', (req, res) => {
           permission_level = COALESCE(?, permission_level),
           is_admin = COALESCE(?, is_admin),
           status = COALESCE(?, status),
-          allowed_tags = COALESCE(?, allowed_tags)
+          allowed_tags = COALESCE(?, allowed_tags),
+          is_executive_board = COALESCE(?, is_executive_board)
       WHERE id = ?
-    `).run(name, email, department, role, permission_level, is_admin !== undefined ? (is_admin ? 1 : 0) : null, status, allowed_tags, userId);
+    `).run(
+      name, 
+      email, 
+      department, 
+      role, 
+      permission_level, 
+      is_admin !== undefined ? (is_admin ? 1 : 0) : null, 
+      status, 
+      allowed_tags, 
+      is_executive_board !== undefined ? (is_executive_board ? 1 : 0) : null,
+      userId
+    );
 
     const updatedUser = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
 
     const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
     db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
-      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'USER_UPDATE', updatedUser.name, `Updated allowed tags to [${updatedUser.allowed_tags}]`);
+      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'USER_UPDATE', updatedUser.name, `Updated user profile for ${updatedUser.name} (Dept: ${updatedUser.department}, Exec Board: ${updatedUser.is_executive_board ? 'Yes' : 'No'})`);
 
     res.json({ success: true, message: 'User updated successfully', data: updatedUser });
   } catch (err) {
@@ -921,30 +964,58 @@ app.patch('/api/users/:id/toggle-status', (req, res) => {
   res.json({ success: true, message: `User status changed to ${nextStatus}`, data: { ...user, status: nextStatus } });
 });
 
-// Get departments
+// Get corporate departments (with user counts)
 app.get('/api/departments', (req, res) => {
-  const depts = db.prepare("SELECT * FROM departments ORDER BY name ASC").all();
-  // Get video count per department
-  const counts = db.prepare("SELECT department, COUNT(*) as count FROM videos GROUP BY department").all();
-  const countMap = {};
-  counts.forEach(c => { countMap[c.department] = c.count; });
+  try {
+    const depts = db.prepare("SELECT * FROM departments ORDER BY id ASC").all();
+    const counts = db.prepare("SELECT department, COUNT(*) as count FROM users GROUP BY department").all();
+    const countMap = {};
+    counts.forEach(c => { if (c.department) countMap[c.department] = c.count; });
 
-  const data = depts.map(d => ({
-    ...d,
-    video_count: countMap[d.name] || 0
-  }));
+    const data = depts.map(d => ({
+      ...d,
+      user_count: countMap[d.name] || 0
+    }));
 
-  res.json({ success: true, data });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
-// Create department
+// Create corporate department
 app.post('/api/departments', (req, res) => {
   const { name, code, icon, description } = req.body;
-  if (!name || !code) return res.status(400).json({ success: false, message: 'Name and Code required' });
+  if (!name) return res.status(400).json({ success: false, message: 'Department name is required' });
   try {
-    const result = db.prepare("INSERT INTO departments (name, code, icon, description) VALUES (?, ?, ?, ?)").run(name, code, icon || 'folder', description || '');
+    const deptCode = code || name.slice(0, 4).toUpperCase();
+    const result = db.prepare("INSERT INTO departments (name, code, icon, description) VALUES (?, ?, ?, ?)").run(name.trim(), deptCode, icon || 'business_center', description || '');
     const newDept = db.prepare("SELECT * FROM departments WHERE id = ?").get(result.lastInsertRowid);
-    res.json({ success: true, message: 'Department created', data: newDept });
+    db.prepare(`
+      INSERT INTO audit_logs (actor_name, actor_role, action, target, details)
+      VALUES (?, ?, ?, ?, ?)
+    `).run('Admin', 'System Administrator', 'DEPARTMENT_CREATE', name.trim(), `Created corporate department '${name.trim()}'`);
+    res.json({ success: true, message: 'Department created successfully', data: newDept });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Delete corporate department
+app.delete('/api/departments/:id', (req, res) => {
+  try {
+    const old = db.prepare("SELECT * FROM departments WHERE id = ?").get(req.params.id);
+    if (!old) return res.status(404).json({ success: false, message: 'Department not found' });
+    const userCount = db.prepare("SELECT COUNT(*) as c FROM users WHERE department = ?").get(old.name).c;
+    if (userCount > 0) {
+      return res.status(400).json({ success: false, message: `Cannot delete department '${old.name}' because ${userCount} user(s) currently belong to it.` });
+    }
+    db.prepare("DELETE FROM departments WHERE id = ?").run(req.params.id);
+    db.prepare(`
+      INSERT INTO audit_logs (actor_name, actor_role, action, target, details)
+      VALUES (?, ?, ?, ?, ?)
+    `).run('Admin', 'System Administrator', 'DEPARTMENT_DELETE', old.name, `Deleted corporate department '${old.name}'`);
+    res.json({ success: true, message: 'Department deleted successfully' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

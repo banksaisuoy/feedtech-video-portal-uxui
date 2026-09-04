@@ -47,7 +47,10 @@ function renderUserTable() {
             </div>
           </div>
         </td>
-        <td class="py-3.5 px-5 font-semibold text-gray-700">${u.department}</td>
+        <td class="py-3.5 px-5">
+          <div class="font-semibold text-gray-800">${u.department || 'General'}</div>
+          ${(u.is_executive_board === 1 || u.department === 'Executive Board') ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300 mt-0.5"><span class="material-symbols-outlined text-[10px]">star</span> Executive Board</span>` : ''}
+        </td>
         <td class="py-3.5 px-5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.is_admin ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}">${u.is_admin ? '🛡️ Administrator' : '👤 Regular Staff'}</span></td>
         <td class="py-3.5 px-5">
           <span class="inline-flex items-center gap-1.5 font-semibold text-[11px] ${isInactive ? 'text-rose-600' : 'text-emerald-700'}">
@@ -60,7 +63,7 @@ function renderUserTable() {
             <span class="material-symbols-outlined text-xs">visibility</span>
             <span>Video Access</span>
           </button>
-          <button onclick="editUserPrompt(${u.id})" class="p-1 text-gray-400 hover:text-primary rounded hover:bg-slate-100 align-middle" title="Edit User & Tags">
+          <button onclick="editUserPrompt(${u.id})" class="p-1 text-gray-400 hover:text-primary rounded hover:bg-slate-100 align-middle" title="Edit User & Roles">
             <span class="material-symbols-outlined text-base">edit</span>
           </button>
           <button onclick="toggleUserStatus(${u.id})" class="p-1 text-gray-400 hover:text-amber-600 rounded hover:bg-slate-100 align-middle" title="${isInactive ? 'Activate' : 'Deactivate'}">
@@ -82,8 +85,8 @@ function evaluateVideoAccessForUser(user, video) {
   if (!user || user.status !== 'Active') return { allowed: false, reason: 'User inactive or not found' };
   
   // Rule 1: Super Admin / Executive administrator has full visibility
-  if (user.is_admin === 1 || user.role === 'System Administrator' || user.department === 'Executive') {
-    return { allowed: true, reason: '👑 ผู้ดูแลระบบ (Full Administrator Access)' };
+  if (user.is_admin === 1 || user.role === 'System Administrator' || user.is_executive_board === 1 || user.department === 'Executive Board') {
+    return { allowed: true, reason: '👑 ผู้ดูแลระบบ / กรรมการบริหาร (Full Executive & Admin Access)' };
   }
 
   // Rule 2: If video is hidden by admin
@@ -369,15 +372,24 @@ function renderUploadPersonList(filter = '') {
   const container = document.getElementById('uploadPersonListContainer');
   if (!container) return;
 
-  const q = filter.toLowerCase();
-  let users = state.users;
+  const q = (filter || document.getElementById('uploadPersonSearchInput')?.value || '').toLowerCase();
+  const deptFilter = document.getElementById('uploadDeptFilter')?.value || '';
+  let users = state.users || [];
+  if (deptFilter) {
+    users = users.filter(u => u.department === deptFilter);
+  }
   if (q) {
-    users = users.filter(u => u.name.toLowerCase().includes(q) || u.department.toLowerCase().includes(q) || u.role.toLowerCase().includes(q));
+    users = users.filter(u => u.name.toLowerCase().includes(q) || (u.department && u.department.toLowerCase().includes(q)) || (u.role && u.role.toLowerCase().includes(q)) || (u.emp_id && u.emp_id.toLowerCase().includes(q)));
+  }
+
+  if (users.length === 0) {
+    container.innerHTML = `<div class="py-6 text-center text-xs text-gray-400">No personnel match current filters.</div>`;
+    return;
   }
 
   container.innerHTML = users.map(u => {
     const isChecked = state.selectedUploadPersons.has(u.id);
-    const isExec = u.department === 'Executive' || u.role.includes('Director') || u.role.includes('Lead');
+    const isBoard = u.is_executive_board === 1 || u.department === 'Executive Board';
     return `
       <label class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 cursor-pointer text-xs">
         <div class="flex items-center gap-2.5">
@@ -388,9 +400,10 @@ function renderUploadPersonList(filter = '') {
           <div>
             <div class="font-bold text-gray-900 flex items-center gap-1.5">
               <span>${u.name}</span>
-              ${isExec ? '<span class="px-1.5 py-0.2 bg-purple-100 text-purple-700 font-extrabold rounded text-[9px]">EXEC</span>' : ''}
+              ${isBoard ? '<span class="px-1.5 py-0.2 bg-amber-100 text-amber-800 border border-amber-200 font-extrabold rounded text-[9px]">⭐ BOARD</span>' : ''}
+              ${u.is_admin ? '<span class="px-1.5 py-0.2 bg-purple-100 text-purple-700 font-bold rounded text-[9px]">ADMIN</span>' : ''}
             </div>
-            <div class="text-[10px] text-gray-400">${u.role} • ${u.department}</div>
+            <div class="text-[10px] text-gray-400">${u.role || 'Staff'} • ${u.department || 'General'}</div>
           </div>
         </div>
         <span class="text-[10px] font-mono text-gray-400">${u.emp_id || 'ID-' + u.id}</span>
@@ -416,15 +429,30 @@ function toggleUploadPerson(id) {
   if (countText) countText.textContent = `Selected: ${state.selectedUploadPersons.size} persons`;
 }
 
-function selectVipPresetForUpload() {
-  state.selectedUploadPersons.clear();
+function addDepartmentPersonsForUpload() {
+  const deptSelect = document.getElementById('uploadDeptFilter');
+  const dept = deptSelect ? deptSelect.value : '';
+  let count = 0;
   state.users.forEach(u => {
-    if (u.department === 'Executive' || u.role.includes('Director') || u.role.includes('Lead') || u.is_admin === 1) {
+    if (!dept || u.department === dept) {
       state.selectedUploadPersons.add(u.id);
+      count++;
     }
   });
   renderUploadPersonList();
-  showToast('Executive Board & R&D Lead members selected', 'info');
+  showToast(`Added ${count} personnel from ${dept || 'all departments'}`, 'info');
+}
+
+function selectVipPresetForUpload() {
+  let count = 0;
+  state.users.forEach(u => {
+    if (u.is_executive_board === 1 || u.department === 'Executive Board' || u.department === 'Executive' || u.role.includes('Director') || u.is_admin === 1) {
+      state.selectedUploadPersons.add(u.id);
+      count++;
+    }
+  });
+  renderUploadPersonList();
+  showToast(`⭐ Added ${count} Executive Board members to policy`, 'info');
 }
 
 function clearUploadPersons() {
@@ -453,15 +481,24 @@ function renderDrawerPersonList(filter = '') {
   const container = document.getElementById('drawerPersonListContainer');
   if (!container) return;
 
-  const q = filter.toLowerCase();
-  let users = state.users;
+  const q = (filter || document.getElementById('drawerPersonSearchInput')?.value || '').toLowerCase();
+  const deptFilter = document.getElementById('drawerDeptFilter')?.value || '';
+  let users = state.users || [];
+  if (deptFilter) {
+    users = users.filter(u => u.department === deptFilter);
+  }
   if (q) {
-    users = users.filter(u => u.name.toLowerCase().includes(q) || u.department.toLowerCase().includes(q) || u.role.toLowerCase().includes(q));
+    users = users.filter(u => u.name.toLowerCase().includes(q) || (u.department && u.department.toLowerCase().includes(q)) || (u.role && u.role.toLowerCase().includes(q)) || (u.emp_id && u.emp_id.toLowerCase().includes(q)));
+  }
+
+  if (users.length === 0) {
+    container.innerHTML = `<div class="py-6 text-center text-xs text-gray-400">No personnel match current filters.</div>`;
+    return;
   }
 
   container.innerHTML = users.map(u => {
     const isChecked = state.selectedDrawerPersons.has(u.id);
-    const isExec = u.department === 'Executive' || u.role.includes('Director') || u.role.includes('Lead');
+    const isBoard = u.is_executive_board === 1 || u.department === 'Executive Board';
     return `
       <label class="flex items-center justify-between p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs">
         <div class="flex items-center gap-2">
@@ -472,9 +509,10 @@ function renderDrawerPersonList(filter = '') {
           <div>
             <div class="font-bold text-gray-900 flex items-center gap-1">
               <span>${u.name}</span>
-              ${isExec ? '<span class="px-1 py-0.1 bg-purple-100 text-purple-700 font-extrabold rounded text-[8px]">EXEC</span>' : ''}
+              ${isBoard ? '<span class="px-1 py-0.1 bg-amber-100 text-amber-800 border border-amber-200 font-extrabold rounded text-[8px]">⭐ BOARD</span>' : ''}
+              ${u.is_admin ? '<span class="px-1 py-0.1 bg-purple-100 text-purple-700 font-bold rounded text-[8px]">ADMIN</span>' : ''}
             </div>
-            <div class="text-[9px] text-gray-400">${u.role}</div>
+            <div class="text-[9px] text-gray-400">${u.role || 'Staff'} • ${u.department || 'General'}</div>
           </div>
         </div>
       </label>
@@ -499,15 +537,30 @@ function toggleDrawerPerson(id) {
   if (countText) countText.textContent = `Selected: ${state.selectedDrawerPersons.size} persons`;
 }
 
-function selectVipPresetForDrawer() {
-  state.selectedDrawerPersons.clear();
+function addDepartmentPersonsForDrawer() {
+  const deptSelect = document.getElementById('drawerDeptFilter');
+  const dept = deptSelect ? deptSelect.value : '';
+  let count = 0;
   state.users.forEach(u => {
-    if (u.department === 'Executive' || u.role.includes('Director') || u.role.includes('Lead') || u.is_admin === 1) {
+    if (!dept || u.department === dept) {
       state.selectedDrawerPersons.add(u.id);
+      count++;
     }
   });
   renderDrawerPersonList();
-  showToast('Executive Board & R&D Lead members selected in drawer', 'info');
+  showToast(`Added ${count} personnel from ${dept || 'all departments'}`, 'info');
+}
+
+function selectVipPresetForDrawer() {
+  let count = 0;
+  state.users.forEach(u => {
+    if (u.is_executive_board === 1 || u.department === 'Executive Board' || u.department === 'Executive' || u.role.includes('Director') || u.is_admin === 1) {
+      state.selectedDrawerPersons.add(u.id);
+      count++;
+    }
+  });
+  renderDrawerPersonList();
+  showToast(`⭐ Added ${count} Executive Board members in drawer`, 'info');
 }
 
 function clearDrawerPersons() {

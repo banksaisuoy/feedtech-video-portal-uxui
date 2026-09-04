@@ -547,7 +547,7 @@ function renderAdminDeptTable() {
             </span>
           </div>
           <h3 class="font-bold text-sm text-gray-900">${c.name}</h3>
-          <p class="text-xs text-gray-500 mt-1 leading-relaxed">Enterprise taxonomy domain governing curated content and authorized viewer groups.</p>
+          <p class="text-xs text-gray-500 mt-1 leading-relaxed">Enterprise category taxonomy governing curated video content and knowledge assets.</p>
         </div>
 
         <!-- Associated Personnel / Members List -->
@@ -594,7 +594,7 @@ async function openCategoryDrilldown(catName = 'All') {
   const tbody = document.getElementById('drilldownTableBody');
   const summaryEl = document.getElementById('drilldownTableSummary');
 
-  const displayCat = (!catName || catName === 'All') ? 'All Domains' : catName;
+  const displayCat = (!catName || catName === 'All') ? 'All Categories' : catName;
   if (titleEl) titleEl.textContent = `${displayCat} Video Breakdown`;
   if (badgeEl) badgeEl.textContent = `${displayCat}`;
 
@@ -693,6 +693,7 @@ function openAddDeptModal() {
 
 function closeDeptModal() {
   closeCategoryModal();
+  if (typeof closeDepartmentModal === 'function') closeDepartmentModal();
 }
 
 async function saveDeptModalSubmit() {
@@ -743,43 +744,180 @@ function openCategoryDetail(catName) {
   if (titleEl) titleEl.textContent = catName;
   if (descEl) descEl.textContent = `Official collection of academic assets, research papers, and SOP video protocols under ${catName}.`;
 
-  const filtered = state.accessibleVideos.filter(v => {
-    if (catName === 'Recommended') return true;
-    if (v.category === catName) return true;
-    const lowCat = catName.toLowerCase();
-    const lowTags = (v.tags || '').toLowerCase();
-    const lowDept = (v.department || '').toLowerCase();
+  const pool = state.accessibleVideos || [];
+  const lowCat = (catName || '').trim().toLowerCase();
 
-    if (lowCat.includes('research') || lowCat.includes('biotech')) {
-      return lowDept.includes('biotech') || lowTags.includes('biotech') || (v.category && v.category.toLowerCase().includes('research'));
-    }
-    if (lowCat.includes('trial') || lowCat.includes('crop')) {
-      return lowTags.includes('drones') || lowTags.includes('yield') || lowTags.includes('swine') || lowTags.includes('nutrition') || lowDept.includes('swine') || lowDept.includes('poultry');
-    }
-    if (lowCat.includes('safety') || lowCat.includes('training')) {
-      return lowTags.includes('safety') || lowTags.includes('biosecurity') || lowTags.includes('qclab') || lowDept.includes('qc');
-    }
-    if (lowCat.includes('townhall') || lowCat.includes('brief') || lowCat.includes('executive')) {
-      return (v.category && v.category.toLowerCase().includes('townhall')) || lowDept.includes('executive') || lowTags.includes('meeting') || lowTags.includes('confidential');
-    }
-    if (lowCat.includes('mill') || lowCat.includes('operation') || lowCat.includes('scada')) {
-      return lowDept.includes('operations') || lowTags.includes('scada') || lowTags.includes('rawmaterial');
-    }
-    if (lowCat.includes('vendor') || lowCat.includes('standard')) {
-      return lowDept.includes('raw material') || lowTags.includes('standard');
+  const filtered = pool.filter(v => {
+    if (!catName || lowCat === 'all' || lowCat === 'all categories') return true;
+    if (v.category && v.category.trim().toLowerCase() === lowCat) return true;
+    if (v.department && v.department.trim().toLowerCase() === lowCat) return true;
+    if (v.category && (v.category.toLowerCase().includes(lowCat) || lowCat.includes(v.category.toLowerCase()))) return true;
+    if (v.tags) {
+      const tagArr = v.tags.split(',').map(t => t.trim().toLowerCase().replace(/^#/, ''));
+      if (tagArr.some(t => lowCat.includes(t) || t.includes(lowCat))) return true;
     }
     return false;
   });
 
-  const list = filtered.length > 0 ? filtered : state.accessibleVideos;
-
   if (grid) {
-    if (list.length === 0) {
-      grid.innerHTML = `<div class="col-span-full py-12 text-center text-gray-400">No videos available under this category with your current access permissions.</div>`;
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div class="col-span-full py-16 text-center">
+          <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-3">
+            <span class="material-symbols-outlined text-2xl">folder_off</span>
+          </div>
+          <h4 class="text-sm font-bold text-gray-700">No videos in this category</h4>
+          <p class="text-xs text-gray-400 mt-1 max-w-sm mx-auto">There are currently no videos found under "${catName}" accessible to your profile.</p>
+        </div>
+      `;
     } else {
-      grid.innerHTML = list.map(v => createVideoCardHtml(v)).join('');
+      grid.innerHTML = filtered.map(v => createVideoCardHtml(v)).join('');
     }
   }
 }
+
+// ---------------- CORPORATE DEPARTMENT MANAGEMENT ----------------
+
+async function loadDepartments() {
+  try {
+    const res = await fetch('/api/departments');
+    const json = await res.json();
+    if (json.success) {
+      state.departments = json.data;
+      renderDepartmentList();
+      populateDepartmentSelects();
+    }
+  } catch (err) {
+    console.error('Failed to load departments', err);
+  }
+}
+
+function renderDepartmentList() {
+  const container = document.getElementById('departmentListContainer');
+  if (!container) return;
+
+  const depts = state.departments || [];
+  if (depts.length === 0) {
+    container.innerHTML = `<div class="py-8 text-center text-xs text-gray-400">No departments configured yet.</div>`;
+    return;
+  }
+
+  container.innerHTML = depts.map(d => `
+    <div class="p-3 bg-white border border-outline-variant rounded-xl flex items-center justify-between gap-3 hover:border-primary/40 transition-all shadow-2xs">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-8 h-8 rounded-lg bg-emerald-50 text-primary flex items-center justify-center font-bold shrink-0">
+          <span class="material-symbols-outlined text-base">corporate_fare</span>
+        </div>
+        <div class="min-w-0">
+          <div class="font-bold text-gray-900 text-xs truncate">${d.name}</div>
+          <div class="text-[11px] text-gray-400 line-clamp-1">${d.description || 'Corporate organizational unit'}</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 shrink-0">
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${d.user_count > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-gray-500'}">
+          ${d.user_count || 0} Members
+        </span>
+        <button onclick="deleteDepartmentSubmit(${d.id}, '${d.name.replace(/'/g, "\\'")}')" class="p-1 text-gray-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors" title="Delete Department">
+          <span class="material-symbols-outlined text-base">delete</span>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function populateDepartmentSelects() {
+  const depts = state.departments || [];
+  
+  // User Filter in User Management
+  const filterSelect = document.getElementById('userDeptFilter');
+  if (filterSelect) {
+    const curr = filterSelect.value;
+    filterSelect.innerHTML = `<option value="">All Departments</option>` + depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+    filterSelect.value = curr;
+  }
+
+  // User Add/Edit Modal
+  const modalDept = document.getElementById('modalDept');
+  if (modalDept) {
+    const curr = modalDept.value;
+    modalDept.innerHTML = depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+    if (curr) modalDept.value = curr;
+  }
+
+  // PBAC Department Filters (Upload & Drawer)
+  const uploadDeptFilter = document.getElementById('uploadDeptFilter');
+  if (uploadDeptFilter) {
+    uploadDeptFilter.innerHTML = `<option value="">All Departments</option>` + depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+  }
+  const drawerDeptFilter = document.getElementById('drawerDeptFilter');
+  if (drawerDeptFilter) {
+    drawerDeptFilter.innerHTML = `<option value="">All Departments</option>` + depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+  }
+}
+
+function openDepartmentModal() {
+  const modal = document.getElementById('departmentModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    loadDepartments();
+  }
+}
+
+function closeDepartmentModal() {
+  const modal = document.getElementById('departmentModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function saveDepartmentSubmit() {
+  const nameInput = document.getElementById('newDeptName');
+  const descInput = document.getElementById('newDeptDesc');
+  const name = nameInput ? nameInput.value.trim() : '';
+  const description = descInput ? descInput.value.trim() : '';
+
+  if (!name) {
+    showToast('Please specify department name', 'error');
+    if (nameInput) nameInput.focus();
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/departments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description })
+    });
+    const json = await res.json();
+    if (json.success) {
+      if (nameInput) nameInput.value = '';
+      if (descInput) descInput.value = '';
+      showToast('Department added successfully', 'success');
+      await loadDepartments();
+      if (typeof renderUserTable === 'function') renderUserTable();
+    } else {
+      showToast(json.message || 'Failed to add department', 'error');
+    }
+  } catch (err) {
+    showToast('Error saving department', 'error');
+  }
+}
+
+async function deleteDepartmentSubmit(id, name) {
+  if (!confirm(`Are you sure you want to delete department "${name}"?`)) return;
+
+  try {
+    const res = await fetch(`/api/departments/${id}`, { method: 'DELETE' });
+    const json = await res.json();
+    if (json.success) {
+      showToast('Department deleted successfully', 'success');
+      await loadDepartments();
+      if (typeof renderUserTable === 'function') renderUserTable();
+    } else {
+      showToast(json.message || 'Cannot delete department', 'error');
+    }
+  } catch (err) {
+    showToast('Error deleting department', 'error');
+  }
+}
+
 
 

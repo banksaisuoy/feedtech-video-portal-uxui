@@ -107,7 +107,6 @@ function renderFeaturedCarousel() {
             <span class="px-2 py-0.5 rounded bg-black/60 text-white font-mono text-xs border border-white/10">
               ${v.duration || '10:00'}
             </span>
-            ${getPermissionBadgeMarkup(v)}
           </div>
 
           <!-- Video Title -->
@@ -351,7 +350,7 @@ function renderHomeVideos() {
       const isImg = c.icon && (c.icon.startsWith('data:') || c.icon.startsWith('http') || c.icon.startsWith('/'));
       const iconHtml = isImg 
         ? `<img src="${c.icon}" class="w-5 h-5 object-contain rounded" alt="${c.name}">` 
-        : `<span class="material-symbols-outlined text-base text-primary">${c.icon || 'domain'}</span>`;
+        : `<span class="material-symbols-outlined text-base text-primary">${c.icon || 'category'}</span>`;
 
       return `
         <section class="space-y-4 pt-6 border-t border-outline-variant">
@@ -362,7 +361,7 @@ function renderHomeVideos() {
               </div>
               <div>
                 <h3 class="text-base font-bold text-gray-900">${c.name}</h3>
-                <p class="text-xs text-gray-500 line-clamp-1">${c.description || `Knowledge domain videos and recordings for ${c.name}`}</p>
+                <p class="text-xs text-gray-500 line-clamp-1">${c.description || `Curated videos and recordings for ${c.name}`}</p>
               </div>
             </div>
             <button onclick="openCategoryDetail('${c.name}')" class="text-xs font-bold text-primary hover:text-emerald-700 hover:underline flex items-center gap-1 group">
@@ -505,8 +504,7 @@ function renderWatchHistory() {
           </div>
           <div>
             <div class="flex items-center gap-2 mb-0.5">
-              <span class="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded">${v.department}</span>
-              ${getPermissionBadgeMarkup(v.permission_level)}
+              <span class="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded">${v.category || v.department || 'Video'}</span>
             </div>
             <h4 class="text-xs font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-1">${v.title}</h4>
             <div class="text-[10px] text-gray-400">Watched on ${dates[idx % dates.length]}</div>
@@ -750,7 +748,6 @@ function createVideoCardHtml(v) {
         <div>
           <div class="flex items-center justify-between gap-2 mb-1.5">
             <span class="text-[10px] font-bold text-emerald-900 bg-emerald-100/90 px-2 py-0.5 rounded truncate max-w-[150px]">${v.category || 'General'}</span>
-            ${getPermissionBadgeMarkup(v)}
           </div>
           <h4 class="text-xs font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
             ${v.title}

@@ -174,12 +174,21 @@ function openAddUserModal() {
   document.getElementById('modalRole').value = 'Staff Member';
   document.getElementById('modalTags').value = '#general, #standard';
 
-  // Populate category options
+  // Populate department options
   const modalDept = document.getElementById('modalDept');
-  if (modalDept && state.categories) {
-    modalDept.innerHTML = state.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-    modalDept.value = state.categories[0]?.name || 'Biotech';
+  const depts = state.departments && state.departments.length > 0 ? state.departments : [
+    { name: 'Research & Development (R&D)' }, { name: 'Feed Mill Operations' },
+    { name: 'Quality Assurance & QC-Lab' }, { name: 'Executive Board' },
+    { name: 'Veterinary & Animal Health' }, { name: 'Animal Nutrition Science' },
+    { name: 'Supply Chain & Procurement' }, { name: 'Information Technology & Digital' }
+  ];
+  if (modalDept) {
+    modalDept.innerHTML = depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+    modalDept.value = depts[0]?.name || 'Research & Development (R&D)';
   }
+
+  const execBoardCheck = document.getElementById('modalUserIsExecBoard');
+  if (execBoardCheck) execBoardCheck.checked = false;
 
   const roleSelect = document.getElementById('modalRoleSelect');
   if (roleSelect) roleSelect.value = 'user';
@@ -201,11 +210,22 @@ function editUserPrompt(userId) {
   document.getElementById('modalRole').value = u.role || (u.is_admin ? 'System Administrator' : 'Staff Member');
   document.getElementById('modalTags').value = u.allowed_tags || '';
 
-  // Populate category options
+  // Populate department options
   const modalDept = document.getElementById('modalDept');
-  if (modalDept && state.categories) {
-    modalDept.innerHTML = state.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-    modalDept.value = u.department || state.categories[0]?.name;
+  const depts = state.departments && state.departments.length > 0 ? state.departments : [
+    { name: 'Research & Development (R&D)' }, { name: 'Feed Mill Operations' },
+    { name: 'Quality Assurance & QC-Lab' }, { name: 'Executive Board' },
+    { name: 'Veterinary & Animal Health' }, { name: 'Animal Nutrition Science' },
+    { name: 'Supply Chain & Procurement' }, { name: 'Information Technology & Digital' }
+  ];
+  if (modalDept) {
+    modalDept.innerHTML = depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+    modalDept.value = u.department || depts[0]?.name;
+  }
+
+  const execBoardCheck = document.getElementById('modalUserIsExecBoard');
+  if (execBoardCheck) {
+    execBoardCheck.checked = (u.is_executive_board === 1 || u.department === 'Executive Board');
   }
 
   const roleSelect = document.getElementById('modalRoleSelect');
@@ -236,6 +256,7 @@ async function saveUserModalSubmit() {
   const name = document.getElementById('modalName').value.trim();
   const email = document.getElementById('modalEmail').value.trim();
   const department = document.getElementById('modalDept').value;
+  const is_executive_board = document.getElementById('modalUserIsExecBoard')?.checked ? 1 : 0;
   const roleSelect = document.getElementById('modalRoleSelect')?.value || 'user';
   const isAdmin = roleSelect === 'admin';
   const role = isAdmin ? 'System Administrator' : (document.getElementById('modalRole')?.value.trim() || 'Staff Member');
@@ -254,13 +275,13 @@ async function saveUserModalSubmit() {
       res = await fetch(`/api/users/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, department, role, allowed_tags, permission_level, is_admin: isAdmin ? 1 : 0 })
+        body: JSON.stringify({ name, email, department, role, allowed_tags, permission_level, is_admin: isAdmin ? 1 : 0, is_executive_board })
       });
     } else {
       res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emp_id, name, email, department, role, allowed_tags, permission_level, is_admin: isAdmin ? 1 : 0 })
+        body: JSON.stringify({ emp_id, name, email, department, role, allowed_tags, permission_level, is_admin: isAdmin ? 1 : 0, is_executive_board })
       });
     }
 
