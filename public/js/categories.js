@@ -91,7 +91,7 @@ async function loadDepartments() {
 }
 
 function populateCategorySelects() {
-  const selects = ['tagCategoryFilter', 'quickTagDept', 'modalTagDept', 'uploadVideoDept', 'editDrawerDept', 'videoDeptFilter', 'userDeptFilter', 'modalDept', 'modalEventDept', 'adminEventDeptFilter'];
+  const selects = ['tagCategoryFilter', 'quickTagDept', 'modalTagDept', 'uploadVideoCategory', 'editDrawerCategory', 'modalEventDept', 'adminEventDeptFilter'];
   if (!state.categories) return;
 
   selects.forEach(id => {
@@ -105,7 +105,16 @@ function populateCategorySelects() {
 }
 
 function populateDepartmentSelects() {
-  populateCategorySelects();
+  const selects = ['uploadVideoDept', 'editDrawerDept', 'uploadDeptFilter', 'drawerDeptFilter', 'userDeptFilter', 'modalDept'];
+  const departments = state.departments || [];
+  selects.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isFilter = id.includes('Filter');
+    let opts = isFilter ? '<option value="">All Departments</option>' : '';
+    opts += departments.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+    el.innerHTML = opts;
+  });
 }
 
 // ---------------- CONTENT TYPE / FORMAT MANAGEMENT ----------------
@@ -125,7 +134,7 @@ async function loadContentTypes() {
 }
 
 function populateContentTypeSelects() {
-  const selects = ['uploadVideoCategory', 'editDrawerCategory', 'videoContentTypeFilter', 'homeContentTypeFilter'];
+  const selects = ['uploadVideoContentType', 'editDrawerContentType', 'videoContentTypeFilter', 'homeContentTypeFilter'];
   if (!state.contentTypes) return;
 
   selects.forEach(id => {
@@ -750,13 +759,7 @@ function openCategoryDetail(catName) {
   const filtered = pool.filter(v => {
     if (!catName || lowCat === 'all' || lowCat === 'all categories') return true;
     if (v.category && v.category.trim().toLowerCase() === lowCat) return true;
-    if (v.department && v.department.trim().toLowerCase() === lowCat) return true;
-    if (v.category && (v.category.toLowerCase().includes(lowCat) || lowCat.includes(v.category.toLowerCase()))) return true;
-    if (v.tags) {
-      const tagArr = v.tags.split(',').map(t => t.trim().toLowerCase().replace(/^#/, ''));
-      if (tagArr.some(t => lowCat.includes(t) || t.includes(lowCat))) return true;
-    }
-    return false;
+    return Boolean(v.category && v.category.trim().toLowerCase() === lowCat);
   });
 
   if (grid) {
@@ -843,6 +846,14 @@ function populateDepartmentSelects() {
     modalDept.innerHTML = depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
     if (curr) modalDept.value = curr;
   }
+
+  ['uploadVideoDept', 'editDrawerDept', 'videoDeptFilter'].forEach(id => {
+    const select = document.getElementById(id);
+    if (!select) return;
+    const current = select.value;
+    select.innerHTML = depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+    if (current) select.value = current;
+  });
 
   // PBAC Department Filters (Upload & Drawer)
   const uploadDeptFilter = document.getElementById('uploadDeptFilter');

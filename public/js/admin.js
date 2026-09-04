@@ -269,8 +269,9 @@ function renderVideoManagementTable() {
         </div>
       </td>
       <td class="py-3 px-4">
-        <div class="font-semibold text-gray-800 text-xs">${v.department}</div>
-        <div class="text-[10px] text-gray-400 truncate max-w-[140px]">${v.tags || ''}</div>
+        <div class="font-semibold text-gray-800 text-xs">${v.category || 'Uncategorized'}</div>
+        <div class="text-[10px] text-gray-500 truncate max-w-[140px]">${v.department || 'Unassigned Department'}</div>
+        <div class="text-[10px] text-gray-400 truncate max-w-[140px]">${v.content_type || 'Unspecified Content Type'} · ${v.tags || ''}</div>
       </td>
       <td class="py-3 px-4">${getPermissionBadgeMarkup(v)}</td>
       <td class="py-3 px-4 text-center whitespace-nowrap">
@@ -585,7 +586,10 @@ function openEditDrawer(videoId) {
   document.getElementById('editDrawerDesc').value = v.description || '';
   document.getElementById('editDrawerDept').value = v.department;
   if (document.getElementById('editDrawerCategory')) {
-    document.getElementById('editDrawerCategory').value = v.category || 'Research & Whitepaper';
+    document.getElementById('editDrawerCategory').value = v.category || '';
+  }
+  if (document.getElementById('editDrawerContentType')) {
+    document.getElementById('editDrawerContentType').value = v.content_type || 'Research & Whitepaper';
   }
   document.getElementById('editDrawerTags').value = v.tags || '';
   document.getElementById('editDrawerIsHidden').checked = (v.is_hidden === 1);
@@ -640,7 +644,8 @@ async function saveEditDrawerChanges() {
   const title = document.getElementById('editDrawerTitle').value.trim();
   const description = document.getElementById('editDrawerDesc').value.trim();
   const department = document.getElementById('editDrawerDept').value;
-  const category = document.getElementById('editDrawerCategory')?.value || department;
+  const category = document.getElementById('editDrawerCategory')?.value || '';
+  const content_type = document.getElementById('editDrawerContentType')?.value || 'Research & Whitepaper';
   const tags = document.getElementById('editDrawerTags').value.trim();
   const is_hidden = document.getElementById('editDrawerIsHidden').checked ? 1 : 0;
   const is_featured = document.getElementById('editDrawerIsFeatured')?.checked ? 1 : 0;
@@ -669,6 +674,7 @@ async function saveEditDrawerChanges() {
         description, 
         department, 
         category,
+        content_type,
         tags, 
         thumbnail_url,
         is_hidden,
@@ -945,7 +951,8 @@ async function submitUploadVideo() {
   const title = document.getElementById('uploadVideoTitle').value.trim();
   const department = document.getElementById('uploadVideoDept').value;
   const description = document.getElementById('uploadVideoDesc').value.trim();
-  const category = document.getElementById('uploadVideoCategory')?.value || 'Research & Whitepaper';
+  const category = document.getElementById('uploadVideoCategory')?.value || '';
+  const content_type = document.getElementById('uploadVideoContentType')?.value || 'Research & Whitepaper';
   const duration = document.getElementById('uploadVideoDuration')?.value?.trim() || '10:00';
   const tags = document.getElementById('uploadVideoTags').value.trim();
   const thumbnail_url = document.getElementById('uploadThumbnailUrl')?.value.trim() || DOMAIN_THUMBNAIL_PRESETS.Default;
@@ -977,6 +984,7 @@ async function submitUploadVideo() {
         description,
         department,
         category,
+        content_type,
         duration,
         tags,
         thumbnail_url,

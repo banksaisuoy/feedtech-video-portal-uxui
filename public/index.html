@@ -392,6 +392,10 @@
               <span class="material-symbols-outlined text-xl">domain</span>
               <span class="sidebar-link-text">Category Management</span>
             </a>
+            <a href="#" onclick="navigateView('admin-depts'); return false;" id="nav-admin-depts" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Department Management">
+              <span class="material-symbols-outlined text-xl">corporate_fare</span>
+              <span class="sidebar-link-text">Department Management</span>
+            </a>
             <a href="#" onclick="navigateView('admin-tags'); return false;" id="nav-admin-tags" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Tag Management">
               <span class="material-symbols-outlined text-xl">sell</span>
               <span class="sidebar-link-text">Tag Management</span>
@@ -1331,9 +1335,9 @@
               <input id="uploadVideoTitle" type="text" placeholder="e.g. Swine Immunity Assay Q4 Review" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-semibold text-gray-900">
             </div>
             <div>
-              <label class="block text-xs font-bold text-gray-700 mb-1">Category <span class="text-rose-500">*</span></label>
+              <label class="block text-xs font-bold text-gray-700 mb-1">Department <span class="text-rose-500">*</span></label>
               <select id="uploadVideoDept" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none">
-                <!-- Populated dynamically with categories -->
+                <!-- Populated dynamically with departments -->
               </select>
             </div>
           </div>
@@ -1350,7 +1354,7 @@
                 <span class="material-symbols-outlined text-xs">tune</span> + Manage Types
               </button>
             </div>
-            <select id="uploadVideoCategory" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-semibold text-gray-900">
+            <select id="uploadVideoContentType" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-semibold text-gray-900">
               <option value="Research & Whitepaper">Research & Whitepaper</option>
               <option value="Field Trials & Reports">Field Trials & Reports</option>
               <option value="Training & Safety Protocols">Training & Safety Protocols</option>
@@ -1702,7 +1706,7 @@
                 <input id="tagSearchInput" oninput="filterTagTable()" type="text" placeholder="Search tags..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary outline-none">
               </div>
               <select id="tagCategoryFilter" onchange="filterTagTable()" class="px-2.5 py-1.5 text-xs border border-outline-variant rounded-lg bg-white outline-none font-medium text-gray-700">
-                <option value="">All Categories</option>
+                <option value="">All Departments</option>
               </select>
             </div>
           </div>
@@ -1838,9 +1842,16 @@
         </div>
       </div>
 
-      <!-- ALIAS: VIEW MANAGE CATEGORIES (FOR BACKWARD COMPATIBILITY) -->
+      <!-- 18. VIEW: DEPARTMENT MANAGEMENT -->
       <div id="view-admin-depts" class="view-content hidden space-y-6 max-w-7xl mx-auto">
-        <div id="adminDeptGrid" class="hidden"></div>
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2"><span class="material-symbols-outlined text-2xl text-primary">corporate_fare</span><span>Department Management</span></h1>
+            <p class="text-xs text-gray-500 mt-1">Manage organizational departments independently from video Categories and Content Types.</p>
+          </div>
+          <button onclick="openDepartmentModal()" class="px-4 py-2 bg-primary text-white font-bold text-xs rounded-lg hover:bg-emerald-800 flex items-center gap-1.5 shadow-sm"><span class="material-symbols-outlined text-sm">add_circle</span><span>+ Add Department</span></button>
+        </div>
+        <div id="departmentListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
       </div>
 
       <!-- 19. VIEW: MEETING RECORDINGS (USER) -->
@@ -2035,27 +2046,26 @@
 
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1">Category</label>
+          <label class="block text-xs font-bold text-gray-700 mb-1">Department</label>
           <select id="editDrawerDept" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none">
             <!-- Dynamic options -->
           </select>
         </div>
         <div>
           <div class="flex items-center justify-between mb-1">
-            <label class="block text-xs font-bold text-gray-700">Content Type / Format</label>
+            <label class="block text-xs font-bold text-gray-700">Category</label>
             <button type="button" onclick="openAddContentTypeModal()" class="text-[10px] text-primary font-bold hover:underline flex items-center gap-0.5">
               <span class="material-symbols-outlined text-xs">tune</span> Manage
             </button>
           </div>
           <select id="editDrawerCategory" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-semibold">
-            <option value="Research & Whitepaper">Research & Whitepaper</option>
-            <option value="Field Trials & Reports">Field Trials & Reports</option>
-            <option value="Training & Safety Protocols">Training & Safety Protocols</option>
-            <option value="Townhall & Executive Updates">Townhall & Executive Updates</option>
-            <option value="Lab Demos & Assay Procedures">Lab Demos & Assay Procedures</option>
-            <option value="Production & Mill Operations">Production & Mill Operations</option>
-            <option value="Corporate Events & Symposia">Corporate Events & Symposia</option>
-            <option value="Meeting Recordings">Meeting Recordings</option>
+            <!-- Dynamic options -->
+          </select>
+        </div>
+        <div class="col-span-2">
+          <label class="block text-xs font-bold text-gray-700 mb-1">Content Type / Format</label>
+          <select id="editDrawerContentType" class="w-full px-3 py-2 text-xs border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none font-semibold">
+            <!-- Dynamic options -->
           </select>
         </div>
       </div>

@@ -77,8 +77,7 @@ function navigateView(viewName) {
     }
   }
   if (viewName === 'admin-depts') {
-    navigateView('admin-categories');
-    return;
+    if (typeof loadDepartments === 'function') loadDepartments();
   }
   if (viewName === 'admin-videos') renderVideoManagementTable();
   if (viewName === 'admin-events') {

@@ -71,6 +71,7 @@ db.exec(`
     description TEXT,
     department TEXT NOT NULL,
     category TEXT NOT NULL,
+    content_type TEXT,
     permission_level TEXT NOT NULL, -- 'Standard', 'Restricted', 'Highly Confidential'
     duration TEXT NOT NULL,
     views INTEGER DEFAULT 0,
@@ -287,13 +288,8 @@ const officialCategories = [
 ];
 
 try {
-  db.prepare(`
-    DELETE FROM categories WHERE name IN (
-      'Research & Whitepaper', 'Field Trials & Reports', 'Training & Safety Protocols',
-      'Townhall & Executive Updates', 'Lab Demos & Assay Procedures', 'Production & Mill Operations',
-      'Corporate Events & Symposia', 'Meeting Recordings'
-    )
-  `).run();
+  const officialCategoryNames = officialCategories.map(([name]) => `'${name.replace(/'/g, "''")}'`).join(', ');
+  db.prepare(`DELETE FROM categories WHERE name NOT IN (${officialCategoryNames})`).run();
 
   const insertCat = db.prepare("INSERT OR IGNORE INTO categories (name, icon, description) VALUES (?, ?, ?)");
   for (const [name, icon, desc] of officialCategories) {
@@ -636,6 +632,35 @@ if (countLogs.count === 0) {
 try {
   db.exec(`ALTER TABLE users ADD COLUMN allowed_tags TEXT DEFAULT '#general, #standard';`);
 } catch (e) {}
+
+// Keep video taxonomy fields separate from organizational departments.
+try {
+  db.exec(`ALTER TABLE videos ADD COLUMN content_type TEXT`);
+  db.exec(`UPDATE videos SET content_type = category WHERE content_type IS NULL`);
+  db.exec(`
+    UPDATE videos
+    SET category = CASE department
+      WHEN 'China' THEN 'Commodity'
+      ELSE department
+    END,
+    department = CASE department
+      WHEN 'Biotech' THEN 'Research & Development (R&D)'
+      WHEN 'Swine' THEN 'Veterinary & Animal Health'
+      WHEN 'Poultry' THEN 'Veterinary & Animal Health'
+      WHEN 'Aquatic' THEN 'Veterinary & Animal Health'
+      WHEN 'Dairy Process' THEN 'Feed Mill Operations'
+      WHEN 'Operations' THEN 'Feed Mill Operations'
+      WHEN 'Automation' THEN 'Information Technology & Digital'
+      WHEN 'QC-Lab' THEN 'Quality Assurance & QC-Lab'
+      WHEN 'Commodity' THEN 'Supply Chain & Procurement'
+      WHEN 'China' THEN 'Supply Chain & Procurement'
+      ELSE department
+    END
+    WHERE content_type IS NOT NULL
+  `);
+} catch (e) {
+  try { db.prepare("UPDATE videos SET content_type = category WHERE content_type IS NULL").run(); } catch (ignore) {}
+}
 
 // Add Person-based Access Control columns to videos table
 try {
@@ -1025,14 +1050,11 @@ app.delete('/api/departments/:id', (req, res) => {
 app.get('/api/categories', (req, res) => {
   try {
     const cats = db.prepare("SELECT * FROM categories ORDER BY name ASC").all();
-    const videos = db.prepare("SELECT category, department FROM videos").all();
+    const videos = db.prepare("SELECT category FROM videos").all();
     
     const countMap = {};
     videos.forEach(v => {
       if (v.category) countMap[v.category] = (countMap[v.category] || 0) + 1;
-      if (v.department && v.department !== v.category) {
-        countMap[v.department] = (countMap[v.department] || 0) + 1;
-      }
     });
 
     const data = cats.map(c => ({
@@ -1371,7 +1393,7 @@ app.post('/api/videos', (req, res) => {
   }
 
   const { 
-    title, description, department, category, permission_level, duration, 
+    title, description, department, category, content_type, permission_level, duration,
     thumbnail_url, video_url, tags, allow_downloads, enable_comments,
     access_mode, allowed_user_ids, excluded_user_ids
   } = req.body;
@@ -1383,18 +1405,19 @@ app.post('/api/videos', (req, res) => {
   const video_id = `VID-${Math.floor(8000 + Math.random() * 1999)}`;
   const defaultThumb = 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=800&q=80';
   const defaultVideo = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-  const finalCategory = category || department || 'Research & Whitepaper';
+  const finalCategory = category || 'Biotech';
 
   try {
     const result = db.prepare(`
-      INSERT INTO videos (video_id, title, description, department, category, permission_level, duration, thumbnail_url, video_url, tags, uploaded_by, allow_downloads, enable_comments, access_mode, allowed_user_ids, excluded_user_ids)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO videos (video_id, title, description, department, category, content_type, permission_level, duration, thumbnail_url, video_url, tags, uploaded_by, allow_downloads, enable_comments, access_mode, allowed_user_ids, excluded_user_ids)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       video_id,
       title,
       description || 'Uploaded via Feedtech Cloud Hub simulator.',
       department || finalCategory,
       finalCategory,
+      content_type || 'Research & Whitepaper',
       permission_level || 'Standard',
       duration || '10:00',
       thumbnail_url || defaultThumb,
@@ -1422,7 +1445,7 @@ app.post('/api/videos', (req, res) => {
 app.put('/api/videos/:id', (req, res) => {
   const videoId = req.params.id;
   const { 
-    title, description, department, category, permission_level, tags, 
+    title, description, department, category, content_type, permission_level, tags,
     thumbnail_url,
     is_hidden, allow_downloads, enable_comments,
     access_mode, allowed_user_ids, excluded_user_ids,
@@ -1436,6 +1459,7 @@ app.put('/api/videos/:id', (req, res) => {
           description = COALESCE(?, description),
           department = COALESCE(?, department),
           category = COALESCE(?, category),
+          content_type = COALESCE(?, content_type),
           permission_level = COALESCE(?, permission_level),
           tags = COALESCE(?, tags),
           thumbnail_url = COALESCE(?, thumbnail_url),
@@ -1449,7 +1473,7 @@ app.put('/api/videos/:id', (req, res) => {
           is_recommended = COALESCE(?, is_recommended)
       WHERE id = ? OR video_id = ?
     `).run(
-      title, description, department, category, permission_level, tags, 
+      title, description, department, category, content_type, permission_level, tags,
       thumbnail_url,
       is_hidden, allow_downloads, enable_comments,
       access_mode,
