@@ -128,7 +128,7 @@ async function loadContentTypes() {
 }
 
 function populateContentTypeSelects() {
-  const selects = ['uploadVideoContentType', 'editDrawerContentType', 'videoContentTypeFilter', 'homeContentTypeFilter', 'categoryContentTypeFilter'];
+  const selects = ['uploadVideoContentType', 'editDrawerContentType', 'videoContentTypeFilter', 'homeContentTypeFilter', 'categoryDetailContentTypeFilter'];
   if (!state.contentTypes) return;
 
   selects.forEach(id => {
@@ -737,7 +737,9 @@ function filterMeetings(filter) {
 // ---------------- CATEGORY DETAIL ----------------
 
 function openCategoryDetail(catName) {
+  const previousCategory = state.selectedCategory;
   state.selectedCategory = catName;
+  if (previousCategory !== catName) state.categoryContentTypeFilter = '';
   navigateView('category-detail');
 
   const titleEl = document.getElementById('catDetailTitle');
@@ -746,6 +748,8 @@ function openCategoryDetail(catName) {
 
   if (titleEl) titleEl.textContent = catName;
   if (descEl) descEl.textContent = `Official collection of academic assets, research papers, and SOP video protocols under ${catName}.`;
+  const typeFilter = document.getElementById('categoryDetailContentTypeFilter');
+  if (typeFilter) typeFilter.value = state.categoryContentTypeFilter || '';
 
   const pool = state.accessibleVideos || [];
   const lowCat = (catName || '').trim().toLowerCase();
@@ -771,6 +775,13 @@ function openCategoryDetail(catName) {
       grid.innerHTML = filtered.map(v => createVideoCardHtml(v)).join('');
     }
   }
+}
+
+function filterCategoryDetailByContentType(contentType) {
+  state.categoryContentTypeFilter = contentType || '';
+  openCategoryDetail(state.selectedCategory || 'All');
+  const typeFilter = document.getElementById('categoryDetailContentTypeFilter');
+  if (typeFilter) typeFilter.value = state.categoryContentTypeFilter;
 }
 
 // ---------------- CORPORATE DEPARTMENT MANAGEMENT ----------------

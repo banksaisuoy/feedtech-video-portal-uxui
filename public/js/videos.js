@@ -560,21 +560,13 @@ function renderCategoriesDirectory(filterTab = 'all') {
   if (!container) return;
 
   const cats = state.categories || [];
-  const contentType = state.categoryContentTypeFilter || '';
-  const visibleVideos = (state.accessibleVideos || []).filter(v => !contentType || v.content_type === contentType);
   if (cats.length === 0) {
     container.innerHTML = '<div class="col-span-full py-12 text-center text-xs text-gray-400">No categories configured.</div>';
     return;
   }
 
-  const visibleCategories = cats.filter(c => !contentType || visibleVideos.some(v => v.category === c.name));
-  if (visibleCategories.length === 0) {
-    container.innerHTML = '<div class="col-span-full py-12 text-center text-xs text-gray-400">No categories contain this Content Type.</div>';
-    return;
-  }
-
-  container.innerHTML = visibleCategories.map(c => {
-    const videoCount = visibleVideos.filter(v => v.category === c.name).length;
+  container.innerHTML = cats.map(c => {
+    const videoCount = c.video_count || 0;
     return `
     <div class="bg-white rounded-xl border border-outline-variant p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group" onclick="openCategoryDetail('${c.name}')">
       <div class="space-y-3">
