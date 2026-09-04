@@ -730,7 +730,11 @@ try {
     'Pet Food': 'Animal Nutrition Science',
     'Sustainable Feed': 'Research & Development (R&D)'
   };
-  const demoTypes = ['Research & Whitepaper', 'Field Trials & Reports', 'Training & Safety Protocols', 'Meeting Recordings'];
+  const demoTypes = [
+    'Research & Whitepaper', 'Field Trials & Reports', 'Training & Safety Protocols',
+    'Townhall & Executive Updates', 'Lab Demos & Assay Procedures',
+    'Production & Mill Operations', 'Corporate Events & Symposia', 'Meeting Recordings'
+  ];
   const insertDemo = db.prepare(`
     INSERT INTO videos (video_id, title, description, department, category, content_type, permission_level, duration, views, likes, thumbnail_url, video_url, tags, uploaded_by, access_mode, allowed_user_ids, excluded_user_ids)
     VALUES (?, ?, ?, ?, ?, ?, 'Standard', ?, ?, ?, ?, ?, ?, 'Demo Content Team', 'public', '[]', '[]')
@@ -755,6 +759,9 @@ try {
       );
     }
   }
+  const demoRows = db.prepare("SELECT id FROM videos WHERE uploaded_by = 'Demo Content Team' ORDER BY id ASC").all();
+  const updateDemoType = db.prepare('UPDATE videos SET content_type = ? WHERE id = ?');
+  demoRows.forEach((video, index) => updateDemoType.run(demoTypes[index % demoTypes.length], video.id));
 } catch (e) {
   console.error('Error seeding demo category coverage:', e.message);
 }

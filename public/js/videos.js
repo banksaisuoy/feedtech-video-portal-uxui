@@ -560,19 +560,23 @@ function renderCategoriesDirectory(filterTab = 'all') {
   if (!container) return;
 
   const cats = state.categories || [];
+  const contentType = state.categoryContentTypeFilter || '';
+  const visibleVideos = (state.accessibleVideos || []).filter(v => !contentType || v.content_type === contentType);
   if (cats.length === 0) {
     container.innerHTML = '<div class="col-span-full py-12 text-center text-xs text-gray-400">No categories configured.</div>';
     return;
   }
 
-  container.innerHTML = cats.map(c => `
+  container.innerHTML = cats.map(c => {
+    const videoCount = visibleVideos.filter(v => v.category === c.name).length;
+    return `
     <div class="bg-white rounded-xl border border-outline-variant p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group" onclick="openCategoryDetail('${c.name}')">
       <div class="space-y-3">
         <div class="flex items-center justify-between">
           <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
             <span class="material-symbols-outlined text-xl">${c.icon || 'category'}</span>
           </div>
-          <span class="text-xs font-bold text-gray-400">${c.video_count || 0} Videos</span>
+          <span class="text-xs font-bold text-gray-400">${videoCount} Videos</span>
         </div>
         <div>
           <h3 class="font-bold text-sm text-gray-900 group-hover:text-primary transition-colors">${c.name}</h3>
@@ -584,7 +588,13 @@ function renderCategoriesDirectory(filterTab = 'all') {
         <span class="material-symbols-outlined text-sm">arrow_forward</span>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
+}
+
+function filterCategoriesByContentType(contentType) {
+  state.categoryContentTypeFilter = contentType || '';
+  renderCategoriesDirectory('all');
 }
 
 function handleCategoryCardClick(title, type) {

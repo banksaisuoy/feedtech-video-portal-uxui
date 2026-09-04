@@ -128,7 +128,7 @@ async function loadContentTypes() {
 }
 
 function populateContentTypeSelects() {
-  const selects = ['uploadVideoContentType', 'editDrawerContentType', 'videoContentTypeFilter', 'homeContentTypeFilter'];
+  const selects = ['uploadVideoContentType', 'editDrawerContentType', 'videoContentTypeFilter', 'homeContentTypeFilter', 'categoryContentTypeFilter'];
   if (!state.contentTypes) return;
 
   selects.forEach(id => {
@@ -749,11 +749,11 @@ function openCategoryDetail(catName) {
 
   const pool = state.accessibleVideos || [];
   const lowCat = (catName || '').trim().toLowerCase();
+  const contentType = state.categoryContentTypeFilter || '';
 
   const filtered = pool.filter(v => {
     if (!catName || lowCat === 'all' || lowCat === 'all categories') return true;
-    if (v.category && v.category.trim().toLowerCase() === lowCat) return true;
-    return Boolean(v.category && v.category.trim().toLowerCase() === lowCat);
+    return Boolean(v.category && v.category.trim().toLowerCase() === lowCat && (!contentType || v.content_type === contentType));
   });
 
   if (grid) {
