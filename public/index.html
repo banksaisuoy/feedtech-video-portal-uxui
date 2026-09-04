@@ -365,10 +365,6 @@
               <span class="material-symbols-outlined text-xl">favorite</span>
               <span class="sidebar-link-text">Favorites</span>
             </a>
-            <a href="#" onclick="navigateView('events'); return false;" id="nav-events" class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-slate-50 transition-colors" title="Events & Symposia">
-              <span class="material-symbols-outlined text-xl">event</span>
-              <span class="sidebar-link-text">Events &amp; Symposia</span>
-            </a>
           </nav>
         </div>
 
@@ -910,10 +906,6 @@
           <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-outline-variant text-xs">
             <button onclick="filterCategoriesTab('all')" id="catTab-all" class="cat-tab-btn px-3 py-1.5 rounded-lg font-bold bg-white text-primary shadow-xs">All Categories</button>
             <button onclick="filterCategoriesTab('academic')" id="catTab-academic" class="cat-tab-btn px-3 py-1.5 rounded-lg font-semibold text-gray-600 hover:text-gray-900">Scientific R&D</button>
-            <button onclick="filterCategoriesTab('events')" id="catTab-events" class="cat-tab-btn px-3 py-1.5 rounded-lg font-semibold text-gray-600 hover:text-gray-900 flex items-center gap-1">
-              <span class="material-symbols-outlined text-sm">event</span>
-              <span>Events & Symposia</span>
-            </button>
             <button onclick="filterCategoriesTab('meetings')" id="catTab-meetings" class="cat-tab-btn px-3 py-1.5 rounded-lg font-semibold text-gray-600 hover:text-gray-900 flex items-center gap-1">
               <span class="material-symbols-outlined text-sm">meeting_room</span>
               <span>Meeting Recordings</span>
@@ -926,21 +918,7 @@
           <!-- Populated dynamically via JS -->
         </div>
 
-        <!-- Section 2: Integrated Corporate Events Grid (Embedded) -->
-        <div id="integratedEventsContainer" class="space-y-4 hidden">
-          <div class="flex items-center justify-between">
-            <h3 class="font-bold text-gray-900 text-sm flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-base text-primary">event</span>
-              <span>Corporate Events & Symposia Live / Replay</span>
-            </h3>
-            <span class="text-xs text-gray-400">Official Feedtech Global Conferences</span>
-          </div>
-          <div id="integratedEventsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            <!-- Populated via JS from events data -->
-          </div>
-        </div>
-
-        <!-- Section 3: Integrated Meeting Recordings Grid (Embedded) -->
+        <!-- Section 2: Integrated Meeting Recordings Grid (Embedded) -->
         <div id="integratedMeetingsContainer" class="space-y-4 hidden">
           <div class="flex items-center justify-between">
             <h3 class="font-bold text-gray-900 text-sm flex items-center gap-1.5">
@@ -1019,26 +997,8 @@
 
         <!-- Deep Analytics: Category Distribution & Top Videos Leaderboard -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <!-- Category Engagement Breakdown (5 cols) -->
-          <div class="lg:col-span-5 bg-white border border-outline-variant rounded-xl p-6 shadow-sm space-y-4">
-            <div class="flex items-center justify-between border-b border-outline-variant pb-3">
-              <div>
-                <h3 class="font-bold text-gray-900 text-sm flex items-center gap-1.5">
-                  <span class="material-symbols-outlined text-base text-primary">pie_chart</span>
-                  <span>Category Engagement Breakdown</span>
-                </h3>
-                <p class="text-[11px] text-gray-400">Total viewership distributed by academic category</p>
-              </div>
-              <span class="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded">Real-time</span>
-            </div>
-
-            <div id="adminCategoryAnalyticsList" class="space-y-3.5 pt-1">
-              <!-- Populated dynamically via loadAdminDashboard() -->
-            </div>
-          </div>
-
           <!-- Top Performing Videos Leaderboard (7 cols) -->
-          <div class="lg:col-span-7 bg-white border border-outline-variant rounded-xl p-6 shadow-sm space-y-4">
+          <div class="lg:col-span-12 bg-white border border-outline-variant rounded-xl p-6 shadow-sm space-y-4">
             <div class="flex items-center justify-between border-b border-outline-variant pb-3">
               <div>
                 <h3 class="font-bold text-gray-900 text-sm flex items-center gap-1.5">
@@ -1071,20 +1031,13 @@
 
         <!-- Bento Grid Main Content -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Monthly Video Consumption by Category Bar Chart (Col Span 2) -->
           <div class="lg:col-span-2 bg-white border border-outline-variant rounded-xl p-6 shadow-sm flex flex-col">
             <div class="flex justify-between items-center mb-6">
               <div>
-                <h3 class="font-bold text-gray-900 text-sm">Monthly Video Consumption by Category</h3>
-                <p class="text-xs text-gray-400">Interactive video view breakdown across categories (Click bar to drill down)</p>
+                <h3 class="font-bold text-gray-900 text-sm">Monthly Video Consumption</h3>
+                <p class="text-xs text-gray-400">Video usage trend across the portal</p>
               </div>
-              <button onclick="openCategoryDrilldown('Biotech')" class="text-primary hover:bg-emerald-50 px-2.5 py-1.5 rounded-lg transition-colors text-xs font-bold flex items-center gap-1 border border-primary/20 shadow-xs">
-                <span class="material-symbols-outlined text-sm">analytics</span>
-                <span>Inspect Video Breakdown</span>
-              </button>
             </div>
-            
-            <!-- Abstracted Bar Chart with Interactive Click-to-Drilldown -->
             <div class="flex-1 relative flex items-end justify-between gap-3 pt-6 border-b border-outline-variant/40 pb-4 h-56">
               <div onclick="openCategoryDrilldown('Biotech')" title="Click to drill down Biotech videos" class="flex flex-col items-center gap-2 group flex-1 h-full justify-end cursor-pointer">
                 <div class="w-full max-w-[42px] bg-primary/20 rounded-t-md h-[75%] group-hover:bg-primary/40 transition-all relative flex items-end overflow-hidden group-hover:scale-105">
@@ -1125,7 +1078,6 @@
             </div>
             <div class="flex items-center justify-between text-xs text-gray-400 mt-4 pt-2">
               <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-primary"></span> Primary Consumption</span>
-              <span class="text-[11px] text-primary font-medium cursor-pointer hover:underline" onclick="openCategoryDrilldown('All')">💡 Click any category to view individual video statistics</span>
             </div>
           </div>
 
@@ -1170,39 +1122,8 @@
               </div>
             </div>
 
-            <div class="mt-6 pt-4 border-t border-outline-variant flex items-center justify-between">
-              <span class="text-xs text-gray-500 font-medium">RBAC Security Gate</span>
-              <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded text-[11px] font-bold">Enforced (Active)</span>
-            </div>
           </div>
         </div>
-
-          <div class="bg-white rounded-xl border border-outline-variant p-5 shadow-sm space-y-4">
-            <h3 class="text-sm font-bold text-gray-900">Access Control Distribution</h3>
-            <div class="p-4 rounded-xl bg-slate-50 border border-outline-variant space-y-3 text-xs">
-              <div class="flex items-center justify-between">
-                <span class="flex items-center gap-1.5 font-semibold text-gray-700">
-                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 🌐 Public (Company-Wide)
-                </span>
-                <span class="font-bold text-gray-900">5 Videos</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="flex items-center gap-1.5 font-semibold text-gray-700">
-                  <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> 👥 Include (Whitelisted)
-                </span>
-                <span class="font-bold text-gray-900">4 Videos</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="flex items-center gap-1.5 font-semibold text-gray-700">
-                  <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> 🚫 Exclude (Blacklisted)
-                </span>
-                <span class="font-bold text-gray-900">3 Videos</span>
-              </div>
-            </div>
-            <button onclick="navigateView('admin-matrix')" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-gray-700 font-bold text-xs rounded-lg transition-colors">
-              Inspect Access Matrix
-            </button>
-          </div>
       </div>
 
       <!-- 12. VIEW: USER MANAGEMENT (ADMIN) -->
