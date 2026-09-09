@@ -177,10 +177,10 @@ function openAddUserModal() {
   // Populate department options
   const modalDept = document.getElementById('modalDept');
   const depts = state.departments && state.departments.length > 0 ? state.departments : [
-    { name: 'Research & Development (R&D)' }, { name: 'Feed Mill Operations' },
-    { name: 'Quality Assurance & QC-Lab' }, { name: 'Executive Board' },
-    { name: 'Veterinary & Animal Health' }, { name: 'Animal Nutrition Science' },
-    { name: 'Supply Chain & Procurement' }, { name: 'Information Technology & Digital' }
+    { name: 'Biotech' }, { name: 'Swine' }, { name: 'Aquatic' }, { name: 'Conference' },
+    { name: 'Dairy' }, { name: 'Dairy Process' }, { name: 'Extension Research' }, { name: 'Nutrition' },
+    { name: 'Oversea' }, { name: 'Premix' }, { name: 'Poultry' }, { name: 'Raw Material' },
+    { name: 'Ruminant' }, { name: 'Ruminant Pakthongchai' }, { name: 'Supplier' }, { name: 'QC-Lab' }, { name: 'China' }
   ];
   if (modalDept) {
     modalDept.innerHTML = depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
@@ -214,10 +214,10 @@ function editUserPrompt(userId) {
   // Populate department options
   const modalDept = document.getElementById('modalDept');
   const depts = state.departments && state.departments.length > 0 ? state.departments : [
-    { name: 'Research & Development (R&D)' }, { name: 'Feed Mill Operations' },
-    { name: 'Quality Assurance & QC-Lab' }, { name: 'Executive Board' },
-    { name: 'Veterinary & Animal Health' }, { name: 'Animal Nutrition Science' },
-    { name: 'Supply Chain & Procurement' }, { name: 'Information Technology & Digital' }
+    { name: 'Biotech' }, { name: 'Swine' }, { name: 'Aquatic' }, { name: 'Conference' },
+    { name: 'Dairy' }, { name: 'Dairy Process' }, { name: 'Extension Research' }, { name: 'Nutrition' },
+    { name: 'Oversea' }, { name: 'Premix' }, { name: 'Poultry' }, { name: 'Raw Material' },
+    { name: 'Ruminant' }, { name: 'Ruminant Pakthongchai' }, { name: 'Supplier' }, { name: 'QC-Lab' }, { name: 'China' }
   ];
   if (modalDept) {
     modalDept.innerHTML = depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');

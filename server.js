@@ -251,23 +251,32 @@ try {
   db.prepare("ALTER TABLE users ADD COLUMN is_executive_board INTEGER DEFAULT 0").run();
 } catch (e) {}
 
-// Populate / Refresh Corporate Departments (Independent organizational units for users)
+// Populate / Refresh Corporate Departments / Groups (17 Groups specified by P'Note)
 const corporateDepartments = [
-  { name: 'Executive Board', code: 'EXEC', icon: 'business_center', description: 'Corporate leadership, C-Suite executives, and Board of Directors.' },
-  { name: 'Research & Development (R&D)', code: 'RND', icon: 'science', description: 'Biotechnology research, molecular assays, and feed formulation innovation.' },
-  { name: 'Feed Mill Operations', code: 'OPS', icon: 'precision_manufacturing', description: 'Feed milling operations, SCADA automation, and factory engineering.' },
-  { name: 'Quality Assurance & QC-Lab', code: 'QAC', icon: 'verified', description: 'Chemical spectrometry, feed quality testing, and safety protocols.' },
-  { name: 'Veterinary & Animal Health', code: 'VAH', icon: 'medical_services', description: 'Swine, poultry, and aquatic disease control and veterinary advisory.' },
-  { name: 'Animal Nutrition Science', code: 'ANS', icon: 'psychiatry', description: 'Precision feed formulation, nutrient synthesis, and digestibility trials.' },
-  { name: 'Supply Chain & Procurement', code: 'SCP', icon: 'inventory', description: 'Raw material procurement, grain commodities, and vendor quality audits.' },
-  { name: 'Information Technology & Digital', code: 'ITD', icon: 'terminal', description: 'Enterprise video cloud, farm IoT automation, and software engineering.' }
+  { name: 'Biotech', code: 'BIO', icon: 'science', description: 'Biotechnology research, molecular assays, and feed innovations.' },
+  { name: 'Swine', code: 'SWN', icon: 'cruelty_free', description: 'Swine nutrition science, breeding protocols, and field trials.' },
+  { name: 'Aquatic', code: 'AQU', icon: 'water_drop', description: 'Aquaculture, shrimp, and fish nutrition development.' },
+  { name: 'Conference', code: 'CONF', icon: 'groups', description: 'Symposiums, academic conferences, and global summit presentations.' },
+  { name: 'Dairy', code: 'DRY', icon: 'water_drop', description: 'Dairy cattle nutrition, lactation trials, and milk yield.' },
+  { name: 'Dairy Process', code: 'DRYP', icon: 'precision_manufacturing', description: 'Dairy processing hygiene, processing tech, and QA.' },
+  { name: 'Extension Research', code: 'EXT', icon: 'biotech', description: 'Applied extension research and commercial farm trials.' },
+  { name: 'Nutrition', code: 'NUT', icon: 'nutrition', description: 'Precision nutrition formulation, amino acid profiles, and feed chemistry.' },
+  { name: 'Oversea', code: 'OVS', icon: 'public', description: 'International operations, exports, and overseas technical support.' },
+  { name: 'Premix', code: 'PMX', icon: 'grain', description: 'Vitamin, mineral premix formulation, and additive testing.' },
+  { name: 'Poultry', code: 'PLT', icon: 'egg', description: 'Broiler and layer performance, flock trials, and avian nutrition.' },
+  { name: 'Raw Material', code: 'RMAT', icon: 'inventory_2', description: 'Grain commodities, quality inspection, and raw material intake.' },
+  { name: 'Ruminant', code: 'RUM', icon: 'pets', description: 'Ruminant feed formulations, beef cattle trials, and forage.' },
+  { name: 'Ruminant Pakthongchai', code: 'RUMP', icon: 'location_on', description: 'Pakthongchai ruminant research station and experimental farm.' },
+  { name: 'Supplier', code: 'SPL', icon: 'handshake', description: 'Supplier partnerships, vendor technical audits, and ingredient sourcing.' },
+  { name: 'QC-Lab', code: 'QCL', icon: 'biotech', description: 'Central laboratory quality control, spectrometry, and safety assays.' },
+  { name: 'China', code: 'CHN', icon: 'language', description: 'China regional business unit and collaborative feed programs.' }
 ];
 
 try {
-  // Purge old duplicate category names from departments table
-  db.prepare("DELETE FROM departments WHERE name IN ('Biotech', 'Swine', 'Aquatic', 'Poultry', 'QC-Lab', 'Dairy', 'Dairy Process', 'Extension Research', 'Nutrition', 'Oversea', 'Premix', 'Raw Material', 'Ruminant', 'Ruminant Pathongchai', 'Supplier', 'Conference', 'China')").run();
+  // Clear any old placeholders or test departments so only the 17 official Groups exist
+  db.prepare("DELETE FROM departments WHERE name NOT IN ('Biotech', 'Swine', 'Aquatic', 'Conference', 'Dairy', 'Dairy Process', 'Extension Research', 'Nutrition', 'Oversea', 'Premix', 'Poultry', 'Raw Material', 'Ruminant', 'Ruminant Pakthongchai', 'Supplier', 'QC-Lab', 'China')").run();
   
-  const insertDept = db.prepare("INSERT OR IGNORE INTO departments (name, code, icon, description) VALUES (?, ?, ?, ?)");
+  const insertDept = db.prepare("INSERT OR REPLACE INTO departments (name, code, icon, description) VALUES (?, ?, ?, ?)");
   for (const d of corporateDepartments) {
     insertDept.run(d.name, d.code, d.icon, d.description);
   }
@@ -327,17 +336,14 @@ try {
 
 // Update existing users to have authentic Departments and is_executive_board
 try {
-  db.prepare("UPDATE users SET department = 'Executive Board', is_executive_board = 1, is_admin = 1 WHERE name LIKE '%Kittisak%' OR email LIKE '%admin%'").run();
-  db.prepare("UPDATE users SET department = 'Executive Board', is_executive_board = 1 WHERE name LIKE '%Nuntana%'").run();
-  db.prepare("UPDATE users SET department = 'Research & Development (R&D)', is_executive_board = 1 WHERE name LIKE '%Thanawat%'").run();
-  db.prepare("UPDATE users SET department = 'Research & Development (R&D)', is_executive_board = 0 WHERE name LIKE '%Alice%'").run();
-  db.prepare("UPDATE users SET department = 'Feed Mill Operations', is_executive_board = 0 WHERE name LIKE '%John Doe%'").run();
-  db.prepare("UPDATE users SET department = 'Quality Assurance & QC-Lab', is_executive_board = 0 WHERE name LIKE '%Maria Wong%'").run();
-  db.prepare("UPDATE users SET department = 'Animal Nutrition Science', is_executive_board = 0 WHERE name LIKE '%Somchai%'").run();
-  db.prepare("UPDATE users SET department = 'Veterinary & Animal Health', is_executive_board = 0 WHERE name LIKE '%Ananya%'").run();
-  db.prepare("UPDATE users SET department = 'Supply Chain & Procurement', is_executive_board = 0 WHERE name LIKE '%David Miller%'").run();
-  db.prepare("UPDATE users SET department = 'Information Technology & Digital', is_executive_board = 0 WHERE name LIKE '%James Wilson%'").run();
-  db.prepare("UPDATE users SET department = 'Quality Assurance & QC-Lab', is_executive_board = 0 WHERE name LIKE '%Lisa Chen%'").run();
+  db.prepare("UPDATE users SET department = 'Biotech' WHERE name LIKE '%Thanawat%' OR name LIKE '%Alice%'").run();
+  db.prepare("UPDATE users SET department = 'Swine' WHERE name LIKE '%Somchai%'").run();
+  db.prepare("UPDATE users SET department = 'Aquatic' WHERE name LIKE '%Ananya%'").run();
+  db.prepare("UPDATE users SET department = 'QC-Lab' WHERE name LIKE '%Maria Wong%' OR name LIKE '%Lisa Chen%'").run();
+  db.prepare("UPDATE users SET department = 'Dairy' WHERE name LIKE '%John Doe%'").run();
+  db.prepare("UPDATE users SET department = 'Raw Material' WHERE name LIKE '%David Miller%'").run();
+  db.prepare("UPDATE users SET department = 'Nutrition' WHERE name LIKE '%James Wilson%'").run();
+  db.prepare("UPDATE users SET department = 'Biotech' WHERE department NOT IN ('Biotech', 'Swine', 'Aquatic', 'Conference', 'Dairy', 'Dairy Process', 'Extension Research', 'Nutrition', 'Oversea', 'Premix', 'Poultry', 'Raw Material', 'Ruminant', 'Ruminant Pakthongchai', 'Supplier', 'QC-Lab', 'China')").run();
 } catch (e) {
   console.error('Error migrating user departments:', e.message);
 }
