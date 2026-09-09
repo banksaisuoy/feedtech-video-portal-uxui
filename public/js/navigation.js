@@ -7,7 +7,7 @@
 
 function navigateView(viewName) {
   const u = state.currentUser;
-  const isAdmin = u && (u.is_admin === 1 || u.role === 'System Administrator' || u.department === 'Executive');
+  const isAdmin = u && (u.is_admin === 1 || u.role === 'Admin');
 
   // Intercept profile, settings, and support routes to open unified Profile & Settings modal
   if (viewName === 'settings' || viewName === 'preferences') {
@@ -80,8 +80,8 @@ function navigateView(viewName) {
     if (typeof loadDepartments === 'function') loadDepartments();
   }
   if (viewName === 'admin-videos') {
-    const videoDeptFilter = document.getElementById('videoDeptFilter');
-    if (videoDeptFilter) videoDeptFilter.value = '';
+    const videoCatFilter = document.getElementById('videoCatFilter');
+    if (videoCatFilter) videoCatFilter.value = '';
     if (typeof loadAllVideos === 'function') {
       loadAllVideos();
     } else {
@@ -116,7 +116,7 @@ function goBackFromWatchPage() {
 
 function togglePortalAdminMode() {
   const u = state.currentUser;
-  const isAdmin = u && (u.is_admin === 1 || u.role === 'System Administrator' || u.department === 'Executive');
+  const isAdmin = u && (u.is_admin === 1 || u.role === 'Admin');
 
   if (!isAdmin) {
     showToast(t('regularStaffToast'), 'error');
@@ -188,6 +188,11 @@ window.setSidebarCollapsed = function(collapsed) {
   if (collapsed) {
     sidebar.classList.add('collapsed');
     localStorage.setItem('feedtech_sidebar_collapsed', 'true');
+    // Hide categories submenu to prevent visual overflow
+    const submenu = document.getElementById('sidebarCategoriesSubmenu');
+    const chevron = document.getElementById('sidebarCatChevron');
+    if (submenu) submenu.classList.add('hidden');
+    if (chevron) chevron.classList.remove('rotate-180');
   } else {
     sidebar.classList.remove('collapsed');
     localStorage.setItem('feedtech_sidebar_collapsed', 'false');
@@ -203,14 +208,14 @@ window.initTheme = function() {
 
 window.setPortalTheme = function(theme) {
   applyTheme(theme);
-  showToast(theme === 'dark' ? '🌙 สลับเข้าสู่โหมดมืด (Dark Mode)' : '☀️ สลับเข้าสู่โหมดสว่าง (Light Mode)', 'info');
+  showToast(theme === 'dark' ? '🌙 Dark Mode enabled' : '☀️ Light Mode enabled', 'info');
 };
 
 window.toggleDarkMode = function() {
   const isDark = document.documentElement.classList.contains('dark');
   const nextTheme = isDark ? 'light' : 'dark';
   applyTheme(nextTheme);
-  showToast(nextTheme === 'dark' ? '🌙 เปิดใช้งานโหมดมืด (Dark Mode)' : '☀️ เปิดใช้งานโหมดสว่าง (Light Mode)', 'info');
+  showToast(nextTheme === 'dark' ? '🌙 Dark Mode enabled' : '☀️ Light Mode enabled', 'info');
 };
 
 function applyTheme(theme) {

@@ -7,6 +7,12 @@
 
 function toggleSidebarCategoriesDropdown(event) {
   if (event) event.stopPropagation();
+  const sidebar = document.getElementById('mainSidebar');
+  if (sidebar && sidebar.classList.contains('collapsed')) {
+    if (typeof window.setSidebarCollapsed === 'function') {
+      window.setSidebarCollapsed(false);
+    }
+  }
   const submenu = document.getElementById('sidebarCategoriesSubmenu');
   const chevron = document.getElementById('sidebarCatChevron');
   if (!submenu) return;
@@ -91,7 +97,7 @@ async function loadDepartments() {
 }
 
 function populateCategorySelects() {
-  const selects = ['tagCategoryFilter', 'quickTagDept', 'modalTagDept', 'uploadVideoDept', 'uploadVideoCategory', 'editDrawerCategory'];
+  const selects = ['tagCategoryFilter', 'quickTagDept', 'modalTagDept', 'uploadVideoDept', 'uploadVideoCategory', 'editDrawerCategory', 'videoCatFilter'];
   if (!state.categories) return;
 
   selects.forEach(id => {
@@ -270,9 +276,10 @@ function renderCategoryManagementTable() {
     const totalVids = cats.reduce((acc, c) => acc + (c.video_count || 0), 0);
     totalVidEl.textContent = totalVids;
   }
-  const contentTypeKpiEl = document.getElementById('adminCatKpiContentTypes');
-  if (contentTypeKpiEl) {
-    contentTypeKpiEl.textContent = `${(state.contentTypes || []).length} Types`;
+  const featuredKpiEl = document.getElementById('adminCatKpiFeatured');
+  if (featuredKpiEl) {
+    const featuredCount = (state.allVideos || []).filter(v => v.is_featured === 1).length;
+    featuredKpiEl.textContent = `${featuredCount} Videos`;
   }
 
   if (list.length === 0) {
@@ -405,7 +412,7 @@ function updateCatIconPreview(iconValue) {
 }
 
 function openAddCategoryModal() {
-  document.getElementById('categoryModalTitle').textContent = 'Add Category (เพิ่มหมวดหมู่ความรู้)';
+  document.getElementById('categoryModalTitle').textContent = 'Add Category';
   document.getElementById('modalCatId').value = '';
   document.getElementById('modalCatName').value = '';
   document.getElementById('modalCatIcon').value = 'domain';
@@ -737,9 +744,7 @@ function filterMeetings(filter) {
 // ---------------- CATEGORY DETAIL ----------------
 
 function openCategoryDetail(catName) {
-  const previousCategory = state.selectedCategory;
   state.selectedCategory = catName;
-  if (previousCategory !== catName) state.categoryContentTypeFilter = '';
   navigateView('category-detail');
 
   const titleEl = document.getElementById('catDetailTitle');
@@ -748,16 +753,14 @@ function openCategoryDetail(catName) {
 
   if (titleEl) titleEl.textContent = catName;
   if (descEl) descEl.textContent = `Official collection of academic assets, research papers, and SOP video protocols under ${catName}.`;
-  const typeFilter = document.getElementById('categoryDetailContentTypeFilter');
-  if (typeFilter) typeFilter.value = state.categoryContentTypeFilter || '';
 
   const pool = state.accessibleVideos || [];
   const lowCat = (catName || '').trim().toLowerCase();
-  const contentType = state.categoryContentTypeFilter || '';
 
   const filtered = pool.filter(v => {
-    if (!catName || lowCat === 'all' || lowCat === 'all categories') return true;
-    return Boolean(v.category && v.category.trim().toLowerCase() === lowCat && (!contentType || v.content_type === contentType));
+    return (!catName || lowCat === 'all' || lowCat === 'all categories') 
+      ? true 
+      : Boolean(v.category && v.category.trim().toLowerCase() === lowCat);
   });
 
   if (grid) {
@@ -777,12 +780,7 @@ function openCategoryDetail(catName) {
   }
 }
 
-function filterCategoryDetailByContentType(contentType) {
-  state.categoryContentTypeFilter = contentType || '';
-  openCategoryDetail(state.selectedCategory || 'All');
-  const typeFilter = document.getElementById('categoryDetailContentTypeFilter');
-  if (typeFilter) typeFilter.value = state.categoryContentTypeFilter;
-}
+
 
 // ---------------- CORPORATE DEPARTMENT MANAGEMENT ----------------
 
@@ -852,7 +850,7 @@ function populateDepartmentSelects() {
     if (curr) modalDept.value = curr;
   }
 
-  ['editDrawerDept', 'videoDeptFilter', 'modalEventDept'].forEach(id => {
+  ['modalEventDept'].forEach(id => {
     const select = document.getElementById(id);
     if (!select) return;
     const current = select.value;

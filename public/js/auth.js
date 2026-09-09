@@ -114,29 +114,32 @@ async function switchPersona(userId) {
 }
 
 async function quickSwitchToAdmin() {
-  const adminUser = state.users.find(u => u.is_admin === 1 || u.role === 'System Administrator' || u.department === 'Executive');
+  const adminUser = state.users.find(u => u.is_admin === 1 || u.role === 'Admin');
   if (adminUser) {
     await switchPersona(adminUser.id);
     navigateView('admin-tags');
-    showToast('Switched to Admin: Opened Tag & Category Management', 'success');
+    showToast('Switched to Admin: Opened Category Management', 'success');
   }
 }
 
 function renderPersonaSelector() {
   const sel = document.getElementById('personaSelector');
   if (!sel) return;
-  sel.innerHTML = state.users.map(u => `
+  sel.innerHTML = state.users.map(u => {
+    const roleText = (u.role === 'Admin' || u.is_admin === 1) ? 'Admin' : 'User';
+    return `
     <option value="${u.id}" ${state.currentUser && state.currentUser.id === u.id ? 'selected' : ''}>
-      ${u.name} — ${u.role} (${u.department}) ${u.is_admin ? '👑 Admin' : '👤 User'}
+      ${u.name} — ${u.department} (${roleText})
     </option>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function renderCurrentUserUI() {
   const u = state.currentUser;
   if (!u) return;
 
-  const isAdmin = (u.is_admin === 1 || u.role === 'System Administrator' || u.department === 'Executive');
+  const isAdmin = (u.is_admin === 1 || u.role === 'Admin');
 
   // Top control bar
   const badge = document.getElementById('personaLevelBadge');
@@ -146,22 +149,16 @@ function renderCurrentUserUI() {
 
   if (badge) {
     if (isAdmin) {
-      badge.textContent = '👑 Super Admin';
+      badge.textContent = '🛡️ Admin';
       badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-purple-500/40 text-purple-200 border border-purple-400';
-    } else if (u.name.includes('Noi') || u.name.includes('Nuntana') || u.department === 'Executive') {
-      badge.textContent = '⭐ Executive Board';
-      badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/40 text-amber-200 border border-amber-400';
-    } else if (u.name.includes('Noom') || u.name.includes('Thanawat') || u.role.includes('Lead')) {
-      badge.textContent = '🔬 Senior R&D Lead';
-      badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-blue-500/40 text-blue-200 border border-blue-400';
     } else {
-      badge.textContent = '👤 Authorized Staff';
+      badge.textContent = '👤 User';
       badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/50';
     }
   }
 
   if (deptText) {
-    deptText.textContent = `Dept: ${u.department} | Role: ${u.role} | Access: PBAC`;
+    deptText.textContent = `Dept: ${u.department} | Role: ${isAdmin ? 'Admin' : 'User'}`;
   }
 
   // Top navbar profile
@@ -170,7 +167,7 @@ function renderCurrentUserUI() {
   const navAvatar = document.getElementById('navAvatar');
 
   if (navName) navName.textContent = u.name;
-  if (navRole) navRole.textContent = `${u.role} • ${u.is_admin ? 'Admin' : 'User'}`;
+  if (navRole) navRole.textContent = `${u.department} • ${isAdmin ? 'Admin' : 'User'}`;
   if (navAvatar) {
     const initials = u.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
     navAvatar.textContent = initials;
@@ -209,10 +206,10 @@ function renderCurrentUserUI() {
   if (modalAdminBadge) {
     if (isAdmin) {
       modalAdminBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/80 text-white border border-white/30';
-      modalAdminBadge.innerHTML = '🛡️ Administrator (Full Access)';
+      modalAdminBadge.innerHTML = '🛡️ Admin';
     } else {
       modalAdminBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-white/20 text-white border border-white/30';
-      modalAdminBadge.innerHTML = '👤 View-Only Member';
+      modalAdminBadge.innerHTML = '👤 User';
     }
   }
   if (profileEmpId) profileEmpId.textContent = u.emp_id || 'EMP-1001';
@@ -221,7 +218,7 @@ function renderCurrentUserUI() {
     profileDept.innerHTML = `${u.department || 'General'} ${isBoard ? '<span class="text-[10px] text-amber-600 block">⭐ Executive Board</span>' : ''}`;
   }
   if (profileVidCount) profileVidCount.textContent = `${state.accessibleVideos ? state.accessibleVideos.length : 0} / ${state.allVideos ? state.allVideos.length : 10}`;
-  if (profileAdminStatus) profileAdminStatus.textContent = isAdmin ? 'Administrator (Full)' : 'View-Only (Non-Admin)';
+  if (profileAdminStatus) profileAdminStatus.textContent = isAdmin ? 'Admin' : 'User';
 
   // Render Allowed Tags Chips in Banner
   const bannerTagsContainer = document.getElementById('bannerUserTagsContainer');
@@ -434,7 +431,7 @@ async function handleLoginFormSubmit(e) {
       await loadAccessibleVideos();
       await loadAllVideos();
       
-      const isAdmin = (json.data.is_admin === 1 || json.data.role === 'System Administrator');
+      const isAdmin = (json.data.is_admin === 1 || json.data.role === 'Admin');
       if (isAdmin) {
         navigateView('admin-dashboard');
       } else {

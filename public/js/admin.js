@@ -22,9 +22,9 @@ function renderUserTable() {
   }
   if (level) {
     if (level === 'Admin') {
-      list = list.filter(u => u.is_admin === 1 || u.role === 'System Administrator');
+      list = list.filter(u => u.is_admin === 1 || u.role === 'Admin');
     } else if (level === 'User') {
-      list = list.filter(u => !u.is_admin && u.role !== 'System Administrator');
+      list = list.filter(u => !u.is_admin && u.role !== 'Admin');
     }
   }
 
@@ -32,6 +32,7 @@ function renderUserTable() {
     const initials = u.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
     const isInactive = u.status === 'Inactive';
     const statusColor = isInactive ? 'bg-rose-500' : 'bg-emerald-500';
+    const isAdmin = (u.is_admin === 1 || u.role === 'Admin');
 
     return `
       <tr class="hover:bg-slate-50/80 transition-colors ${isInactive ? 'opacity-60 bg-slate-100/50' : ''}">
@@ -51,7 +52,7 @@ function renderUserTable() {
           <div class="font-semibold text-gray-800">${u.department || 'General'}</div>
           ${(u.is_executive_board === 1 || u.department === 'Executive Board') ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300 mt-0.5"><span class="material-symbols-outlined text-[10px]">star</span> Executive Board</span>` : ''}
         </td>
-        <td class="py-3.5 px-5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.is_admin ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}">${u.is_admin ? '🛡️ Administrator' : '👤 Regular Staff'}</span></td>
+        <td class="py-3.5 px-5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${isAdmin ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}">${isAdmin ? '🛡️ Admin' : '👤 User'}</span></td>
         <td class="py-3.5 px-5">
           <span class="inline-flex items-center gap-1.5 font-semibold text-[11px] ${isInactive ? 'text-rose-600' : 'text-emerald-700'}">
             <span class="w-2 h-2 rounded-full ${statusColor}"></span>
@@ -59,7 +60,7 @@ function renderUserTable() {
           </span>
         </td>
         <td class="py-3.5 px-5 text-right space-x-1.5 whitespace-nowrap">
-          <button onclick="inspectUserVideoAccess(${u.id})" class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-[11px] font-bold transition-colors shadow-2xs" title="ดูว่าผู้ใช้นี้สามารถดูคลิปไหนได้บ้าง">
+          <button onclick="inspectUserVideoAccess(${u.id})" class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-[11px] font-bold transition-colors shadow-2xs" title="Check Video Access">
             <span class="material-symbols-outlined text-xs">visibility</span>
             <span>Video Access</span>
           </button>
@@ -85,13 +86,13 @@ function evaluateVideoAccessForUser(user, video) {
   if (!user || user.status !== 'Active') return { allowed: false, reason: 'User inactive or not found' };
   
   // Rule 1: Super Admin / Executive administrator has full visibility
-  if (user.is_admin === 1 || user.role === 'System Administrator' || user.is_executive_board === 1 || user.department === 'Executive Board') {
-    return { allowed: true, reason: '👑 ผู้ดูแลระบบ / กรรมการบริหาร (Full Executive & Admin Access)' };
+  if (user.is_admin === 1 || user.role === 'Admin' || user.is_executive_board === 1 || user.department === 'Executive Board') {
+    return { allowed: true, reason: '👑 Full Executive & Admin Access' };
   }
 
   // Rule 2: If video is hidden by admin
   if (video.is_hidden === 1) {
-    return { allowed: false, reason: '🚫 วิดีโอถูกซ่อนโดยผู้ดูแลระบบ (Archived/Hidden)' };
+    return { allowed: false, reason: '🚫 Hidden by Administrator' };
   }
 
   // Parse allowed & excluded user lists
@@ -117,12 +118,12 @@ function evaluateVideoAccessForUser(user, video) {
     if (isIncluded) {
       return { 
         allowed: true, 
-        reason: `👥 สิทธิ์เฉพาะบุคคล (Whitelist Include - ${allowedUsers.length} ท่าน)` 
+        reason: `👥 Whitelist Include (${allowedUsers.length} users)` 
       };
     }
     return { 
       allowed: false, 
-      reason: `⛔ สิทธิ์เฉพาะบุคคล: จำกัดเฉพาะรายชื่อบุคคลที่กำหนด (${allowedUsers.length} ท่าน)` 
+      reason: `⛔ Whitelist Restricted (${allowedUsers.length} users)` 
     };
   }
 
@@ -132,19 +133,19 @@ function evaluateVideoAccessForUser(user, video) {
     if (isExcluded) {
       return { 
         allowed: false, 
-        reason: '⛔ ถูกจำกัดสิทธิ์ (Exclude Blacklist): อยู่ในรายชื่อที่ยกเว้นการเข้าถึง' 
+        reason: '⛔ Denied: Excluded by policy' 
       };
     }
     return { 
       allowed: true, 
-      reason: `🌐 เข้าถึงได้ทั่วไป (ยกเว้นเฉพาะบุคคล ${excludedUsers.length} ท่าน)` 
+      reason: `🌐 Public Access (Except ${excludedUsers.length} excluded users)` 
     };
   }
 
   // Rule 5: Public
   return { 
     allowed: true, 
-    reason: '🌐 สาธารณะ (Public): สมาชิกทุกคนในองค์กรเข้าถึงได้' 
+    reason: '🌐 Public: Accessible to all members' 
   };
 }
 
@@ -159,7 +160,7 @@ function inspectUserVideoAccess(userId) {
   const tagsListEl = document.getElementById('userAccessTagsList');
   const listEl = document.getElementById('userAccessVideosList');
 
-  if (titleEl) titleEl.textContent = `ตรวจสอบสิทธิ์การดูวิดีโอ: ${user.name}`;
+  if (titleEl) titleEl.textContent = `Check Video Access: ${user.name}`;
   if (subtitleEl) subtitleEl.textContent = `${user.role} • ${user.department} • ${user.email} (${user.emp_id || 'ID-' + user.id})`;
 
   if (tagsListEl) {
@@ -177,8 +178,8 @@ function inspectUserVideoAccess(userId) {
     if (evalResult.allowed) allowedCount++;
 
     const statusBadge = evalResult.allowed
-      ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200"><span class="material-symbols-outlined text-xs">check_circle</span> อนุญาต (Allowed)</span>`
-      : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200"><span class="material-symbols-outlined text-xs">block</span> จำกัดสิทธิ์ (Denied)</span>`;
+      ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200"><span class="material-symbols-outlined text-xs">check_circle</span> Allowed</span>`
+      : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200"><span class="material-symbols-outlined text-xs">block</span> Denied</span>`;
 
     const mode = (v.access_mode || 'public').toLowerCase();
     const accessModeBadge = mode === 'include'
@@ -215,11 +216,11 @@ function inspectUserVideoAccess(userId) {
     `;
   }).join('');
 
-  if (listEl) listEl.innerHTML = itemsHtml || '<div class="text-center py-6 text-gray-400 text-xs">ไม่พบรายการวิดีโอ</div>';
+  if (listEl) listEl.innerHTML = itemsHtml || '<div class="text-center py-6 text-gray-400 text-xs">No videos found</div>';
   
   const total = videos.length;
   const pct = total > 0 ? Math.round((allowedCount / total) * 100) : 0;
-  if (summaryEl) summaryEl.textContent = `${allowedCount} / ${total} วิดีโอที่รับสิทธิ์ (${pct}%)`;
+  if (summaryEl) summaryEl.textContent = `${allowedCount} / ${total} Videos Allowed (${pct}%)`;
 
   if (modal) modal.classList.remove('hidden');
 }
@@ -244,15 +245,15 @@ function renderVideoManagementTable() {
   }
 
   const q = (document.getElementById('videoTableSearchInput')?.value || '').toLowerCase();
-  const dept = document.getElementById('videoDeptFilter')?.value || '';
+  const cat = document.getElementById('videoCatFilter')?.value || document.getElementById('videoDeptFilter')?.value || '';
   const level = document.getElementById('videoLevelFilter')?.value || '';
 
   let list = videos;
   if (q) {
     list = list.filter(v => v.title.toLowerCase().includes(q) || v.video_id.toLowerCase().includes(q));
   }
-  if (dept) {
-    list = list.filter(v => v.department === dept);
+  if (cat) {
+    list = list.filter(v => v.category === cat);
   }
   if (level) {
     list = list.filter(v => (v.access_mode || 'public').toLowerCase() === level.toLowerCase());
@@ -276,19 +277,15 @@ function renderVideoManagementTable() {
       </td>
       <td class="py-3 px-4">
         <div class="font-semibold text-gray-800 text-xs">${v.category || 'Uncategorized'}</div>
-        <div class="text-[10px] text-gray-500 truncate max-w-[140px]">${v.department || 'Unassigned Department'}</div>
-        <div class="text-[10px] text-gray-400 truncate max-w-[140px]">${v.content_type || 'Unspecified Content Type'} · ${v.tags || ''}</div>
+        <div class="text-[10px] text-gray-500 truncate max-w-[180px]">${v.content_type || 'Research & Whitepaper'}</div>
+        <div class="text-[10px] text-gray-400 truncate max-w-[180px]">${v.tags || ''}</div>
       </td>
       <td class="py-3 px-4">${getPermissionBadgeMarkup(v)}</td>
       <td class="py-3 px-4 text-center whitespace-nowrap">
-        <div class="inline-flex items-center gap-1 bg-slate-100/80 p-1 rounded-lg border border-slate-200">
-          <button type="button" onclick="toggleVideoHighlight(${v.id}, event)" class="p-1 rounded transition-all ${v.is_featured ? 'text-amber-700 bg-amber-200/90 font-bold shadow-xs' : 'text-gray-400 hover:text-amber-600 hover:bg-white'}" title="${v.is_featured ? '📌 วิดีโอไฮไลท์หน้าแรก (คลิกเพื่อยกเลิก)' : 'คลิกเพื่อปักหมุดไฮไลท์หน้าแรก'}">
-            <span class="material-symbols-outlined text-sm ${v.is_featured ? 'fill' : ''}">push_pin</span>
-          </button>
-          <button type="button" onclick="toggleVideoRecommended(${v.id}, event)" class="p-1 rounded transition-all ${v.is_recommended ? 'text-emerald-800 bg-emerald-200/90 font-bold shadow-xs' : 'text-gray-400 hover:text-emerald-700 hover:bg-white'}" title="${v.is_recommended ? '⭐ คลิปแนะนำ (คลิกเพื่อยกเลิก)' : 'คลิกเพื่อตั้งเป็นคลิปแนะนำ'}">
-            <span class="material-symbols-outlined text-sm ${v.is_recommended ? 'fill' : ''}">star</span>
-          </button>
-        </div>
+        <button type="button" onclick="toggleVideoHighlight(${v.id}, event)" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all ${v.is_featured ? 'text-amber-800 bg-amber-100 font-bold border border-amber-300 shadow-2xs' : 'text-gray-400 hover:text-amber-700 hover:bg-slate-100 border border-transparent'}" title="${v.is_featured ? '📌 Pinned to Hero Highlight (Click to unpin)' : 'Click to pin as Hero Highlight'}">
+          <span class="material-symbols-outlined text-sm ${v.is_featured ? 'fill text-amber-600' : ''}">push_pin</span>
+          <span class="text-[10px] font-semibold">${v.is_featured ? 'Pinned' : 'Pin'}</span>
+        </button>
       </td>
       <td class="py-3 px-4 text-[11px] text-gray-500">${v.views || 0} views</td>
       <td class="py-3 px-4 text-[11px] text-gray-600">${v.uploaded_by || 'Admin'}</td>
@@ -321,7 +318,7 @@ async function toggleVideoHighlight(videoId, event) {
       
       renderVideoManagementTable();
       if (typeof renderFeaturedCarousel === 'function') renderFeaturedCarousel();
-      showToast(json.is_featured ? '📌 ปักหมุดเป็นวิดีโอไฮไลท์หน้าแรกแล้ว' : 'ปลดหมุดวิดีโอไฮไลท์แล้ว', 'info');
+      showToast(json.is_featured ? '📌 Pinned as hero highlight' : 'Unpinned from hero highlight', 'info');
     }
   } catch (err) {
     console.error('Failed to toggle featured highlight:', err);
@@ -343,7 +340,7 @@ async function toggleVideoRecommended(videoId, event) {
       renderVideoManagementTable();
       if (typeof renderHomeVideos === 'function') renderHomeVideos();
       if (typeof renderRecommendedVideos === 'function') renderRecommendedVideos();
-      showToast(json.is_recommended ? '⭐ ตั้งเป็นคลิปแนะนำสำหรับคุณแล้ว' : 'ปลดคลิปแนะนำแล้ว', 'info');
+      showToast(json.is_recommended ? '⭐ Set as recommended' : 'Removed from recommended', 'info');
     }
   } catch (err) {
     console.error('Failed to toggle recommended:', err);
@@ -420,6 +417,14 @@ function renderUploadPersonList(filter = '') {
 
   const countText = document.getElementById('uploadSelectedPersonsCountText');
   if (countText) countText.textContent = `Selected: ${state.selectedUploadPersons.size} persons`;
+
+  const visibleCountText = document.getElementById('uploadVisibleCountText');
+  if (visibleCountText) visibleCountText.textContent = `Showing ${users.length} members`;
+
+  const selectAllCb = document.getElementById('uploadSelectAllCheckbox');
+  if (selectAllCb) {
+    selectAllCb.checked = users.length > 0 && users.every(u => state.selectedUploadPersons.has(u.id));
+  }
 }
 
 function filterUploadPersonList(q) {
@@ -434,6 +439,33 @@ function toggleUploadPerson(id) {
   }
   const countText = document.getElementById('uploadSelectedPersonsCountText');
   if (countText) countText.textContent = `Selected: ${state.selectedUploadPersons.size} persons`;
+
+  const q = (document.getElementById('uploadPersonSearchInput')?.value || '').toLowerCase();
+  const deptFilter = document.getElementById('uploadDeptFilter')?.value || '';
+  let users = state.users || [];
+  if (deptFilter) users = users.filter(u => u.department === deptFilter);
+  if (q) users = users.filter(u => u.name.toLowerCase().includes(q) || (u.department && u.department.toLowerCase().includes(q)) || (u.role && u.role.toLowerCase().includes(q)) || (u.emp_id && u.emp_id.toLowerCase().includes(q)));
+  const selectAllCb = document.getElementById('uploadSelectAllCheckbox');
+  if (selectAllCb) {
+    selectAllCb.checked = users.length > 0 && users.every(u => state.selectedUploadPersons.has(u.id));
+  }
+}
+
+function toggleUploadSelectAll(checked) {
+  const q = (document.getElementById('uploadPersonSearchInput')?.value || '').toLowerCase();
+  const deptFilter = document.getElementById('uploadDeptFilter')?.value || '';
+  let users = state.users || [];
+  if (deptFilter) users = users.filter(u => u.department === deptFilter);
+  if (q) users = users.filter(u => u.name.toLowerCase().includes(q) || (u.department && u.department.toLowerCase().includes(q)) || (u.role && u.role.toLowerCase().includes(q)) || (u.emp_id && u.emp_id.toLowerCase().includes(q)));
+
+  if (checked) {
+    users.forEach(u => state.selectedUploadPersons.add(u.id));
+    showToast(`Selected all ${users.length} visible personnel`, 'info');
+  } else {
+    users.forEach(u => state.selectedUploadPersons.delete(u.id));
+    showToast(`Deselected ${users.length} personnel`, 'info');
+  }
+  renderUploadPersonList();
 }
 
 function addDepartmentPersonsForUpload() {
@@ -500,6 +532,10 @@ function renderDrawerPersonList(filter = '') {
 
   if (users.length === 0) {
     container.innerHTML = `<div class="py-6 text-center text-xs text-gray-400">No personnel match current filters.</div>`;
+    const visibleCountText = document.getElementById('drawerVisibleCountText');
+    if (visibleCountText) visibleCountText.textContent = `Showing 0 members`;
+    const selectAllCb = document.getElementById('drawerSelectAllCheckbox');
+    if (selectAllCb) selectAllCb.checked = false;
     return;
   }
 
@@ -528,6 +564,14 @@ function renderDrawerPersonList(filter = '') {
 
   const countText = document.getElementById('drawerSelectedPersonsCountText');
   if (countText) countText.textContent = `Selected: ${state.selectedDrawerPersons.size} persons`;
+
+  const visibleCountText = document.getElementById('drawerVisibleCountText');
+  if (visibleCountText) visibleCountText.textContent = `Showing ${users.length} members`;
+
+  const selectAllCb = document.getElementById('drawerSelectAllCheckbox');
+  if (selectAllCb) {
+    selectAllCb.checked = users.length > 0 && users.every(u => state.selectedDrawerPersons.has(u.id));
+  }
 }
 
 function filterDrawerPersonList(q) {
@@ -542,6 +586,33 @@ function toggleDrawerPerson(id) {
   }
   const countText = document.getElementById('drawerSelectedPersonsCountText');
   if (countText) countText.textContent = `Selected: ${state.selectedDrawerPersons.size} persons`;
+
+  const q = (document.getElementById('drawerPersonSearchInput')?.value || '').toLowerCase();
+  const deptFilter = document.getElementById('drawerDeptFilter')?.value || '';
+  let users = state.users || [];
+  if (deptFilter) users = users.filter(u => u.department === deptFilter);
+  if (q) users = users.filter(u => u.name.toLowerCase().includes(q) || (u.department && u.department.toLowerCase().includes(q)) || (u.role && u.role.toLowerCase().includes(q)) || (u.emp_id && u.emp_id.toLowerCase().includes(q)));
+  const selectAllCb = document.getElementById('drawerSelectAllCheckbox');
+  if (selectAllCb) {
+    selectAllCb.checked = users.length > 0 && users.every(u => state.selectedDrawerPersons.has(u.id));
+  }
+}
+
+function toggleDrawerSelectAll(checked) {
+  const q = (document.getElementById('drawerPersonSearchInput')?.value || '').toLowerCase();
+  const deptFilter = document.getElementById('drawerDeptFilter')?.value || '';
+  let users = state.users || [];
+  if (deptFilter) users = users.filter(u => u.department === deptFilter);
+  if (q) users = users.filter(u => u.name.toLowerCase().includes(q) || (u.department && u.department.toLowerCase().includes(q)) || (u.role && u.role.toLowerCase().includes(q)) || (u.emp_id && u.emp_id.toLowerCase().includes(q)));
+
+  if (checked) {
+    users.forEach(u => state.selectedDrawerPersons.add(u.id));
+    showToast(`Selected all ${users.length} visible members`, 'info');
+  } else {
+    users.forEach(u => state.selectedDrawerPersons.delete(u.id));
+    showToast(`Deselected ${users.length} members`, 'info');
+  }
+  renderDrawerPersonList();
 }
 
 function addDepartmentPersonsForDrawer() {
@@ -587,25 +658,45 @@ function openEditDrawer(videoId) {
   if (document.getElementById('editDrawerThumbUrl')) {
     document.getElementById('editDrawerThumbUrl').value = v.thumbnail_url || '';
   }
-  document.getElementById('editDrawerDuration').textContent = v.duration;
+  document.getElementById('editDrawerDuration').textContent = v.duration || '10:00';
   document.getElementById('editDrawerTitle').value = v.title;
-  document.getElementById('editDrawerDesc').value = v.description || '';
-  document.getElementById('editDrawerDept').value = v.department;
+  if (document.getElementById('editDrawerDesc')) {
+    document.getElementById('editDrawerDesc').value = v.description || '';
+  }
+  if (document.getElementById('editDrawerDept')) {
+    document.getElementById('editDrawerDept').value = v.department || '';
+  }
   if (document.getElementById('editDrawerCategory')) {
-    document.getElementById('editDrawerCategory').value = v.category || '';
+    const catEl = document.getElementById('editDrawerCategory');
+    if (catEl.children.length === 0 && state.categories) {
+      catEl.innerHTML = state.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    }
+    catEl.value = v.category || '';
   }
   if (document.getElementById('editDrawerContentType')) {
     document.getElementById('editDrawerContentType').value = v.content_type || 'Research & Whitepaper';
   }
-  document.getElementById('editDrawerTags').value = v.tags || '';
-  document.getElementById('editDrawerIsHidden').checked = (v.is_hidden === 1);
+  if (document.getElementById('editDrawerTags')) {
+    document.getElementById('editDrawerTags').value = v.tags || '';
+  }
+  if (document.getElementById('editDrawerIsHidden')) {
+    document.getElementById('editDrawerIsHidden').checked = (v.is_hidden === 1);
+  }
   if (document.getElementById('editDrawerIsFeatured')) {
     document.getElementById('editDrawerIsFeatured').checked = (v.is_featured === 1);
   }
   if (document.getElementById('editDrawerIsRecommended')) {
     document.getElementById('editDrawerIsRecommended').checked = (v.is_recommended === 1);
   }
-  renderTagPicker('editDrawerTagsContainer', 'editDrawerTags', false);
+  if (document.getElementById('editDrawerTagsContainer')) {
+    renderTagPicker('editDrawerTagsContainer', 'editDrawerTags', false);
+  }
+
+  // Populate department filter in drawer if empty
+  const deptFilter = document.getElementById('drawerDeptFilter');
+  if (deptFilter && deptFilter.options.length <= 1 && state.departments) {
+    deptFilter.innerHTML = '<option value="">All Departments</option>' + state.departments.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+  }
 
   // Set Access Mode and populate Person Picker in Drawer
   const accessMode = (v.access_mode || 'public').toLowerCase();
@@ -624,39 +715,48 @@ function openEditDrawer(videoId) {
 
   toggleDrawerAccessModeUI(accessMode);
 
+  // Show Centered Full Modal
+  const wrapper = document.getElementById('edit-modal-wrapper');
+  if (wrapper) wrapper.classList.remove('hidden');
+
   const overlay = document.getElementById('edit-drawer-overlay');
   const drawer = document.getElementById('edit-drawer');
-
-  overlay.classList.remove('hidden');
-  setTimeout(() => {
+  if (overlay) {
+    overlay.classList.remove('hidden');
     overlay.classList.remove('opacity-0');
     overlay.classList.add('opacity-100');
+  }
+  if (drawer) {
     drawer.classList.add('open');
-  }, 10);
+  }
 }
 
 function closeEditDrawer() {
+  const wrapper = document.getElementById('edit-modal-wrapper');
+  if (wrapper) wrapper.classList.add('hidden');
   const overlay = document.getElementById('edit-drawer-overlay');
   const drawer = document.getElementById('edit-drawer');
-
-  drawer.classList.remove('open');
-  overlay.classList.remove('opacity-100');
-  overlay.classList.add('opacity-0');
-  setTimeout(() => overlay.classList.add('hidden'), 300);
+  if (drawer) drawer.classList.remove('open');
+  if (overlay) {
+    overlay.classList.remove('opacity-100');
+    overlay.classList.add('opacity-0');
+    setTimeout(() => overlay.classList.add('hidden'), 200);
+  }
 }
 
 async function saveEditDrawerChanges() {
   const videoId = document.getElementById('editDrawerVideoId').value;
   const title = document.getElementById('editDrawerTitle').value.trim();
   const description = document.getElementById('editDrawerDesc').value.trim();
-  const department = document.getElementById('editDrawerDept').value;
-  const category = document.getElementById('editDrawerCategory')?.value || '';
-  const content_type = document.getElementById('editDrawerContentType')?.value || 'Research & Whitepaper';
-  const tags = document.getElementById('editDrawerTags').value.trim();
-  const is_hidden = document.getElementById('editDrawerIsHidden').checked ? 1 : 0;
+  const existingVideo = (state.allVideos || []).find(x => x.id == videoId);
+  const department = document.getElementById('editDrawerDept')?.value || existingVideo?.department || 'General';
+  const category = document.getElementById('editDrawerCategory')?.value || existingVideo?.category || '';
+  const content_type = document.getElementById('editDrawerContentType')?.value || existingVideo?.content_type || 'Research & Whitepaper';
+  const tags = document.getElementById('editDrawerTags')?.value?.trim() || '';
+  const is_hidden = document.getElementById('editDrawerIsHidden')?.checked ? 1 : 0;
   const is_featured = document.getElementById('editDrawerIsFeatured')?.checked ? 1 : 0;
   const is_recommended = document.getElementById('editDrawerIsRecommended')?.checked ? 1 : 0;
-  const thumbnail_url = document.getElementById('editDrawerThumbUrl')?.value.trim() || undefined;
+  const thumbnail_url = document.getElementById('editDrawerThumbUrl')?.value?.trim() || undefined;
 
   let access_mode = 'public';
   const radios = document.getElementsByName('drawerAccessMode');
@@ -698,7 +798,7 @@ async function saveEditDrawerChanges() {
       await loadAccessibleVideos();
       if (typeof renderFeaturedCarousel === 'function') renderFeaturedCarousel();
       if (typeof renderHomeVideos === 'function') renderHomeVideos();
-      showToast(`Video updated successfully (Highlight: ${is_featured ? 'ON' : 'OFF'}, Rec: ${is_recommended ? 'ON' : 'OFF'})`, 'success');
+      showToast(`Video updated successfully (Hero Highlight: ${is_featured ? 'ON' : 'OFF'})`, 'success');
     }
   } catch (err) {
     showToast('Failed to save changes', 'error');
@@ -820,7 +920,7 @@ window.handleThumbnailFileSelect = function(input, targetUrlInputId, previewImgI
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
   if (!file.type.startsWith('image/')) {
-    showToast('กรุณาเลือกไฟล์รูปภาพที่ถูกต้อง (PNG, JPG, WebP)', 'error');
+    showToast('Please select a valid image file (PNG, JPG, WebP)', 'error');
     return;
   }
   const reader = new FileReader();
@@ -830,7 +930,7 @@ window.handleThumbnailFileSelect = function(input, targetUrlInputId, previewImgI
     if (urlInput) urlInput.value = dataUrl;
     const previewImg = document.getElementById(previewImgId);
     if (previewImg) previewImg.src = dataUrl;
-    showToast('โหลดรูปภาพหน้าปกจากเครื่องเรียบร้อย', 'success');
+    showToast('Cover image loaded successfully', 'success');
   };
   reader.readAsDataURL(file);
 };
@@ -842,11 +942,11 @@ window.captureThumbnailFromVideoTime = function(secInputId, videoUrlInputId, tar
   const videoUrl = videoUrlInput?.value.trim();
 
   if (!videoUrl) {
-    showToast('กรุณาระบุ Video Source Link ก่อนดึงเฟรมภาพ', 'warning');
+    showToast('Please specify a Video Source Link first', 'warning');
     return;
   }
 
-  showToast(`กำลังดึงเฟรมจากคลิปที่วินาที ${sec}s...`, 'info');
+  showToast(`Capturing video frame at ${sec}s...`, 'info');
 
   const tempVid = document.createElement('video');
   tempVid.crossOrigin = 'anonymous';
@@ -866,14 +966,14 @@ window.captureThumbnailFromVideoTime = function(secInputId, videoUrlInputId, tar
       const previewImg = document.getElementById(previewImgId);
       if (previewImg) previewImg.src = dataUrl;
 
-      showToast(`ดึงภาพหน้าปกที่วินาทีที่ ${sec} สำเร็จ!`, 'success');
+      showToast(`Captured thumbnail at ${sec}s successfully!`, 'success');
     } catch (err) {
       const fallbackUrl = generateFallbackThumbnail(`Snapshot @ ${sec}s`, 'Biotech');
       const urlInput = document.getElementById(targetUrlInputId);
       if (urlInput) urlInput.value = fallbackUrl;
       const previewImg = document.getElementById(previewImgId);
       if (previewImg) previewImg.src = fallbackUrl;
-      showToast(`สร้างภาพตัวอย่างจากวินาทีที่ ${sec} เรียบร้อย`, 'info');
+      showToast(`Created snapshot preview at ${sec}s`, 'info');
     }
   };
 
@@ -887,7 +987,7 @@ window.captureThumbnailFromVideoTime = function(secInputId, videoUrlInputId, tar
     if (urlInput) urlInput.value = fallbackUrl;
     const previewImg = document.getElementById(previewImgId);
     if (previewImg) previewImg.src = fallbackUrl;
-    showToast(`ดึงภาพตัวอย่างจากวินาทีที่ ${sec} เรียบร้อย`, 'info');
+    showToast(`Captured snapshot at ${sec}s`, 'info');
   };
 };
 
@@ -909,6 +1009,15 @@ async function loadAdminDashboard() {
       if (kpiVideos) kpiVideos.textContent = d.totalVideos || '23';
       if (kpiCompletion) kpiCompletion.textContent = d.avgCompletionRate ? d.avgCompletionRate + '%' : '78.4%';
       if (kpiUsers) kpiUsers.textContent = d.activeUsers ? `${d.activeUsers} Active` : '11 Active';
+
+      const distPub = document.getElementById('distPublicCount');
+      const distInc = document.getElementById('distIncludeCount');
+      const distExc = document.getElementById('distExcludeCount');
+      if (d.accessDistribution) {
+        if (distPub) distPub.textContent = `${d.accessDistribution.public || 0} Videos`;
+        if (distInc) distInc.textContent = `${d.accessDistribution.include || 0} Videos`;
+        if (distExc) distExc.textContent = `${d.accessDistribution.exclude || 0} Videos`;
+      }
 
       const catList = document.getElementById('adminCategoryAnalyticsList');
       if (catList && d.categoryBreakdown) {
@@ -1057,7 +1166,7 @@ function generateMatrixHtml(matrixData) {
       <tbody class="divide-y divide-outline-variant">
         ${matrixData.map(row => {
           const u = row.user;
-          const isAdmin = (u.is_admin === 1 || u.role === 'System Administrator' || u.department === 'Executive');
+          const isAdmin = (u.is_admin === 1 || u.role === 'Admin');
           const totalVids = row.accessibleCount + row.restrictedCount;
           const accessiblePct = totalVids > 0 ? Math.round((row.accessibleCount / totalVids) * 100) : 0;
           
@@ -1073,11 +1182,11 @@ function generateMatrixHtml(matrixData) {
               <td class="py-3.5 px-4 align-top">
                 ${isAdmin ? `
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
-                    <span class="material-symbols-outlined text-xs">admin_panel_settings</span> 🛡️ Admin (Full Access)
+                    <span class="material-symbols-outlined text-xs">admin_panel_settings</span> 🛡️ Admin
                   </span>
                 ` : `
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    <span class="material-symbols-outlined text-xs">verified_user</span> 👤 Regular User (PBAC)
+                    <span class="material-symbols-outlined text-xs">person</span> 👤 User
                   </span>
                 `}
               </td>
@@ -1203,6 +1312,9 @@ function renderAuditLogs() {
   tbody.innerHTML = state.auditLogs.map(l => {
     const meta = actionIconMap[l.action] || { icon: 'info', style: 'bg-slate-100 text-slate-700 border-slate-200' };
     const initial = (l.actor_name || 'U').substring(0, 2).toUpperCase();
+    const userObj = (state.users || []).find(u => u.name === l.actor_name);
+    const actorDept = l.actor_department || userObj?.department || 'General';
+    const actorRole = (l.actor_role === 'Admin' || l.actor_role === 'System Administrator' || userObj?.is_admin === 1 || userObj?.role === 'Admin') ? 'Admin' : 'User';
 
     return `
       <tr class="hover:bg-slate-50 transition-colors">
@@ -1222,12 +1334,17 @@ function renderAuditLogs() {
             </div>
             <div>
               <div class="font-bold text-gray-900 text-xs">${l.actor_name || 'System User'}</div>
-              <div class="text-[10px] text-gray-400">${l.actor_role || 'Staff'}</div>
+              <span class="inline-block px-1.5 py-0.2 rounded text-[9px] font-bold ${actorRole === 'Admin' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}">
+                ${actorRole === 'Admin' ? '🛡️ Admin' : '👤 User'}
+              </span>
             </div>
           </div>
         </td>
-        <td class="py-3 px-4 font-mono text-[11px] text-gray-500 whitespace-nowrap">
-          ${l.ip_address || '127.0.0.1'}
+        <td class="py-3 px-4 text-xs font-medium text-gray-700 whitespace-nowrap">
+          <span class="inline-flex items-center gap-1 bg-slate-100/80 px-2 py-0.5 rounded border border-slate-200/80 text-[11px]">
+            <span class="material-symbols-outlined text-xs text-primary">domain</span>
+            <span>${actorDept}</span>
+          </span>
         </td>
         <td class="py-3 px-4 text-gray-600 text-xs max-w-sm truncate" title="${l.details || ''}">
           <span class="font-semibold text-gray-800">${l.target ? `[${l.target}] ` : ''}</span>
@@ -1251,6 +1368,10 @@ function openLogDetailsModal(logId) {
   const titleEl = document.getElementById('logDetailsTitle');
   const bodyEl = document.getElementById('logDetailsBody');
 
+  const userObj = (state.users || []).find(u => u.name === log.actor_name);
+  const actorDept = log.actor_department || userObj?.department || 'General';
+  const actorRole = (log.actor_role === 'Admin' || log.actor_role === 'System Administrator' || userObj?.is_admin === 1 || userObj?.role === 'Admin') ? 'Admin' : 'User';
+
   if (titleEl) titleEl.textContent = `Audit Log #${log.id}: [${log.action}]`;
   if (bodyEl) {
     bodyEl.innerHTML = `
@@ -1258,16 +1379,19 @@ function openLogDetailsModal(logId) {
         <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border border-outline-variant font-mono">
           <div><span class="text-gray-400">Timestamp:</span> <b class="text-gray-800">${log.created_at}</b></div>
           <div><span class="text-gray-400">Action:</span> <b class="text-primary">${log.action}</b></div>
-          <div><span class="text-gray-400">Actor:</span> <b class="text-gray-800">${log.actor_name}</b> (${log.actor_role})</div>
+          <div><span class="text-gray-400">Actor:</span> <b class="text-gray-800">${log.actor_name}</b></div>
           <div><span class="text-gray-400">Target:</span> <b class="text-gray-800">${log.target}</b></div>
         </div>
         <div>
-          <label class="block font-bold text-gray-700 mb-1">Execution & Changes Trace (ปุ่มและรายละเอียดการเปลี่ยนแปลง):</label>
+          <label class="block font-bold text-gray-700 mb-1">Execution & Changes Trace:</label>
           <div class="p-3 bg-slate-900 text-emerald-300 font-mono text-[11px] rounded-lg border border-slate-700 leading-relaxed whitespace-pre-wrap">
 ${log.details || 'No extended parameters provided.'}
           </div>
         </div>
-        <div class="text-[11px] text-gray-400">IP Address: ${log.ip_address || '127.0.0.1'} • Security Verified</div>
+        <div class="text-[11px] text-gray-500 flex items-center gap-1.5 bg-slate-50 p-2.5 rounded-lg border border-outline-variant">
+          <span class="material-symbols-outlined text-sm text-emerald-600">verified_user</span>
+          <span>Department: <b class="text-gray-800 font-semibold">${actorDept}</b> • Role: <b class="text-gray-800 font-semibold">${actorRole}</b></span>
+        </div>
       </div>
     `;
   }

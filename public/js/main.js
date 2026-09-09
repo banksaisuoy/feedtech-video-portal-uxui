@@ -34,7 +34,7 @@ async function init() {
   await loadEvents();
 
   if (isAuthed) {
-    const isAdmin = state.currentUser && (state.currentUser.is_admin === 1 || state.currentUser.role === 'System Administrator');
+    const isAdmin = state.currentUser && (state.currentUser.is_admin === 1 || state.currentUser.role === 'Admin');
     navigateView(isAdmin ? 'admin-dashboard' : 'home');
   } else {
     navigateView('home');

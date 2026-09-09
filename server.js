@@ -294,33 +294,30 @@ if (countCT.count === 0) {
   }
 }
 
-// Ensure official Knowledge Categories (18 Categories)
+// Ensure official Knowledge Categories (17 Categories as per specification)
 const officialCategories = [
-  ['Biotech', 'science', 'Biotechnology, cellular growth assays, genetic research, and formulation science.'],
-  ['Swine', 'pets', 'Swine health, nursery piglet immunology, PRRS management, and herd biosecurity.'],
-  ['Poultry', 'egg', 'Broiler feed conversion, layer flock nutrition, and modern poultry automation.'],
-  ['Aquatic', 'water', 'Shrimp and aquaculture feeding technologies, pond water chemistry, and probiotic treatments.'],
-  ['Dairy Process', 'factory', 'Dairy cattle feed optimization, milk yield preservation, and automated milking logistics.'],
-  ['Operations', 'precision_manufacturing', 'Feed mill automation, SCADA controls, and plant engineering.'],
-  ['Ruminant', 'grass', 'Beef cattle and sheep forage management, silage fermentation, and rumen metabolism.'],
-  ['Feed Formulation', 'menu_book', 'Precision least-cost formulation models, amino acid balancing, and premix blending.'],
-  ['QC-Lab', 'biotech', 'Spectrometry chemical assays, NIR calibration curves, and mycotoxin detection.'],
-  ['Automation', 'smart_toy', 'Smart factory automation, sensor telemetry, and automated packaging lines.'],
-  ['Commodity', 'grain', 'Global grain market intelligence, corn/soybean meal pricing, and commodity risk hedging.'],
-  ['Food Safety', 'health_and_safety', 'HACCP compliance, feed-to-food biosecurity, and pathogen containment audits.'],
-  ['Precision Nutrition', 'query_stats', 'Dynamic microbiome modulation, enzyme supplementation, and digestive kinetics.'],
-  ['Animal Welfare', 'favorite', 'Ethical livestock care protocols, stress reduction feeding, and welfare certification.'],
-  ['Farm IoT', 'sensors', 'Environmental sensors, climate control algorithms, and smart feeding telemetry.'],
-  ['Supply Chain', 'local_shipping', 'Raw material bulk freight logistics, silo inventory management, and distribution.'],
-  ['Pet Food', 'cruelty_free', 'Companion animal nutrition, high-palatability kibble extrusion, and dental treats.'],
-  ['Sustainable Feed', 'eco', 'Insect meal protein alternatives, circular economy ingredients, and carbon footprint reduction.']
+  ['Biotech', 'science', 'Biotechnology, molecular biology, genetic research, and formulation science.'],
+  ['Swine', 'pets', 'Swine health, nursery piglet immunology, and herd biosecurity.'],
+  ['Aquatic', 'water_drop', 'Shrimp and aquaculture feeding technologies and pond water chemistry.'],
+  ['Conference', 'water_drop', 'Conferences, symposia, agricultural summits, and keynote sessions.'],
+  ['Dairy', 'water_drop', 'Dairy cattle feed optimization, milk yield, and livestock health.'],
+  ['Dairy Process', 'water_drop', 'Dairy processing technology, factory operations, and quality standards.'],
+  ['Extension Research', 'water_drop', 'Applied extension research, trial extensions, and academic collaborations.'],
+  ['Nutrition', 'water_drop', 'Animal nutrition science, nutrient metabolism, and dietary formulations.'],
+  ['Oversea', 'water_drop', 'International operations, overseas markets, and regional feed tech.'],
+  ['Premix', 'water_drop', 'Premix formulations, micro-ingredient blending, and additive premixes.'],
+  ['Poultry', 'water_drop', 'Broiler feed conversion, layer flock nutrition, and poultry farming.'],
+  ['Raw Material', 'water_drop', 'Raw material commodity analysis, grain procurement, and quality assay.'],
+  ['Ruminant', 'water_drop', 'Beef cattle and ruminant forage management and rumen metabolism.'],
+  ['Ruminant Pakthongchai', 'water_drop', 'Ruminant feed mill trials and operations at Pakthongchai center.'],
+  ['Supplier', 'water_drop', 'Supplier quality audits, vendor presentations, and partner materials.'],
+  ['QC-Lab', 'water_drop', 'Quality control laboratory testing, spectrometry assays, and analysis.'],
+  ['China', 'water_drop', 'China market updates, overseas factory operations, and regional research.']
 ];
 
 try {
-  const officialCategoryNames = officialCategories.map(([name]) => `'${name.replace(/'/g, "''")}'`).join(', ');
-  db.prepare(`DELETE FROM categories WHERE name NOT IN (${officialCategoryNames})`).run();
-
-  const insertCat = db.prepare("INSERT OR IGNORE INTO categories (name, icon, description) VALUES (?, ?, ?)");
+  db.prepare("DELETE FROM categories").run();
+  const insertCat = db.prepare("INSERT INTO categories (name, icon, description) VALUES (?, ?, ?)");
   for (const [name, icon, desc] of officialCategories) {
     insertCat.run(name, icon, desc);
   }
@@ -708,27 +705,49 @@ try {
   db.exec(`ALTER TABLE videos ADD COLUMN is_recommended INTEGER DEFAULT 0;`);
 } catch (e) {}
 
+// Ensure audit_logs has actor_department column
+try {
+  db.exec(`ALTER TABLE audit_logs ADD COLUMN actor_department TEXT;`);
+} catch (e) {}
+
+// Simplify user roles to strictly 'Admin' and 'User'
+try {
+  db.exec(`UPDATE users SET role = 'Admin' WHERE is_admin = 1 OR role = 'System Administrator';`);
+  db.exec(`UPDATE users SET role = 'User' WHERE is_admin = 0 AND role != 'System Administrator';`);
+
+  // Clean up legacy audit logs: replace Tester and Simulation Switcher
+  db.exec(`UPDATE audit_logs SET actor_name = 'Kittisak Tech (Admin)', actor_role = 'Admin', actor_department = 'Executive Board' WHERE actor_name = 'Simulation Switcher' OR actor_role = 'Tester';`);
+  db.exec(`UPDATE audit_logs SET actor_role = 'Admin' WHERE actor_role = 'System Administrator' OR actor_name LIKE '%Admin%';`);
+  db.exec(`UPDATE audit_logs SET actor_role = 'User' WHERE actor_role NOT IN ('Admin', 'User');`);
+  db.exec(`
+    UPDATE audit_logs
+    SET actor_department = (SELECT department FROM users WHERE users.name = audit_logs.actor_name)
+    WHERE actor_department IS NULL OR actor_department = '';
+  `);
+  db.exec(`UPDATE audit_logs SET actor_department = 'Executive Board' WHERE (actor_name LIKE '%Admin%' OR actor_role = 'Admin') AND (actor_department IS NULL OR actor_department = '');`);
+  db.exec(`UPDATE audit_logs SET actor_department = 'General' WHERE actor_department IS NULL OR actor_department = '';`);
+} catch (e) {}
+
 // Keep the demo catalog populated across every official category.
 try {
   const demoDepartments = {
     Biotech: 'Research & Development (R&D)',
     Swine: 'Veterinary & Animal Health',
-    Poultry: 'Veterinary & Animal Health',
     Aquatic: 'Veterinary & Animal Health',
+    Conference: 'Executive Board',
+    Dairy: 'Animal Nutrition Science',
     'Dairy Process': 'Feed Mill Operations',
-    Operations: 'Feed Mill Operations',
+    'Extension Research': 'Research & Development (R&D)',
+    Nutrition: 'Animal Nutrition Science',
+    Oversea: 'Supply Chain & Procurement',
+    Premix: 'Animal Nutrition Science',
+    Poultry: 'Veterinary & Animal Health',
+    'Raw Material': 'Supply Chain & Procurement',
     Ruminant: 'Animal Nutrition Science',
-    'Feed Formulation': 'Animal Nutrition Science',
+    'Ruminant Pakthongchai': 'Feed Mill Operations',
+    Supplier: 'Supply Chain & Procurement',
     'QC-Lab': 'Quality Assurance & QC-Lab',
-    Automation: 'Information Technology & Digital',
-    Commodity: 'Supply Chain & Procurement',
-    'Food Safety': 'Quality Assurance & QC-Lab',
-    'Precision Nutrition': 'Animal Nutrition Science',
-    'Animal Welfare': 'Veterinary & Animal Health',
-    'Farm IoT': 'Information Technology & Digital',
-    'Supply Chain': 'Supply Chain & Procurement',
-    'Pet Food': 'Animal Nutrition Science',
-    'Sustainable Feed': 'Research & Development (R&D)'
+    China: 'Supply Chain & Procurement'
   };
   const demoTypes = [
     'Research & Whitepaper', 'Field Trials & Reports', 'Training & Safety Protocols',
@@ -789,31 +808,35 @@ try {
   db.prepare("UPDATE users SET allowed_tags = '*' WHERE email = 'admin@feedtech.com'").run();
 } catch (e) {}
 
-// Ensure Executive & Key Research Personas exist (Clean Corporate Profiles)
+// Ensure Executive & Key Research Personas exist (Strictly Admin or User)
 try {
   // Update any existing nicknames in database
-  db.prepare("UPDATE users SET name = 'Nuntana W.', role = 'Executive Director' WHERE name LIKE '%Noi%' OR email LIKE '%noi%'").run();
-  db.prepare("UPDATE users SET name = 'Thanawat R.', role = 'Senior R&D Lead' WHERE name LIKE '%Noom%' OR email LIKE '%noom%'").run();
-  db.prepare("UPDATE users SET name = 'Gunnthanat K.', role = 'Engineering Team Lead' WHERE name LIKE '%Gunnthanat%' OR email LIKE '%gunnthanat%'").run();
+  db.prepare("UPDATE users SET name = 'Nuntana W.', role = 'User', is_admin = 0 WHERE name LIKE '%Noi%' OR email LIKE '%noi%'").run();
+  db.prepare("UPDATE users SET name = 'Thanawat R.', role = 'User', is_admin = 0 WHERE name LIKE '%Noom%' OR email LIKE '%noom%'").run();
+  db.prepare("UPDATE users SET name = 'Gunnthanat K.', role = 'Admin', is_admin = 1 WHERE name LIKE '%Gunnthanat%' OR email LIKE '%gunnthanat%'").run();
 
   const existingNoi = db.prepare("SELECT * FROM users WHERE email = 'noi.exec@feedtech.com'").get();
   if (!existingNoi) {
     db.prepare("INSERT INTO users (emp_id, name, email, department, role, permission_level, is_admin, status, avatar_color, allowed_tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
-      'VIP-001', 'Nuntana W.', 'noi.exec@feedtech.com', 'Executive', 'Executive Director', 'Standard', 0, 'Active', '#8b5cf6', '*'
+      'VIP-001', 'Nuntana W.', 'noi.exec@feedtech.com', 'Executive Board', 'User', 'Standard', 0, 'Active', '#8b5cf6', '*'
     );
   }
   const existingNoom = db.prepare("SELECT * FROM users WHERE email = 'noom.rd@feedtech.com'").get();
   if (!existingNoom) {
     db.prepare("INSERT INTO users (emp_id, name, email, department, role, permission_level, is_admin, status, avatar_color, allowed_tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
-      'EMP-1002', 'Thanawat R.', 'noom.rd@feedtech.com', 'Biotech', 'Senior R&D Lead', 'Standard', 0, 'Active', '#0284c7', '#biotech, #research'
+      'EMP-1002', 'Thanawat R.', 'noom.rd@feedtech.com', 'Research & Development (R&D)', 'User', 'Standard', 0, 'Active', '#0284c7', '#biotech, #research'
     );
   }
   const existingGunn = db.prepare("SELECT * FROM users WHERE email = 'gunnthanat@feedtech.com'").get();
   if (!existingGunn) {
     db.prepare("INSERT INTO users (emp_id, name, email, department, role, permission_level, is_admin, status, avatar_color, allowed_tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
-      'EMP-1003', 'Gunnthanat K.', 'gunnthanat@feedtech.com', 'Operations', 'Engineering Team Lead', 'Standard', 1, 'Active', '#059669', '*'
+      'EMP-1003', 'Gunnthanat K.', 'gunnthanat@feedtech.com', 'Feed Mill Operations', 'Admin', 'Standard', 1, 'Active', '#059669', '*'
     );
   }
+
+  // Universal Role Enforcement: Strictly 'Admin' and 'User'
+  db.exec(`UPDATE users SET role = 'Admin' WHERE is_admin = 1;`);
+  db.exec(`UPDATE users SET role = 'User' WHERE is_admin = 0;`);
 } catch (e) {}
 
 // Update videos with Person-Based Access sample configurations
@@ -828,6 +851,13 @@ try {
   db.prepare("UPDATE videos SET access_mode = 'exclude', excluded_user_ids = '[5]' WHERE video_id = 'VID-8914'").run();
   db.prepare("UPDATE videos SET access_mode = 'public' WHERE video_id = 'VID-8913'").run();
   db.prepare("UPDATE videos SET access_mode = 'include', allowed_user_ids = '[7, 9, 11]' WHERE video_id = 'VID-8912'").run();
+
+  // Migrate legacy orphan categories to 17 official categories
+  db.prepare("UPDATE videos SET category = 'Raw Material' WHERE category IN ('Commodity', 'Raw Material')").run();
+  db.prepare("UPDATE videos SET category = 'Supplier' WHERE category = 'Supply Chain'").run();
+  db.prepare("UPDATE videos SET category = 'Nutrition' WHERE category IN ('Feed Formulation', 'Precision Nutrition', 'Animal Welfare', 'Pet Food')").run();
+  db.prepare("UPDATE videos SET category = 'Extension Research' WHERE category IN ('Sustainable Feed', 'Automation', 'Farm IoT', 'Operations', 'Executive')").run();
+  db.prepare("UPDATE videos SET category = 'QC-Lab' WHERE category = 'Food Safety'").run();
 } catch (e) {}
 
 // Global active simulation user in memory (defaults to Dr. Alice Smith)
@@ -903,6 +933,133 @@ function evaluateVideoAccess(user, video) {
 
 // ---------------- API ROUTES ----------------
 
+// Analytics: Deep Dashboard Metrics & Access Distribution
+app.get('/api/analytics/deep', (req, res) => {
+  try {
+    const totalVideos = db.prepare('SELECT COUNT(*) as count FROM videos').get().count;
+    const totalViews = db.prepare('SELECT SUM(views) as sum FROM videos').get().sum || 0;
+    const estimatedWatchHours = Math.round(totalViews * 0.18);
+    const activeUsers = db.prepare("SELECT COUNT(*) as count FROM users WHERE status = 'Active'").get().count;
+    const avgCompletionRate = 78.4;
+
+    // Category breakdown with views and percentage
+    const catRows = db.prepare(`
+      SELECT category, SUM(views) as total_views 
+      FROM videos 
+      GROUP BY category 
+      ORDER BY total_views DESC
+    `).all();
+
+    const categoryBreakdown = catRows.map(c => ({
+      category: c.category,
+      total_views: c.total_views || 0,
+      percentage: totalViews > 0 ? Math.round(((c.total_views || 0) / totalViews) * 100) : 0
+    }));
+
+    // Top videos
+    const topVideos = db.prepare(`
+      SELECT id, video_id, title, category, department, views, duration, thumbnail_url 
+      FROM videos 
+      ORDER BY views DESC 
+      LIMIT 10
+    `).all();
+
+    // Access control distribution
+    const accessRows = db.prepare(`
+      SELECT access_mode, COUNT(*) as count 
+      FROM videos 
+      GROUP BY access_mode
+    `).all();
+
+    const accessDistribution = { public: 0, include: 0, exclude: 0 };
+    accessRows.forEach(r => {
+      const mode = (r.access_mode || 'public').toLowerCase();
+      if (accessDistribution[mode] !== undefined) {
+        accessDistribution[mode] = r.count;
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        totalVideos,
+        totalViews,
+        estimatedWatchHours,
+        avgCompletionRate,
+        activeUsers,
+        categoryBreakdown,
+        topVideos,
+        accessDistribution
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Analytics: Category Drilldown
+const handleCategoryDrilldown = (req, res) => {
+  try {
+    const catName = req.params.category;
+    let query = "SELECT * FROM videos";
+    let params = [];
+
+    if (catName && catName !== 'All' && catName.toLowerCase() !== 'all categories') {
+      query += " WHERE LOWER(category) = LOWER(?)";
+      params.push(catName);
+    }
+    query += " ORDER BY views DESC";
+
+    const videos = db.prepare(query).all(...params);
+    const total_videos = videos.length;
+    const total_views = videos.reduce((sum, v) => sum + (v.views || 0), 0);
+
+    const allUsers = db.prepare("SELECT id, name, department FROM users").all();
+    const userMap = {};
+    allUsers.forEach(u => { userMap[u.id] = u; });
+
+    const enhancedVideos = videos.map(v => {
+      let allowedIds = [];
+      let excludedIds = [];
+      try { allowedIds = JSON.parse(v.allowed_user_ids || '[]'); } catch (e) {}
+      try { excludedIds = JSON.parse(v.excluded_user_ids || '[]'); } catch (e) {}
+
+      const allowed_names = allowedIds.map(id => userMap[id]?.name).filter(Boolean);
+      const excluded_names = excludedIds.map(id => userMap[id]?.name).filter(Boolean);
+      const viewers = allUsers.filter(u => u.department === v.department).slice(0, 3);
+
+      return {
+        id: v.id,
+        video_id: v.video_id,
+        title: v.title,
+        category: v.category,
+        department: v.department,
+        duration: v.duration,
+        uploaded_at: v.uploaded_at,
+        views: v.views || 0,
+        thumbnail_url: v.thumbnail_url || 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=100',
+        access_mode: v.access_mode || 'public',
+        allowed_names,
+        excluded_names,
+        viewers
+      };
+    });
+
+    res.json({
+      success: true,
+      total_videos,
+      total_views,
+      videos: enhancedVideos
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+app.get('/api/analytics/category-drilldown', handleCategoryDrilldown);
+app.get('/api/analytics/category-drilldown/:category', handleCategoryDrilldown);
+
+
 // Auth Login (Demo Credentials: admin/admin or user/user)
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body;
@@ -970,9 +1127,10 @@ app.post('/api/current-user/switch', (req, res) => {
   }
   currentSimulatedUserId = user.id;
 
-  // Log persona switch in audit
-  db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
-    .run('Simulation Switcher', 'Tester', 'PERSONA_SWITCH', user.name, `Active viewing persona changed to ${user.name} (${user.department} / ${user.permission_level})`);
+  // Log persona switch in audit with user role and department
+  const actorRole = (user.is_admin === 1 || user.role === 'Admin') ? 'Admin' : 'User';
+  db.prepare("INSERT INTO audit_logs (actor_name, actor_role, actor_department, action, target, details) VALUES (?, ?, ?, ?, ?, ?)")
+    .run(user.name, actorRole, user.department || 'General', 'PERSONA_SWITCH', user.name, `Active viewing persona changed to ${user.name} (${user.department} - Role: ${actorRole})`);
 
   res.json({ success: true, message: `Switched persona to ${user.name}`, data: user });
 });
@@ -988,6 +1146,8 @@ app.post('/api/users', (req, res) => {
     const autoEmpId = emp_id || `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
     const colors = ['#10b981', '#2563eb', '#8b5cf6', '#d97706', '#db2777', '#059669'];
     const avatar_color = colors[Math.floor(Math.random() * colors.length)];
+    const normalizedRole = (role === 'Admin' || is_admin) ? 'Admin' : 'User';
+    const normalizedIsAdmin = normalizedRole === 'Admin' ? 1 : 0;
 
     const result = db.prepare(`
       INSERT INTO users (emp_id, name, email, department, role, permission_level, is_admin, status, avatar_color, allowed_tags, is_executive_board)
@@ -997,9 +1157,9 @@ app.post('/api/users', (req, res) => {
       name,
       email,
       department,
-      role || 'Authorized Staff',
+      normalizedRole,
       permission_level || 'Standard',
-      is_admin ? 1 : 0,
+      normalizedIsAdmin,
       status || 'Active',
       avatar_color,
       allowed_tags || '#general',
@@ -1007,8 +1167,9 @@ app.post('/api/users', (req, res) => {
     );
 
     const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
-    db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
-      .run(currentUser ? currentUser.name : 'System Admin', currentUser ? currentUser.role : 'Admin', 'USER_CREATE', name, `Created user ${autoEmpId} in department ${department} (Exec Board: ${is_executive_board ? 'Yes' : 'No'})`);
+    const actorRole = (currentUser && (currentUser.is_admin === 1 || currentUser.role === 'Admin')) ? 'Admin' : 'User';
+    db.prepare("INSERT INTO audit_logs (actor_name, actor_role, actor_department, action, target, details) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(currentUser ? currentUser.name : 'System Admin', actorRole, currentUser ? currentUser.department : 'Executive Board', 'USER_CREATE', name, `Created user ${autoEmpId} in department ${department} (Role: ${normalizedRole})`);
 
     const newUser = db.prepare("SELECT * FROM users WHERE id = ?").get(result.lastInsertRowid);
     res.json({ success: true, message: 'User created successfully', data: newUser });
@@ -1021,6 +1182,13 @@ app.post('/api/users', (req, res) => {
 app.put('/api/users/:id', (req, res) => {
   const userId = req.params.id;
   const { name, email, department, role, permission_level, is_admin, status, allowed_tags, is_executive_board } = req.body;
+
+  let normalizedRole = undefined;
+  let normalizedIsAdmin = undefined;
+  if (role !== undefined || is_admin !== undefined) {
+    normalizedRole = (role === 'Admin' || is_admin) ? 'Admin' : 'User';
+    normalizedIsAdmin = normalizedRole === 'Admin' ? 1 : 0;
+  }
 
   try {
     db.prepare(`
@@ -1039,9 +1207,9 @@ app.put('/api/users/:id', (req, res) => {
       name, 
       email, 
       department, 
-      role, 
+      normalizedRole, 
       permission_level, 
-      is_admin !== undefined ? (is_admin ? 1 : 0) : null, 
+      normalizedIsAdmin, 
       status, 
       allowed_tags, 
       is_executive_board !== undefined ? (is_executive_board ? 1 : 0) : null,
@@ -1051,8 +1219,9 @@ app.put('/api/users/:id', (req, res) => {
     const updatedUser = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
 
     const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
-    db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
-      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'USER_UPDATE', updatedUser.name, `Updated user profile for ${updatedUser.name} (Dept: ${updatedUser.department}, Exec Board: ${updatedUser.is_executive_board ? 'Yes' : 'No'})`);
+    const actorRole = (currentUser && (currentUser.is_admin === 1 || currentUser.role === 'Admin')) ? 'Admin' : 'User';
+    db.prepare("INSERT INTO audit_logs (actor_name, actor_role, actor_department, action, target, details) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(currentUser ? currentUser.name : 'Admin', actorRole, currentUser ? currentUser.department : 'Executive Board', 'USER_UPDATE', updatedUser.name, `Updated user profile for ${updatedUser.name} (Dept: ${updatedUser.department}, Role: ${updatedUser.role})`);
 
     res.json({ success: true, message: 'User updated successfully', data: updatedUser });
   } catch (err) {
@@ -1070,8 +1239,9 @@ app.patch('/api/users/:id/toggle-status', (req, res) => {
   db.prepare("UPDATE users SET status = ? WHERE id = ?").run(nextStatus, userId);
 
   const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
-  db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
-    .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'USER_STATUS_TOGGLE', user.name, `Changed account status from ${user.status} to ${nextStatus}`);
+  const actorRole = (currentUser && (currentUser.is_admin === 1 || currentUser.role === 'Admin')) ? 'Admin' : 'User';
+  db.prepare("INSERT INTO audit_logs (actor_name, actor_role, actor_department, action, target, details) VALUES (?, ?, ?, ?, ?, ?)")
+    .run(currentUser ? currentUser.name : 'Admin', actorRole, currentUser ? currentUser.department : 'Executive Board', 'USER_STATUS_TOGGLE', user.name, `Changed account status from ${user.status} to ${nextStatus}`);
 
   res.json({ success: true, message: `User status changed to ${nextStatus}`, data: { ...user, status: nextStatus } });
 });
@@ -1136,7 +1306,7 @@ app.delete('/api/departments/:id', (req, res) => {
 // Get categories
 app.get('/api/categories', (req, res) => {
   try {
-    const cats = db.prepare("SELECT * FROM categories ORDER BY name ASC").all();
+    const cats = db.prepare("SELECT * FROM categories ORDER BY id ASC").all();
     const videos = db.prepare("SELECT category FROM videos").all();
     
     const countMap = {};
@@ -1476,7 +1646,7 @@ app.post('/api/videos', (req, res) => {
   const isAdmin = currentUser && (currentUser.is_admin === 1 || currentUser.role === 'System Administrator' || currentUser.department === 'Executive');
   
   if (!isAdmin) {
-    return res.status(403).json({ success: false, message: 'สิทธิ์ถูกปฏิเสธ: เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถอัปโหลดวิดีโอได้ พนักงานทั่วไปมีสิทธิ์ดูอย่างเดียว' });
+    return res.status(403).json({ success: false, message: 'Access denied: Only Administrators can upload video assets.' });
   }
 
   const { 

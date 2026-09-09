@@ -171,7 +171,7 @@ function openAddUserModal() {
   document.getElementById('modalEmpId').value = '';
   document.getElementById('modalName').value = '';
   document.getElementById('modalEmail').value = '';
-  document.getElementById('modalRole').value = 'Staff Member';
+  document.getElementById('modalRole').value = 'User';
   document.getElementById('modalTags').value = '#general, #standard';
 
   // Populate department options
@@ -191,7 +191,7 @@ function openAddUserModal() {
   if (execBoardCheck) execBoardCheck.checked = false;
 
   const roleSelect = document.getElementById('modalRoleSelect');
-  if (roleSelect) roleSelect.value = 'user';
+  if (roleSelect) roleSelect.value = 'User';
 
   const levelEl = document.getElementById('modalLevel');
   if (levelEl) levelEl.value = 'Standard';
@@ -202,12 +202,13 @@ function openAddUserModal() {
 function editUserPrompt(userId) {
   const u = state.users.find(x => x.id === userId);
   if (!u) return;
+  const isAdmin = (u.is_admin === 1 || u.role === 'Admin');
   document.getElementById('modalUserId').value = u.id;
   document.getElementById('userModalTitle').textContent = `Edit User: ${u.name}`;
   document.getElementById('modalEmpId').value = u.emp_id || '';
   document.getElementById('modalName').value = u.name;
   document.getElementById('modalEmail').value = u.email;
-  document.getElementById('modalRole').value = u.role || (u.is_admin ? 'System Administrator' : 'Staff Member');
+  document.getElementById('modalRole').value = isAdmin ? 'Admin' : 'User';
   document.getElementById('modalTags').value = u.allowed_tags || '';
 
   // Populate department options
@@ -230,11 +231,11 @@ function editUserPrompt(userId) {
 
   const roleSelect = document.getElementById('modalRoleSelect');
   if (roleSelect) {
-    roleSelect.value = (u.is_admin === 1 || u.role === 'System Administrator') ? 'admin' : 'user';
+    roleSelect.value = isAdmin ? 'Admin' : 'User';
   }
 
   const levelEl = document.getElementById('modalLevel');
-  if (levelEl) levelEl.value = u.permission_level || (u.is_admin ? 'Highly Confidential' : 'Standard');
+  if (levelEl) levelEl.value = u.permission_level || (isAdmin ? 'Highly Confidential' : 'Standard');
 
   document.getElementById('userModal').classList.remove('hidden');
 }
@@ -257,9 +258,9 @@ async function saveUserModalSubmit() {
   const email = document.getElementById('modalEmail').value.trim();
   const department = document.getElementById('modalDept').value;
   const is_executive_board = document.getElementById('modalUserIsExecBoard')?.checked ? 1 : 0;
-  const roleSelect = document.getElementById('modalRoleSelect')?.value || 'user';
-  const isAdmin = roleSelect === 'admin';
-  const role = isAdmin ? 'System Administrator' : (document.getElementById('modalRole')?.value.trim() || 'Staff Member');
+  const roleSelect = document.getElementById('modalRoleSelect')?.value || 'User';
+  const isAdmin = (roleSelect === 'Admin' || roleSelect === 'admin');
+  const role = isAdmin ? 'Admin' : 'User';
   const allowed_tags = document.getElementById('modalTags')?.value?.trim() || '*';
   const permission_level = isAdmin ? 'Highly Confidential' : 'Standard';
   const emp_id = document.getElementById('modalEmpId').value.trim();

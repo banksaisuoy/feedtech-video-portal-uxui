@@ -256,24 +256,19 @@ function renderHomeVideos() {
   const q = (state.searchQuery || '').trim().toLowerCase();
 
   const carouselEl = document.getElementById('homeFeaturedCarousel');
-  const recEl = document.getElementById('homeRecommendedGrid');
-  const recSection = recEl ? recEl.closest('section') : null;
   const catContainer = document.getElementById('homeCategoriesContainer');
 
   if (q) {
-    // Search mode: hide carousel and recommended section, show search results
+    // Search mode: hide carousel, show search results
     if (carouselEl) carouselEl.style.display = 'none';
-    if (recSection) recSection.style.display = 'none';
 
     if (catContainer) {
       const safeQuery = state.searchQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       const matches = allAcc.filter(v => {
         const title = (v.title || '').toLowerCase();
-        const tags = (v.tags || '').toLowerCase();
         const cat = (v.category || '').toLowerCase();
-        const dept = (v.department || '').toLowerCase();
         const desc = (v.description || '').toLowerCase();
-        return title.includes(q) || tags.includes(q) || cat.includes(q) || dept.includes(q) || desc.includes(q);
+        return title.includes(q) || cat.includes(q) || desc.includes(q);
       });
 
       catContainer.innerHTML = `
@@ -284,7 +279,7 @@ function renderHomeVideos() {
                 <span class="material-symbols-outlined text-primary">search</span>
                 <h2 class="text-base font-bold text-gray-900">Search Results for "<span class="text-primary">${safeQuery}</span>"</h2>
               </div>
-              <p class="text-xs text-gray-500 mt-0.5">Found ${matches.length} video${matches.length === 1 ? '' : 's'} matching across Title, Tags, Category, and Description</p>
+              <p class="text-xs text-gray-500 mt-0.5">Found ${matches.length} video${matches.length === 1 ? '' : 's'} matching across Title, Category, and Description</p>
             </div>
             <button type="button" onclick="clearGlobalSearch()" class="px-3.5 py-1.5 text-xs font-bold text-gray-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1.5 transition-colors self-start sm:self-auto cursor-pointer">
               <span class="material-symbols-outlined text-sm">close</span>
@@ -296,7 +291,7 @@ function renderHomeVideos() {
               ? matches.map(v => createVideoCardHtml(v)).join('') 
               : `<div class="col-span-full py-16 text-center text-xs text-gray-400 bg-white rounded-xl border border-dashed border-outline-variant">
                   <span class="material-symbols-outlined text-4xl text-gray-300 block mb-2">search_off</span>
-                  No videos found matching "${safeQuery}". Try searching by another keyword, category, or tag.
+                  No videos found matching "${safeQuery}". Try searching by another title, category, or keyword.
                 </div>`}
           </div>
         </section>
@@ -305,26 +300,11 @@ function renderHomeVideos() {
     return;
   }
 
-  // Normal mode: restore carousel and recommended section
+  // Normal mode: restore carousel
   if (carouselEl) carouselEl.style.display = '';
-  if (recSection) recSection.style.display = '';
 
-  // 0. Render Pinned Hero Carousel
+  // 1. Render Pinned Hero Carousel
   renderFeaturedCarousel();
-
-  // 1. Recommended (Prioritize is_recommended = 1, then sort by views)
-  if (recEl) {
-    const recVideos = [...allAcc].sort((a, b) => {
-      if ((b.is_recommended || 0) !== (a.is_recommended || 0)) {
-        return (b.is_recommended || 0) - (a.is_recommended || 0);
-      }
-      return (b.views || 0) - (a.views || 0);
-    }).slice(0, 4);
-
-    recEl.innerHTML = recVideos.length > 0 
-      ? recVideos.map(v => createVideoCardHtml(v)).join('')
-      : `<div class="col-span-full py-8 text-center text-xs text-gray-400">No recommended videos available under current permissions.</div>`;
-  }
 
   // 2. Dynamic Categories Container (Render rows for ALL categories in state.categories)
   if (catContainer) {
@@ -590,10 +570,6 @@ function renderCategoriesDirectory(filterTab = 'all') {
   }).join('');
 }
 
-function filterCategoriesByContentType(contentType) {
-  state.categoryContentTypeFilter = contentType || '';
-  renderCategoriesDirectory('all');
-}
 
 function handleCategoryCardClick(title, type) {
   if (type === 'events') {
@@ -700,11 +676,11 @@ function submitClearanceRequest() {
   const reason = document.getElementById('reqReason')?.value.trim();
 
   if (!reason) {
-    showToast('กรุณาระบุเหตุผลและความจำเป็นทางธุรกิจ', 'error');
+    showToast('Please provide a business justification', 'error');
     return;
   }
 
-  showToast(`ส่งคำร้องขอสิทธิ์ [${level} - แผนก ${dept}] ไปยัง IT Admin เรียบร้อยแล้ว`, 'success');
+  showToast(`Access request for [${level} - ${dept}] submitted to IT Admin`, 'success');
   document.getElementById('reqReason').value = '';
 }
 
@@ -823,14 +799,9 @@ async function openVideoWatchPage(videoId) {
     if (catBadge) catBadge.textContent = v.category || 'General';
     if (descEl) descEl.textContent = v.description || 'No detailed whitepaper abstract provided.';
 
-    // Tags
+    // Tags container cleared
     if (tagsContainer) {
-      const tagsList = (v.tags || '').split(',').map(t => t.trim()).filter(Boolean);
-      tagsContainer.innerHTML = tagsList.map(t => `
-        <span onclick="handleTagSearch('${t}')" class="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer border border-slate-200 transition-colors">
-          ${t}
-        </span>
-      `).join('');
+      tagsContainer.innerHTML = '';
     }
 
     // Favorite state
@@ -845,7 +816,11 @@ async function openVideoWatchPage(videoId) {
     renderWatchRelatedVideos(v);
 
     // Record watch history
-    await saveWatchProgress(v.id, 15, 100);
+    fetch(`/api/videos/${v.id}/watch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ progress: 15 })
+    }).catch(() => {});
 
   } catch (err) {
     showToast('Failed to open video watch page', 'error');
@@ -911,7 +886,7 @@ function renderWatchRelatedVideos(currentVideo) {
         </div>
         <div class="text-[10px] text-gray-400 flex items-center justify-between pt-1">
           <span>${v.views.toLocaleString()} views</span>
-          <span class="truncate max-w-[70px]">${v.uploaded_by || ''}</span>
+          <span class="text-slate-400 font-medium">${v.duration || ''}</span>
         </div>
       </div>
     </div>
