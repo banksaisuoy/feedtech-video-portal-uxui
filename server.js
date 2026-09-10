@@ -305,23 +305,23 @@ if (countCT.count === 0) {
 
 // Ensure official Knowledge Categories (17 Categories as per specification)
 const officialCategories = [
-  ['Biotech', 'science', 'Biotechnology, molecular biology, genetic research, and formulation science.'],
-  ['Swine', 'pets', 'Swine health, nursery piglet immunology, and herd biosecurity.'],
+  ['Biotech', 'biotech', 'Biotechnology, molecular biology, genetic research, and formulation science.'],
+  ['Swine', 'cruelty_free', 'Swine health, nursery piglet immunology, and herd biosecurity.'],
   ['Aquatic', 'water_drop', 'Shrimp and aquaculture feeding technologies and pond water chemistry.'],
-  ['Conference', 'water_drop', 'Conferences, symposia, agricultural summits, and keynote sessions.'],
-  ['Dairy', 'water_drop', 'Dairy cattle feed optimization, milk yield, and livestock health.'],
-  ['Dairy Process', 'water_drop', 'Dairy processing technology, factory operations, and quality standards.'],
-  ['Extension Research', 'water_drop', 'Applied extension research, trial extensions, and academic collaborations.'],
-  ['Nutrition', 'water_drop', 'Animal nutrition science, nutrient metabolism, and dietary formulations.'],
-  ['Oversea', 'water_drop', 'International operations, overseas markets, and regional feed tech.'],
-  ['Premix', 'water_drop', 'Premix formulations, micro-ingredient blending, and additive premixes.'],
-  ['Poultry', 'water_drop', 'Broiler feed conversion, layer flock nutrition, and poultry farming.'],
-  ['Raw Material', 'water_drop', 'Raw material commodity analysis, grain procurement, and quality assay.'],
-  ['Ruminant', 'water_drop', 'Beef cattle and ruminant forage management and rumen metabolism.'],
-  ['Ruminant Pakthongchai', 'water_drop', 'Ruminant feed mill trials and operations at Pakthongchai center.'],
-  ['Supplier', 'water_drop', 'Supplier quality audits, vendor presentations, and partner materials.'],
-  ['QC-Lab', 'water_drop', 'Quality control laboratory testing, spectrometry assays, and analysis.'],
-  ['China', 'water_drop', 'China market updates, overseas factory operations, and regional research.']
+  ['Conference', 'groups', 'Conferences, symposia, agricultural summits, and keynote sessions.'],
+  ['Dairy', 'agriculture', 'Dairy cattle feed optimization, milk yield, and livestock health.'],
+  ['Dairy Process', 'precision_manufacturing', 'Dairy processing technology, factory operations, and quality standards.'],
+  ['Extension Research', 'menu_book', 'Applied extension research, trial extensions, and academic collaborations.'],
+  ['Nutrition', 'nutrition', 'Animal nutrition science, nutrient metabolism, and dietary formulations.'],
+  ['Oversea', 'public', 'International operations, overseas markets, and regional feed tech.'],
+  ['Premix', 'grain', 'Premix formulations, micro-ingredient blending, and additive premixes.'],
+  ['Poultry', 'egg', 'Broiler feed conversion, layer flock nutrition, and poultry farming.'],
+  ['Raw Material', 'inventory_2', 'Raw material commodity analysis, grain procurement, and quality assay.'],
+  ['Ruminant', 'pets', 'Beef cattle and ruminant forage management and rumen metabolism.'],
+  ['Ruminant Pakthongchai', 'location_on', 'Ruminant feed mill trials and operations at Pakthongchai center.'],
+  ['Supplier', 'handshake', 'Supplier quality audits, vendor presentations, and partner materials.'],
+  ['QC-Lab', 'science', 'Quality control laboratory testing, spectrometry assays, and analysis.'],
+  ['China', 'language', 'China market updates, overseas factory operations, and regional research.']
 ];
 
 try {
@@ -766,7 +766,8 @@ try {
   `);
   for (const [category] of officialCategories) {
     const count = db.prepare('SELECT COUNT(*) AS count FROM videos WHERE category = ?').get(category).count;
-    for (let index = count; index < 10; index++) {
+    if (count >= 5) continue;
+    for (let index = count; index < 5; index++) {
       const slug = category.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toUpperCase();
       insertDemo.run(
         `MOCK-${slug}-${String(index + 1).padStart(2, '0')}`,
