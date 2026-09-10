@@ -86,8 +86,7 @@ function renderFeaturedCarousel() {
     const isActive = idx === state.featuredCurrentIndex;
     return `
       <div id="featuredSlide-${idx}" class="featured-slide absolute inset-0 transition-opacity duration-700 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'}">
-        <!-- Background Image with Ambient Cover -->
-        <img src="${v.thumbnail_url || 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1200'}" alt="${v.title}" class="w-full h-full object-cover select-none">
+        <img src="${v.thumbnail_url || '/thumbnails/vid-biotech-01.svg'}" alt="${v.title}" class="w-full h-full object-cover select-none" onerror="this.onerror=null; this.src='/thumbnails/vid-biotech-01.svg'">
         
         <!-- Dark Multi-Stop Gradient Overlay -->
         <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/20"></div>
@@ -406,7 +405,7 @@ function renderContinueWatching() {
     return `
       <div class="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col group cursor-pointer" onclick="openVideoPlayerModal(${v.id})">
         <div class="relative aspect-video bg-slate-900 overflow-hidden">
-          <img src="${v.thumbnail_url}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+          <img src="${v.thumbnail_url || '/thumbnails/vid-biotech-01.svg'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform" onerror="this.onerror=null; this.src='/thumbnails/vid-biotech-01.svg'">
           <div class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
             <button class="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-lg">
               <span class="material-symbols-outlined fill text-2xl">play_arrow</span>
@@ -475,7 +474,7 @@ function renderWatchHistory() {
       <div class="p-4 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer group" onclick="openVideoPlayerModal(${v.id})">
         <div class="flex items-center gap-3">
           <div class="w-20 h-12 rounded bg-slate-900 overflow-hidden relative shrink-0">
-            <img src="${v.thumbnail_url}" class="w-full h-full object-cover">
+            <img src="${v.thumbnail_url || '/thumbnails/vid-biotech-01.svg'}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/thumbnails/vid-biotech-01.svg'">
             <span class="absolute bottom-0.5 right-0.5 bg-black/80 text-white text-[8px] font-bold px-1 rounded">${v.duration}</span>
           </div>
           <div>
@@ -694,7 +693,7 @@ function createVideoCardHtml(v) {
     <div class="group bg-white rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col cursor-pointer" onclick="openVideoWatchPage(${v.id})">
       <!-- Thumbnail with Overlay -->
       <div class="relative aspect-video w-full bg-slate-900 overflow-hidden">
-        <img src="${v.thumbnail_url || 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+        <img src="${v.thumbnail_url || '/thumbnails/vid-biotech-01.svg'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null; this.src='/thumbnails/vid-biotech-01.svg'">
         
         <!-- Duration Badge -->
         <span class="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
@@ -876,7 +875,7 @@ function renderWatchRelatedVideos(currentVideo) {
   container.innerHTML = related.map(v => `
     <div class="flex gap-3 group cursor-pointer p-2 hover:bg-slate-100 rounded-xl transition-colors border border-transparent hover:border-outline-variant/60" onclick="openVideoWatchPage(${v.id})">
       <div class="relative w-36 aspect-video rounded-lg overflow-hidden shrink-0 bg-slate-900 shadow-2xs">
-        <img src="${v.thumbnail_url || 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=400'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+        <img src="${v.thumbnail_url || '/thumbnails/vid-biotech-01.svg'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='/thumbnails/vid-biotech-01.svg'">
         <span class="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] font-bold px-1 py-0.5 rounded">${v.duration}</span>
       </div>
       <div class="flex flex-col justify-between py-0.5 flex-1 min-w-0">

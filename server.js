@@ -779,7 +779,7 @@ try {
         `${10 + (index % 8)}:${String((index * 7) % 60).padStart(2, '0')}`,
         120 + index * 37,
         12 + index,
-        'https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=800&q=80',
+        `/thumbnails/vid-${slug.toLowerCase()}-01.svg`,
         'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         `#${category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}, #demo, #nas-library`
       );

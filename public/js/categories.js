@@ -649,7 +649,7 @@ async function openCategoryDrilldown(catName = 'All') {
               <td class="py-3 px-4">
                 <div class="flex items-center gap-3">
                   <div class="w-14 h-9 rounded bg-slate-900 overflow-hidden relative shrink-0">
-                    <img src="${v.thumbnail_url}" class="w-full h-full object-cover">
+                    <img src="${v.thumbnail_url || '/thumbnails/vid-biotech-01.svg'}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/thumbnails/vid-biotech-01.svg'">
                   </div>
                   <div>
                     <div class="font-bold text-gray-900 text-xs hover:text-primary cursor-pointer" onclick="closeCategoryDrilldownModal(); openVideoPlayerModal(${v.id})">${v.title}</div>

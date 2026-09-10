@@ -192,7 +192,7 @@ function inspectUserVideoAccess(userId) {
       <div class="flex items-center justify-between p-3 rounded-xl border transition-colors gap-3 ${evalResult.allowed ? 'bg-white border-slate-200 hover:border-emerald-300' : 'bg-rose-50/40 border-rose-200'}">
         <div class="flex items-center gap-3 min-w-0">
           <div class="w-14 aspect-video rounded-lg bg-slate-900 overflow-hidden relative shrink-0">
-            <img src="${v.thumbnail_url || 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=100'}" class="w-full h-full object-cover">
+            <img src="${v.thumbnail_url || '/thumbnails/vid-biotech-01.svg'}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/thumbnails/vid-biotech-01.svg'">
             <span class="absolute bottom-0.5 right-0.5 bg-black/80 text-white text-[8px] font-mono px-1 rounded">${v.duration || '10:00'}</span>
           </div>
           <div class="min-w-0">
@@ -264,7 +264,7 @@ function renderVideoManagementTable() {
       <td class="py-3 px-4">
         <div class="flex items-center gap-3">
           <div class="w-16 h-10 rounded bg-slate-900 overflow-hidden relative shrink-0">
-            <img src="${v.thumbnail_url || 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=200'}" class="w-full h-full object-cover">
+            <img src="${v.thumbnail_url || '/thumbnails/vid-biotech-01.svg'}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/thumbnails/vid-biotech-01.svg'">
             <span class="absolute bottom-0.5 right-0.5 bg-black/80 text-white text-[8px] font-bold px-1 rounded">${v.duration}</span>
           </div>
           <div>
@@ -654,7 +654,7 @@ function openEditDrawer(videoId) {
   if (document.getElementById('editDrawerVideoUrl')) {
     document.getElementById('editDrawerVideoUrl').value = v.video_url || '';
   }
-  document.getElementById('editDrawerThumb').src = v.thumbnail_url || 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=800';
+  document.getElementById('editDrawerThumb').src = v.thumbnail_url || '/thumbnails/vid-biotech-01.svg';
   if (document.getElementById('editDrawerThumbUrl')) {
     document.getElementById('editDrawerThumbUrl').value = v.thumbnail_url || '';
   }
@@ -1042,7 +1042,7 @@ async function loadAdminDashboard() {
             <td class="py-2.5 px-3">
               <div class="flex items-center gap-2.5">
                 <div class="w-12 aspect-video rounded bg-slate-900 overflow-hidden shrink-0">
-                  <img src="${v.thumbnail_url || 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=100'}" class="w-full h-full object-cover">
+                  <img src="${v.thumbnail_url || '/thumbnails/vid-biotech-01.svg'}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/thumbnails/vid-biotech-01.svg'">
                 </div>
                 <span class="font-bold text-gray-900 text-xs line-clamp-1">${v.title}</span>
               </div>
