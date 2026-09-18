@@ -117,7 +117,7 @@ async function quickSwitchToAdmin() {
   const adminUser = state.users.find(u => u.is_admin === 1 || u.role === 'Admin');
   if (adminUser) {
     await switchPersona(adminUser.id);
-    navigateView('admin-tags');
+    navigateView('admin-categories');
     showToast('Switched to Admin: Opened Category Management', 'success');
   }
 }
@@ -184,7 +184,6 @@ function renderCurrentUserUI() {
   const profileDept = document.getElementById('profileDept');
   const profileVidCount = document.getElementById('profileVidCount');
   const profileAdminStatus = document.getElementById('profileAdminStatus');
-  const rawTags = (u.allowed_tags || '').split(',').map(tag => tag.trim()).filter(Boolean);
 
   const initials = u.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   if (modalAvatar) {
@@ -219,17 +218,6 @@ function renderCurrentUserUI() {
   }
   if (profileVidCount) profileVidCount.textContent = `${state.accessibleVideos ? state.accessibleVideos.length : 0} / ${state.allVideos ? state.allVideos.length : 10}`;
   if (profileAdminStatus) profileAdminStatus.textContent = isAdmin ? 'Admin' : 'User';
-
-  // Render Allowed Tags Chips in Banner
-  const bannerTagsContainer = document.getElementById('bannerUserTagsContainer');
-  if (bannerTagsContainer) {
-    bannerTagsContainer.innerHTML = rawTags.map(t => `
-      <button onclick="handleTagSearch('${t}'); return false;" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors shadow-xs" title="Click to search videos by this tag">
-        <span>${t}</span>
-        <span class="material-symbols-outlined text-[10px] opacity-60">search</span>
-      </button>
-    `).join('');
-  }
 
   // Admin vs General User UI Visibility Enforcement
   const viewToggleBtn = document.getElementById('viewToggleBtn');

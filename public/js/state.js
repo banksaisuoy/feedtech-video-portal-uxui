@@ -24,11 +24,7 @@ window.state = {
   editDrawerVideoId: null,
   selectedUploadPersons: new Set(),
   selectedDrawerPersons: new Set(),
-  tagPickerSelected: {
-    modalTags: new Set(),
-    uploadVideoTags: new Set(),
-    editDrawerTags: new Set()
-  }
+  tagPickerSelected: {}
 };
 
 window.formatUserId = function(empId, id) {
@@ -53,7 +49,7 @@ window.translations = {
     adminDashboard: 'Dashboard Overview',
     adminUsers: 'User Management',
     adminDepts: 'Department Management',
-    adminTags: 'Categories & Tags',
+    adminCategories: 'Category Management',
     adminVideos: 'Video Management',
     adminMatrix: 'Access Control Matrix',
     adminLogs: 'System Audit Logs',
@@ -79,7 +75,7 @@ window.translations = {
     adminDashboard: 'แดชบอร์ดภาพรวม',
     adminUsers: 'จัดการผู้ใช้งาน',
     adminDepts: 'จัดการแผนก',
-    adminTags: 'จัดการแท็ก',
+    adminCategories: 'จัดการหมวดหมู่',
     adminVideos: 'จัดการคลังวิดีโอ',
     adminMatrix: 'ตารางสิทธิ์การเข้าถึง',
     adminLogs: 'บันทึกประวัติระบบ',
@@ -125,7 +121,7 @@ window.setPortalLanguage = function(lang) {
     'nav-admin-dashboard': 'adminDashboard',
     'nav-admin-users': 'adminUsers',
     'nav-admin-depts': 'adminDepts',
-    'nav-admin-tags': 'adminTags',
+    'nav-admin-categories': 'adminCategories',
     'nav-admin-videos': 'adminVideos',
     'nav-admin-matrix': 'adminMatrix',
     'nav-admin-logs': 'adminLogs'

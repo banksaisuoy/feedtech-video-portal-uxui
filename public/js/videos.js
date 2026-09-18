@@ -365,8 +365,8 @@ function renderRecommendedVideos() {
 
   let list = state.accessibleVideos;
   if (state.recommendedFilter === 'biotech') list = list.filter(v => (v.category || '') === 'Biotech');
-  if (state.recommendedFilter === 'safety') list = list.filter(v => (v.category || '').includes('Safety') || (v.tags || '').includes('safety') || (v.title || '').toLowerCase().includes('safety'));
-  if (state.recommendedFilter === 'automation') list = list.filter(v => (v.category || '').includes('Automation') || (v.tags || '').includes('automation') || (v.title || '').toLowerCase().includes('automation'));
+  if (state.recommendedFilter === 'safety') list = list.filter(v => (v.category || '').includes('Safety') || (v.content_type || '').toLowerCase().includes('safety') || (v.title || '').toLowerCase().includes('safety'));
+  if (state.recommendedFilter === 'automation') list = list.filter(v => (v.category || '').includes('Automation') || (v.content_type || '').toLowerCase().includes('automation') || (v.title || '').toLowerCase().includes('automation'));
   if (state.recommendedFilter === 'supply') list = list.filter(v => (v.category || '') === 'Supply Chain');
 
   // Prioritize recommended
@@ -662,7 +662,7 @@ function renderIntegratedMeetings() {
   if (!container) return;
 
   const meetingVideos = state.accessibleVideos.filter(v => {
-    return v.category.includes('Townhall') || v.category.includes('Meeting') || (v.tags && v.tags.includes('meeting')) || (v.title && v.title.toLowerCase().includes('townhall'));
+    return v.category.includes('Townhall') || v.category.includes('Meeting') || (v.content_type && v.content_type.toLowerCase().includes('townhall')) || (v.title && v.title.toLowerCase().includes('townhall'));
   });
 
   const list = meetingVideos.length > 0 ? meetingVideos : state.accessibleVideos.slice(0, 6);
