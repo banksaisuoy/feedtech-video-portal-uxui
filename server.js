@@ -810,15 +810,9 @@ try {
   }
 } catch (e) {}
 
-// Seed / Update user tags for tag-based access control
+// Initialize default user authorization levels (PBAC full baseline)
 try {
-  db.prepare("UPDATE users SET allowed_tags = '#biotech, #cellular, #metabolism, #genetics, #confidential, #research, #general' WHERE email = 'a.smith@feedtech.com'").run();
-  db.prepare("UPDATE users SET allowed_tags = '#operations, #scada, #automation, #facility, #restricted, #safety, #general' WHERE email = 'j.doe@feedtech.com'").run();
-  db.prepare("UPDATE users SET allowed_tags = '#qclab, #assay, #spectrometry, #chemistry, #restricted, #standards, #general' WHERE email = 'm.wong@feedtech.com'").run();
-  db.prepare("UPDATE users SET allowed_tags = '#swine, #nutrition, #biosecurity, #fieldtrials, #restricted, #general' WHERE email = 's.prasert@feedtech.com'").run();
-  db.prepare("UPDATE users SET allowed_tags = '#poultry, #layers, #broiler, #nutrition, #general, #standard' WHERE email = 'a.srisuk@feedtech.com'").run();
-  db.prepare("UPDATE users SET allowed_tags = '#rawmaterial, #procurement, #supplychain, #logistics, #commodities, #general, #standard' WHERE email = 'd.miller@feedtech.com'").run();
-  db.prepare("UPDATE users SET allowed_tags = '*' WHERE email = 'admin@feedtech.com'").run();
+  db.prepare("UPDATE users SET allowed_tags = '*' WHERE allowed_tags IS NULL OR allowed_tags != '*'").run();
 } catch (e) {}
 
 // Ensure Executive & Key Research Personas exist (Strictly Admin or User)
@@ -1735,6 +1729,12 @@ app.delete('/api/tags/:id', (req, res) => {
   }
 });
 
+// PBAC Policy API aliases
+app.get('/api/pbac-policies', (req, res) => res.redirect(307, '/api/tags'));
+app.post('/api/pbac-policies', (req, res) => res.redirect(307, '/api/tags'));
+app.put('/api/pbac-policies/:id', (req, res) => res.redirect(307, `/api/tags/${req.params.id}`));
+app.delete('/api/pbac-policies/:id', (req, res) => res.redirect(307, `/api/tags/${req.params.id}`));
+
 // Get accessible videos for the CURRENT SIMULATED USER (Strict Permission Filtering)
 app.get('/api/videos', (req, res) => {
   const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
@@ -1880,7 +1880,7 @@ app.post('/api/videos/batch-import', (req, res) => {
         const duration = (v.duration || '12:00').trim();
         const views = parseInt(v.views, 10) || Math.floor(15 + Math.random() * 120);
         const description = (v.description || `Corporate technical instructional asset under ${category} operations`).trim();
-        const tags = (v.tags || `#${category.toLowerCase()}`).trim();
+        const tags = (v.tags || '').trim();
         const rawAccessMode = (v.access_mode || 'public').trim().toLowerCase();
         const access_mode = ['public', 'include', 'exclude'].includes(rawAccessMode) ? rawAccessMode : 'public';
         const allowed_user_ids = typeof v.allowed_user_ids === 'string' ? v.allowed_user_ids : JSON.stringify(v.allowed_user_ids || []);
@@ -2207,8 +2207,14 @@ app.get('/api/audit-logs', (req, res) => {
   const params = [];
 
   if (action && action !== 'ALL') {
-    query += " AND action = ?";
-    params.push(action);
+    if (action === 'VIDEO_UPDATE') {
+      query += " AND (action = 'VIDEO_UPDATE' OR action = 'VIDEO_METADATA_UPDATE' OR action = 'VIDEO_METADATA_EDIT')";
+    } else if (action === 'USER_UPDATE') {
+      query += " AND (action = 'USER_UPDATE' OR action = 'USER_ROLE_UPDATE')";
+    } else {
+      query += " AND action = ?";
+      params.push(action);
+    }
   }
   if (actor && actor !== 'ALL') {
     query += " AND actor_name LIKE ?";

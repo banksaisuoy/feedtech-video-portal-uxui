@@ -109,7 +109,6 @@ async function saveUserModalSubmit() {
   const roleSelect = document.getElementById('modalRoleSelect')?.value || 'User';
   const isAdmin = (roleSelect === 'Admin' || roleSelect === 'admin');
   const role = isAdmin ? 'Admin' : 'User';
-  const allowed_tags = '*';
   const permission_level = isAdmin ? 'Highly Confidential' : 'Standard';
   const emp_id = document.getElementById('modalEmpId')?.value.trim() || '';
 
@@ -124,13 +123,13 @@ async function saveUserModalSubmit() {
       res = await fetch(`/api/users/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, department, role, allowed_tags, permission_level, is_admin: isAdmin ? 1 : 0, is_executive_board })
+        body: JSON.stringify({ name, email, department, role, permission_level, is_admin: isAdmin ? 1 : 0, is_executive_board })
       });
     } else {
       res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emp_id, name, email, department, role, allowed_tags, permission_level, is_admin: isAdmin ? 1 : 0, is_executive_board })
+        body: JSON.stringify({ emp_id, name, email, department, role, permission_level, is_admin: isAdmin ? 1 : 0, is_executive_board })
       });
     }
 
@@ -179,31 +178,15 @@ function openImportExcelModal() {
   showToast('Excel Bulk Import: Ready for Feedtech XLSX template', 'info');
 }
 
-// ---------------- BACKWARD COMPATIBILITY STUBS (PBAC Transition) ----------------
-
-async function loadTags() {
-  state.tags = [];
-}
-
-function closeTagModal() {}
-function renderTagPicker() {}
-function toggleTagInPicker() {}
-function selectAllTagsInPicker() {}
-function clearTagsInPicker() {}
-function addCustomTagToPicker() {}
-function renderTagTable() {}
-function filterTagTable() {}
-function openAddTagModal() {}
-function editTagPrompt() {}
-async function saveTagModalSubmit() {}
-async function deleteTagPrompt() {}
-function renderCategorySubcategoryPills() {}
-function openAddTagForCategory() {}
-async function handleQuickAddTag() {}
-
-function handleTagSearch(term) {
+// ---------------- BACKWARD COMPATIBILITY STUBS ----------------
+window.loadTags = async function() {};
+window.closeTagModal = function() {};
+window.renderTagPicker = function() {};
+window.renderTagTable = function() {};
+window.openAddTagModal = function() {};
+window.handleTagSearch = function(term) {
   const clean = (term || '').replace(/^#/, '');
   const searchInput = document.getElementById('globalSearchInput');
   if (searchInput) searchInput.value = clean;
   if (typeof handleGlobalSearch === 'function') handleGlobalSearch(clean);
-}
+};

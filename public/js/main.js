@@ -30,7 +30,6 @@ async function init() {
   await loadAllVideos();
   await loadCategories();
   await loadContentTypes();
-  await loadTags();
   await loadEvents();
 
   if (isAuthed) {
@@ -46,7 +45,6 @@ async function init() {
       closeVideoPlayer();
       closeUserModal();
       closeEditDrawer();
-      closeTagModal();
       closeCategoryModal();
       closeDeptModal();
       closeProfileModal();

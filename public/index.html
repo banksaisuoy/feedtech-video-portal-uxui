@@ -1493,13 +1493,18 @@
               <option value="ALL">All Events</option>
               <option value="AUTH_LOGIN">🔑 Login</option>
               <option value="AUTH_LOGOUT">🚪 Logout</option>
+              <option value="PERSONA_SWITCH">🔄 Persona Switch</option>
               <option value="VIDEO_UPLOAD">🎬 Video Upload</option>
               <option value="VIDEO_BATCH_IMPORT">📦 Bulk Import</option>
               <option value="VIDEO_UPDATE">✏️ Video Update</option>
+              <option value="VIDEO_PIN_TOGGLE">📌 Video Pin Toggle</option>
+              <option value="VIDEO_RECOMMEND_TOGGLE">⭐ Video Recommend Toggle</option>
               <option value="VIDEO_DELETE">🗑️ Video Delete</option>
               <option value="CATEGORY_CREATE">📂 Category Create</option>
               <option value="CATEGORY_UPDATE">📝 Category Update</option>
               <option value="CATEGORY_DELETE">❌ Category Delete</option>
+              <option value="CONTENT_TYPE_CREATE">📑 Content Type Create</option>
+              <option value="CONTENT_TYPE_DELETE">❌ Content Type Delete</option>
               <option value="USER_CREATE">✨ User Create</option>
               <option value="USER_UPDATE">👤 User Change</option>
               <option value="USER_DELETE">🚫 User Delete</option>
@@ -1513,6 +1518,9 @@
               <option value="PBAC_POLICY_UPDATE">🛡️ PBAC Policy Update</option>
               <option value="PBAC_POLICY_DELETE">🛡️ PBAC Policy Delete</option>
               <option value="ACCESS_CONTROL_UPDATE">🔐 Access Control Update</option>
+              <option value="CREATE_EVENT">📅 Event Create</option>
+              <option value="UPDATE_EVENT">📝 Event Update</option>
+              <option value="DELETE_EVENT">❌ Event Delete</option>
             </select>
           </div>
           <div class="flex items-center gap-2 shrink-0">
@@ -2291,7 +2299,7 @@
           <span class="text-gray-500">Video Access:</span>
           <b id="userAccessSummaryRate" class="text-emerald-800 ml-1">21 / 23 Videos Allowed</b>
         </div>
-        <div id="userAccessTagsList" class="flex flex-wrap gap-1">
+        <div id="userAccessPbacBadges" class="flex flex-wrap gap-1">
           <!-- PBAC Policy Badges -->
         </div>
       </div>

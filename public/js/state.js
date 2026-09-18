@@ -13,7 +13,6 @@ window.state = {
   videos: [],
   categories: [],
   contentTypes: [],
-  tags: [],
   events: [],
   history: [],
   favorites: [],
@@ -23,8 +22,7 @@ window.state = {
   selectedVideo: null,
   editDrawerVideoId: null,
   selectedUploadPersons: new Set(),
-  selectedDrawerPersons: new Set(),
-  tagPickerSelected: {}
+  selectedDrawerPersons: new Set()
 };
 
 window.formatUserId = function(empId, id) {

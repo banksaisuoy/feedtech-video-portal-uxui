@@ -33,8 +33,8 @@ The old ambiguous Video Access Authorization Level has been restructured into ex
 
 | Role Type | Identifier | System Rights | Default Video Access |
 | :--- | :--- | :--- | :--- |
-| **🛡️ Administrator** | is_admin = 1 | • Full access to Admin Console & Deep Analytics<br>• Video Asset Management (Upload, Edit, Delete, Pin)<br>• Category Management (Add, Edit, Icon selection)<br>• Tag Management & Clearance Assignment<br>• User Management & Role Configuration<br>• System Audit Logs & CSV Export | Access to **ALL** videos (* wildcard access) |
-| **👤 Regular User / Staff** | is_admin = 0 | • Access to User Portal (Home, Categories Hub, History, Favorites)<br>• Dedicated Watch Page & Fullscreen Player<br>• Meeting Recordings & Symposia viewing | Filtered by assigned **Category** and **Allowed Tags** (PBAC/TBAC gate) |
+| **🛡️ Administrator** | is_admin = 1 | • Full access to Admin Console & Deep Analytics<br>• Video Asset Management (Upload, Edit, Delete, Pin)<br>• Category Management (Add, Edit, Icon selection)<br>• PBAC Policy & Access Control Configuration<br>• User Management & Role Configuration<br>• System Audit Logs & CSV Export | Access to **ALL** videos (* wildcard access) |
+| **👤 Regular User / Staff** | is_admin = 0 | • Access to User Portal (Home, Categories Hub, History, Favorites)<br>• Dedicated Watch Page & Fullscreen Player<br>• Meeting Recordings & Symposia viewing | Governed by Person-Based Access Control (**PBAC**: Whitelist / Blacklist / Public) |
 
 ### 3.1 RBAC Simulation Mode & Persona Switcher
 * Located on the top bar (#simulationControlBar).
@@ -48,7 +48,7 @@ The old ambiguous Video Access Authorization Level has been restructured into ex
 ### 4.1 Header & Top Navbar
 * **Brand Identity**: Feedtech Portal with enterprise logo.
 * **Sidebar Toggle Button (☰)**: Collapses the sidebar to an icon-only mini mode (64px) to maximize screen area for video watching and data tables without requiring full-screen mode.
-* **Center Global Search**: Live search across video titles, descriptions, categories, and tags.
+* **Center Global Search**: Live search across video titles, descriptions, categories, and content types.
 * **Quick Theme Toggle (🌙 / ☀️)**: Dark / Light mode switch located in top navigation.
 * **Preferences Icon (tune)**: Web settings and preferences modal accessible directly next to the user avatar.
 * **Authentication**: Dedicated Login Page (admin/admin and user/user) with session persistence and Logout button.
@@ -61,11 +61,11 @@ The old ambiguous Video Access Authorization Level has been restructured into ex
    * ❤️ **Favorites**: Quick access to bookmarked reference protocols.
 2. **Admin Management** *(visible only to Admins)*:
    * 📊 **Dashboard Overview**: Bento-grid deep analytics, KPI cards, monthly consumption charts, and drill-downs. (*All redundant Import Video Link, Import Users, and Manage Access buttons removed per user request*).
-   * 🎬 **Video Management**: Comprehensive asset table with Category, Tags, Access Mode, Pin/Rec controls, and Stats.
+   * 🎬 **Video Management**: Comprehensive asset table with Category, Content Type, Access Mode, Pin/Rec controls, and Stats.
    * ➕ **+ เพิ่มวิดีโอ (Add Video)**: Dedicated, direct menu item leading straight to the Link Architecture Cloud Upload Hub.
    * 🏷️ **Category Management**: Dedicated Bento-grid view matching Stitch screen d6e1c51306154919b88d6a9433b52c7c.
-   * 🔖 **Tag Management**: Unbundled from categories for fine-grained TBAC security.
-   * 👥 **User Management**: Employee accounts table with Category, Allowed Tags, Role (🛡️ Admin / 👤 User), and Video Access Inspector.
+   * 🏢 **Department Management**: Management of organizational business units and member assignments.
+   * 👥 **User Management**: Employee accounts table with Category, Role (🛡️ Admin / 👤 User), and Video Access Inspector.
    * 📋 **System Audit Logs**: Dedicated filterable audit history matching Stitch screen 395a8206f8004d51ab6fb069e032e214 with actor, event, and CSV export.
 
 ---
@@ -98,7 +98,7 @@ The old ambiguous Video Access Authorization Level has been restructured into ex
 
 ## 7. Video Watch Page Experience
 * **Full-Page YouTube-Style Layout**: Replaces basic modal popups with a dedicated 2-column layout (#view-watch).
-* **Main Player Column (8 Cols)**: High-resolution video player, responsive 16:9 ratio, title, author credentials, description, related tags, and comments.
+* **Main Player Column (8 Cols)**: High-resolution video player, responsive 16:9 ratio, title, author credentials, description, category badge, and comments.
 * **Sidebar Column (4 Cols)**: Up-Next video recommendations, related categories, and quick bookmarking.
 * **No PDF download requirement**: Focused entirely on frictionless video streaming and learning.
 

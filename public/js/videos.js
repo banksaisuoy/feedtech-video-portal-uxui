@@ -670,9 +670,10 @@ function renderIntegratedMeetings() {
 }
 
 function submitClearanceRequest() {
-  const level = document.getElementById('reqTargetLevel')?.value;
-  const dept = document.getElementById('reqTargetDept')?.value;
-  const reason = document.getElementById('reqReason')?.value.trim();
+  const level = document.getElementById('reqTargetLevel')?.value || 'Standard';
+  const dept = document.getElementById('reqTargetDept')?.value || 'General';
+  const reasonInput = document.getElementById('reqReason');
+  const reason = reasonInput?.value ? reasonInput.value.trim() : '';
 
   if (!reason) {
     showToast('Please provide a business justification', 'error');
@@ -680,7 +681,7 @@ function submitClearanceRequest() {
   }
 
   showToast(`Access request for [${level} - ${dept}] submitted to IT Admin`, 'success');
-  document.getElementById('reqReason').value = '';
+  if (reasonInput) reasonInput.value = '';
 }
 
 function createVideoCardHtml(v) {

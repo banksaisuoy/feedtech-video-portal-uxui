@@ -157,14 +157,14 @@ function inspectUserVideoAccess(userId) {
   const titleEl = document.getElementById('userAccessModalTitle');
   const subtitleEl = document.getElementById('userAccessModalSubtitle');
   const summaryEl = document.getElementById('userAccessSummaryRate');
-  const tagsListEl = document.getElementById('userAccessTagsList');
+  const pbacBadgesEl = document.getElementById('userAccessPbacBadges');
   const listEl = document.getElementById('userAccessVideosList');
 
   if (titleEl) titleEl.textContent = `Check Video Access: ${user.name}`;
   if (subtitleEl) subtitleEl.textContent = `${user.role} • ${user.department} • ${user.email} (User ID: ${formatUserId(user.emp_id, user.id)})`;
 
-  if (tagsListEl) {
-    tagsListEl.innerHTML = `
+  if (pbacBadgesEl) {
+    pbacBadgesEl.innerHTML = `
       <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-bold">PBAC Access Control</span>
       <span class="px-2 py-0.5 rounded text-[10px] ${user.is_admin ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700'} font-bold">${user.is_admin ? '🛡️ Admin (Full Access)' : '👤 Regular User'}</span>
     `;
@@ -746,7 +746,6 @@ async function saveEditDrawerChanges() {
   const department = document.getElementById('editDrawerDept')?.value || existingVideo?.department || 'General';
   const category = document.getElementById('editDrawerCategory')?.value || existingVideo?.category || '';
   const content_type = document.getElementById('editDrawerContentType')?.value || existingVideo?.content_type || 'Research & Whitepaper';
-  const tags = '';
   const is_hidden = document.getElementById('editDrawerIsHidden')?.checked ? 1 : 0;
   const is_featured = document.getElementById('editDrawerIsFeatured')?.checked ? 1 : 0;
   const is_recommended = document.getElementById('editDrawerIsRecommended')?.checked ? 1 : 0;
@@ -775,7 +774,6 @@ async function saveEditDrawerChanges() {
         department, 
         category,
         content_type,
-        tags, 
         thumbnail_url,
         is_hidden,
         is_featured,
@@ -1063,7 +1061,6 @@ async function submitUploadVideo() {
   const description = document.getElementById('uploadVideoDesc').value.trim();
   const content_type = document.getElementById('uploadVideoContentType')?.value || 'Research & Whitepaper';
   const duration = document.getElementById('uploadVideoDuration')?.value?.trim() || '10:00';
-  const tags = '';
   const thumbnail_url = document.getElementById('uploadThumbnailUrl')?.value.trim() || DOMAIN_THUMBNAIL_PRESETS.Default;
 
   let access_mode = 'public';
@@ -1095,7 +1092,6 @@ async function submitUploadVideo() {
         category,
         content_type,
         duration,
-        tags,
         thumbnail_url,
         video_url,
         access_mode,
@@ -1292,15 +1288,23 @@ function renderAuditLogs() {
   const actionIconMap = {
     'AUTH_LOGIN': { icon: 'login', style: 'bg-blue-50 text-blue-700 border-blue-200' },
     'AUTH_LOGOUT': { icon: 'logout', style: 'bg-slate-100 text-slate-700 border-slate-200' },
+    'PERSONA_SWITCH': { icon: 'switch_account', style: 'bg-purple-50 text-purple-700 border-purple-200' },
     'VIDEO_UPLOAD': { icon: 'video_file', style: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
     'VIDEO_UPDATE': { icon: 'edit', style: 'bg-amber-50 text-amber-800 border-amber-200' },
+    'VIDEO_METADATA_UPDATE': { icon: 'edit', style: 'bg-amber-50 text-amber-800 border-amber-200' },
+    'VIDEO_METADATA_EDIT': { icon: 'edit', style: 'bg-amber-50 text-amber-800 border-amber-200' },
+    'VIDEO_PIN_TOGGLE': { icon: 'push_pin', style: 'bg-amber-50 text-amber-800 border-amber-200' },
+    'VIDEO_RECOMMEND_TOGGLE': { icon: 'star', style: 'bg-amber-50 text-amber-800 border-amber-200' },
     'VIDEO_DELETE': { icon: 'delete', style: 'bg-rose-50 text-rose-700 border-rose-200' },
     'VIDEO_BATCH_IMPORT': { icon: 'upload_file', style: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
     'CATEGORY_CREATE': { icon: 'create_new_folder', style: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
     'CATEGORY_UPDATE': { icon: 'folder_open', style: 'bg-amber-50 text-amber-800 border-amber-200' },
     'CATEGORY_DELETE': { icon: 'folder_delete', style: 'bg-rose-50 text-rose-700 border-rose-200' },
+    'CONTENT_TYPE_CREATE': { icon: 'post_add', style: 'bg-teal-50 text-teal-800 border-teal-200' },
+    'CONTENT_TYPE_DELETE': { icon: 'delete_sweep', style: 'bg-rose-50 text-rose-700 border-rose-200' },
     'USER_CREATE': { icon: 'person_add', style: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
     'USER_UPDATE': { icon: 'manage_accounts', style: 'bg-purple-50 text-purple-700 border-purple-200' },
+    'USER_ROLE_UPDATE': { icon: 'manage_accounts', style: 'bg-purple-50 text-purple-700 border-purple-200' },
     'USER_DELETE': { icon: 'person_remove', style: 'bg-rose-50 text-rose-700 border-rose-200' },
     'USER_STATUS_TOGGLE': { icon: 'toggle_on', style: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
     'DEPARTMENT_CREATE': { icon: 'corporate_fare', style: 'bg-teal-50 text-teal-800 border-teal-200' },
@@ -1312,9 +1316,10 @@ function renderAuditLogs() {
     'PBAC_POLICY_UPDATE': { icon: 'policy', style: 'bg-amber-50 text-amber-800 border-amber-200' },
     'PBAC_POLICY_DELETE': { icon: 'remove_moderator', style: 'bg-rose-50 text-rose-700 border-rose-200' },
     'ACCESS_CONTROL_UPDATE': { icon: 'lock_reset', style: 'bg-purple-50 text-purple-700 border-purple-200' },
-    'TAG_UPDATE': { icon: 'policy', style: 'bg-cyan-50 text-cyan-800 border-cyan-200' },
-    'TAG_CREATE': { icon: 'security', style: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
-    'TAG_DELETE': { icon: 'remove_moderator', style: 'bg-rose-50 text-rose-700 border-rose-200' }
+    'CREATE_EVENT': { icon: 'event', style: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+    'UPDATE_EVENT': { icon: 'edit_calendar', style: 'bg-amber-50 text-amber-800 border-amber-200' },
+    'DELETE_EVENT': { icon: 'event_busy', style: 'bg-rose-50 text-rose-700 border-rose-200' },
+    'PERMISSION_POLICY_CHECK': { icon: 'verified_user', style: 'bg-blue-50 text-blue-700 border-blue-200' }
   };
 
   tbody.innerHTML = state.auditLogs.map(l => {
@@ -2022,7 +2027,7 @@ function handleVideoCsvFile(event) {
           allowed_user_ids: row.allowed_user_ids || row.alloweduserids || '',
           excluded_user_ids: row.excluded_user_ids || row.excludeduserids || '',
           description: row.description || '',
-          tags: row.tags || ''
+          content_type: row.content_type || row.contenttype || 'Research & Whitepaper'
         });
       }
 

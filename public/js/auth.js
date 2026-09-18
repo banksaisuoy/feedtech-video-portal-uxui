@@ -192,8 +192,8 @@ function renderCurrentUserUI() {
   }
   if (modalName) modalName.textContent = u.name;
   if (modalEmailDept) {
-    const execTag = (u.is_executive_board === 1 || u.department === 'Executive Board') ? ' • ⭐ Executive Board' : '';
-    modalEmailDept.textContent = `${u.email} • ${u.department}${execTag}`;
+    const execBadgeText = (u.is_executive_board === 1 || u.department === 'Executive Board') ? ' • ⭐ Executive Board' : '';
+    modalEmailDept.textContent = `${u.email} • ${u.department}${execBadgeText}`;
   }
   if (modalClearance) {
     const isBoard = (u.is_executive_board === 1 || u.department === 'Executive Board');

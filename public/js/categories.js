@@ -75,7 +75,6 @@ async function loadCategories() {
       renderSidebarCategories();
       renderCategoryManagementTable();
       populateCategorySelects();
-      if (typeof renderCategorySubcategoryPills === 'function') renderCategorySubcategoryPills();
       if (typeof renderCategoriesDirectory === 'function') renderCategoriesDirectory();
     }
   } catch (err) {
@@ -180,8 +179,10 @@ function renderContentTypeManagementList() {
 function openAddContentTypeModal() {
   const modal = document.getElementById('contentTypeModal');
   if (modal) {
-    document.getElementById('modalContentTypeName').value = '';
-    document.getElementById('modalContentTypeDesc').value = '';
+    const nameEl = document.getElementById('modalContentTypeName');
+    const descEl = document.getElementById('modalContentTypeDesc');
+    if (nameEl) nameEl.value = '';
+    if (descEl) descEl.value = '';
     renderContentTypeManagementList();
     modal.classList.remove('hidden');
   }

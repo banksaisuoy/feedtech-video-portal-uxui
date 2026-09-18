@@ -9,7 +9,7 @@
 // 3. public/js/navigation.js  (~125 lines) : View routing, search bar, sidebar highlighting
 // 4. public/js/videos.js      (~617 lines) : Video feeds, player modal, watch history, favorites
 // 5. public/js/categories.js  (~491 lines) : Categories Hub, Department tables, Townhalls
-// 6. public/js/tags.js        (~614 lines) : Tags & subcategories, quick add/delete, tag picker
+// 6. public/js/tags.js        (~190 lines) : User account modal & PBAC governance
 // 7. public/js/admin.js       (~1043 lines): Admin console, User & Video management, Upload, Matrix
 // 8. public/js/main.js        (~47 lines)  : App bootstrap, DOM initialization & global shortcuts
 //
