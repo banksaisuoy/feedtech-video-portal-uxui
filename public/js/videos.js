@@ -364,10 +364,10 @@ function renderRecommendedVideos() {
   if (!container) return;
 
   let list = state.accessibleVideos;
-  if (state.recommendedFilter === 'biotech') list = list.filter(v => v.category === 'Biotech');
-  if (state.recommendedFilter === 'safety') list = list.filter(v => v.tags.includes('safety') || v.tags.includes('protocols'));
-  if (state.recommendedFilter === 'automation') list = list.filter(v => v.tags.includes('automation') || v.tags.includes('silo'));
-  if (state.recommendedFilter === 'supply') list = list.filter(v => v.category === 'Supply Chain');
+  if (state.recommendedFilter === 'biotech') list = list.filter(v => (v.category || '') === 'Biotech');
+  if (state.recommendedFilter === 'safety') list = list.filter(v => (v.category || '').includes('Safety') || (v.tags || '').includes('safety') || (v.title || '').toLowerCase().includes('safety'));
+  if (state.recommendedFilter === 'automation') list = list.filter(v => (v.category || '').includes('Automation') || (v.tags || '').includes('automation') || (v.title || '').toLowerCase().includes('automation'));
+  if (state.recommendedFilter === 'supply') list = list.filter(v => (v.category || '') === 'Supply Chain');
 
   // Prioritize recommended
   list = [...list].sort((a, b) => {
@@ -687,7 +687,6 @@ function createVideoCardHtml(v) {
   const favIcon = v.is_favorite ? 'favorite' : 'favorite_border';
   const favClass = v.is_favorite ? 'text-rose-500 fill' : 'text-white hover:text-rose-400';
   const progressPercent = v.watch_progress || 0;
-  const tagList = (v.tags || '').split(',').map(t => t.trim()).filter(Boolean).slice(0, 2);
 
   return `
     <div class="group bg-white rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col cursor-pointer" onclick="openVideoWatchPage(${v.id})">
@@ -701,8 +700,8 @@ function createVideoCardHtml(v) {
         </span>
 
         <!-- Favorite Button -->
-        <button onclick="event.stopPropagation(); toggleFavorite(${v.id})" class="absolute top-2 right-2 p-1.5 bg-black/40 hover:bg-black/70 rounded-full transition-colors ${favClass}">
-          <span class="material-symbols-outlined text-base">${favIcon}</span>
+        <button data-fav-btn="${v.id}" onclick="event.stopPropagation(); toggleFavorite(${v.id})" class="absolute top-2 right-2 p-1.5 bg-black/40 hover:bg-black/70 rounded-full transition-colors ${favClass}">
+          <span data-fav-icon="${v.id}" class="material-symbols-outlined text-base">${favIcon}</span>
         </button>
 
         <!-- Watch Progress Bar -->
@@ -722,9 +721,6 @@ function createVideoCardHtml(v) {
           <h4 class="text-xs font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
             ${v.title}
           </h4>
-          <div class="flex flex-wrap gap-1 mt-1.5">
-            ${tagList.map(t => `<span class="text-[9px] font-mono text-gray-500 bg-slate-100 px-1.5 py-0.2 rounded">${t}</span>`).join('')}
-          </div>
         </div>
 
         <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-gray-400">
@@ -783,7 +779,6 @@ async function openVideoWatchPage(videoId) {
     const authorAvatar = document.getElementById('watchAuthorAvatar');
     const statsEl = document.getElementById('watchVideoStats');
     const catBadge = document.getElementById('watchCategoryBadge');
-    const tagsContainer = document.getElementById('watchTagsContainer');
     const descEl = document.getElementById('watchVideoDesc');
     const favIcon = document.getElementById('watchFavIcon');
     const favText = document.getElementById('watchFavText');
@@ -797,11 +792,6 @@ async function openVideoWatchPage(videoId) {
     if (statsEl) statsEl.textContent = `${v.views.toLocaleString()} views • Uploaded on ${v.uploaded_at || 'Recent'}`;
     if (catBadge) catBadge.textContent = v.category || 'General';
     if (descEl) descEl.textContent = v.description || 'No detailed whitepaper abstract provided.';
-
-    // Tags container cleared
-    if (tagsContainer) {
-      tagsContainer.innerHTML = '';
-    }
 
     // Favorite state
     if (favIcon && favText) {
@@ -859,16 +849,19 @@ function renderWatchRelatedVideos(currentVideo) {
   if (!container) return;
 
   const pool = (state.accessibleVideos && state.accessibleVideos.length > 0) ? state.accessibleVideos : (state.allVideos || []);
-  const otherVideos = pool.filter(v => v.id !== currentVideo.id);
   
-  const related = otherVideos.sort((a, b) => {
-    const aMatch = (a.category === currentVideo.category ? 2 : 0);
-    const bMatch = (b.category === currentVideo.category ? 2 : 0);
-    return bMatch - aMatch;
-  }).slice(0, 8);
+  // STRICT: Only videos from the exact same category
+  const related = pool
+    .filter(v => v.id !== currentVideo.id && v.category === currentVideo.category)
+    .sort((a, b) => (b.views || 0) - (a.views || 0))
+    .slice(0, 10);
 
   if (related.length === 0) {
-    container.innerHTML = `<div class="py-8 text-center text-xs text-gray-400">No additional related videos found.</div>`;
+    container.innerHTML = `
+      <div class="py-8 text-center text-xs text-gray-400 border border-dashed border-outline-variant/60 rounded-xl p-4">
+        <span class="material-symbols-outlined text-2xl text-gray-300 block mb-1">video_library</span>
+        No other videos found in <strong>${currentVideo.category || 'this category'}</strong>.
+      </div>`;
     return;
   }
 
@@ -919,14 +912,6 @@ async function submitWatchComment() {
 function toggleWatchFavorite() {
   if (state.activeWatchVideo) {
     toggleFavorite(state.activeWatchVideo.id);
-    const favIcon = document.getElementById('watchFavIcon');
-    const favText = document.getElementById('watchFavText');
-    state.activeWatchVideo.is_favorite = !state.activeWatchVideo.is_favorite;
-    if (favIcon && favText) {
-      favIcon.textContent = state.activeWatchVideo.is_favorite ? 'favorite' : 'favorite_border';
-      favIcon.className = state.activeWatchVideo.is_favorite ? 'material-symbols-outlined text-base text-rose-500 fill' : 'material-symbols-outlined text-base text-gray-500';
-      favText.textContent = state.activeWatchVideo.is_favorite ? 'Favorited' : 'Favorite';
-    }
   }
 }
 
@@ -964,12 +949,6 @@ async function openVideoPlayerModal(videoId) {
     document.getElementById('playerDeptBadge').textContent = v.department;
     document.getElementById('playerLevelBadge').outerHTML = getPermissionBadgeMarkup(v.permission_level);
 
-    // Tags
-    const tagsContainer = document.getElementById('playerTagsContainer');
-    if (tagsContainer && v.tags) {
-      const tagList = v.tags.split(',').map(t => t.trim());
-      tagsContainer.innerHTML = tagList.map(t => `<span class="text-[10px] font-medium bg-slate-100 text-gray-600 px-2 py-0.5 rounded">${t}</span>`).join('');
-    }
 
     // Video Source
     const player = document.getElementById('activeVideoPlayer');
@@ -1058,14 +1037,73 @@ async function submitComment() {
 }
 
 async function toggleFavorite(videoId) {
+  // 1. Locate video object in state
+  const vid = (state.accessibleVideos || []).find(v => v.id === videoId) || (state.allVideos || []).find(v => v.id === videoId);
+  const oldState = vid ? Boolean(vid.is_favorite) : false;
+  const newState = !oldState;
+
+  if (vid) vid.is_favorite = newState;
+  if (state.activeWatchVideo && state.activeWatchVideo.id === videoId) {
+    state.activeWatchVideo.is_favorite = newState;
+  }
+  if (state.activeVideo && state.activeVideo.id === videoId) {
+    state.activeVideo.is_favorite = newState;
+  }
+
+  // 2. Instant Optimistic DOM Update for ALL matching card buttons
+  const buttons = document.querySelectorAll(`[data-fav-btn="${videoId}"]`);
+  buttons.forEach(btn => {
+    btn.className = `absolute top-2 right-2 p-1.5 bg-black/40 hover:bg-black/70 rounded-full transition-colors ${newState ? 'text-rose-500 fill' : 'text-white hover:text-rose-400'}`;
+    const icon = btn.querySelector('.material-symbols-outlined') || btn.querySelector('[data-fav-icon]');
+    if (icon) {
+      icon.textContent = newState ? 'favorite' : 'favorite_border';
+    }
+  });
+
+  // Watch page favorite button update
+  if (state.activeWatchVideo && state.activeWatchVideo.id === videoId) {
+    const favIcon = document.getElementById('watchFavIcon');
+    const favText = document.getElementById('watchFavText');
+    if (favIcon) {
+      favIcon.textContent = newState ? 'favorite' : 'favorite_border';
+      favIcon.className = newState ? 'material-symbols-outlined text-base text-rose-500 fill' : 'material-symbols-outlined text-base text-gray-500';
+    }
+    if (favText) {
+      favText.textContent = newState ? 'Favorited' : 'Favorite';
+    }
+  }
+
+  // Quick player modal favorite button update
+  const playerFavBtn = document.getElementById('playerFavBtn');
+  if (playerFavBtn && state.activeVideo && state.activeVideo.id === videoId) {
+    playerFavBtn.innerHTML = newState 
+      ? `<span class="material-symbols-outlined text-sm text-rose-500 fill">favorite</span><span class="text-rose-600 font-bold">Favorited</span>`
+      : `<span class="material-symbols-outlined text-sm">favorite_border</span><span>Favorite</span>`;
+  }
+
+  // If currently in favorites view, refresh favorites list
+  if (state.activeView === 'favorites' && typeof renderFavorites === 'function') {
+    renderFavorites();
+  }
+
+  // 3. Background API sync
   try {
     const res = await fetch(`/api/videos/${videoId}/favorite`, { method: 'POST' });
     const json = await res.json();
     if (json.success) {
-      await loadAccessibleVideos();
+      if (vid) vid.is_favorite = json.is_favorite;
       showToast(json.is_favorite ? 'Added to favorites' : 'Removed from favorites', 'info');
+    } else {
+      throw new Error(json.message || 'Server error');
     }
   } catch (err) {
+    // Revert state & DOM on failure
+    if (vid) vid.is_favorite = oldState;
+    buttons.forEach(btn => {
+      btn.className = `absolute top-2 right-2 p-1.5 bg-black/40 hover:bg-black/70 rounded-full transition-colors ${oldState ? 'text-rose-500 fill' : 'text-white hover:text-rose-400'}`;
+      const icon = btn.querySelector('.material-symbols-outlined') || btn.querySelector('[data-fav-icon]');
+      if (icon) icon.textContent = oldState ? 'favorite' : 'favorite_border';
+    });
     showToast('Failed to update favorite', 'error');
   }
 }

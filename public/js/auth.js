@@ -212,7 +212,7 @@ function renderCurrentUserUI() {
       modalAdminBadge.innerHTML = '👤 User';
     }
   }
-  if (profileEmpId) profileEmpId.textContent = u.emp_id || 'EMP-1001';
+  if (profileEmpId) profileEmpId.textContent = formatUserId(u.emp_id, u.id);
   if (profileDept) {
     const isBoard = (u.is_executive_board === 1 || u.department === 'Executive Board');
     profileDept.innerHTML = `${u.department || 'General'} ${isBoard ? '<span class="text-[10px] text-amber-600 block">⭐ Executive Board</span>' : ''}`;

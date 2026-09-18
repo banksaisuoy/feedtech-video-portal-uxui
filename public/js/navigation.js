@@ -65,10 +65,6 @@ function navigateView(viewName) {
     if (typeof loadAdminDashboard === 'function') loadAdminDashboard();
   }
   if (viewName === 'admin-users') renderUserTable();
-  if (viewName === 'admin-tags') {
-    loadTags();
-    loadCategories();
-  }
   if (viewName === 'admin-categories') {
     if (typeof loadCategories === 'function') {
       loadCategories().then(() => {
@@ -91,7 +87,6 @@ function navigateView(viewName) {
   if (viewName === 'admin-events') {
     loadEvents().then(() => renderAdminEventsTable());
   }
-  if (viewName === 'admin-upload') renderTagPicker('uploadTagsContainer', 'uploadVideoTags', false);
   if (viewName === 'admin-logs') {
     if (typeof loadAuditLogs === 'function') loadAuditLogs();
   }

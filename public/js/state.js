@@ -31,6 +31,17 @@ window.state = {
   }
 };
 
+window.formatUserId = function(empId, id) {
+  if (empId) {
+    const clean = String(empId).trim();
+    if (/^\d{4}$/.test(clean)) return clean;
+    const digits = clean.replace(/\D/g, '');
+    if (digits) return digits.slice(-4).padStart(4, '0');
+    return clean;
+  }
+  return String(id || 1).padStart(4, '0');
+};
+
 // ---------------- I18N / MULTILINGUAL SYSTEM ----------------
 
 window.translations = {

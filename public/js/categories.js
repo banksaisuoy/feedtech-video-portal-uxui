@@ -743,6 +743,79 @@ function filterMeetings(filter) {
 
 // ---------------- CATEGORY DETAIL ----------------
 
+// ---------------- CATEGORY DETAIL & VIEW LAYOUTS ----------------
+
+function setCategoryDetailLayout(layout) {
+  state.categoryDetailLayout = layout;
+  const btnGrid = document.getElementById('catViewBtnGrid');
+  const btnList = document.getElementById('catViewBtnList');
+
+  if (btnGrid && btnList) {
+    if (layout === 'grid') {
+      btnGrid.className = 'px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all bg-white text-gray-900 shadow-2xs';
+      btnList.className = 'px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all text-gray-500 hover:text-gray-900';
+    } else {
+      btnList.className = 'px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all bg-white text-gray-900 shadow-2xs';
+      btnGrid.className = 'px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all text-gray-500 hover:text-gray-900';
+    }
+  }
+
+  if (state.selectedCategory) {
+    openCategoryDetail(state.selectedCategory);
+  }
+}
+
+function createVideoListItemHtml(v) {
+  const favIcon = v.is_favorite ? 'favorite' : 'favorite_border';
+  const favClass = v.is_favorite ? 'text-rose-500 fill' : 'text-gray-400 hover:text-rose-500';
+  const progressPercent = v.watch_progress || 0;
+
+  return `
+    <div class="group bg-white rounded-xl border border-outline-variant shadow-xs hover:shadow-md transition-all p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:border-primary/40" onclick="openVideoWatchPage(${v.id})">
+      <div class="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
+        <!-- Thumbnail -->
+        <div class="relative w-36 sm:w-44 aspect-video rounded-lg overflow-hidden shrink-0 bg-slate-900 shadow-2xs">
+          <img src="${v.thumbnail_url || '/thumbnails/vid-biotech-01.svg'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='/thumbnails/vid-biotech-01.svg'">
+          <span class="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+            ${v.duration}
+          </span>
+          ${progressPercent > 0 ? `
+            <div class="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
+              <div class="h-full bg-primary-container" style="width: ${progressPercent}%"></div>
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- Details -->
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="text-[10px] font-bold text-emerald-900 bg-emerald-100/90 px-2 py-0.5 rounded truncate max-w-[150px]">${v.category || 'General'}</span>
+            <span class="text-[10px] text-gray-400 font-medium">• ${v.views ? v.views.toLocaleString() : 0} views</span>
+            <span class="text-[10px] text-gray-400 font-medium">• ${v.uploaded_at ? String(v.uploaded_at).slice(0, 10) : 'Recent'}</span>
+          </div>
+          <h3 class="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-1 leading-snug">
+            ${v.title}
+          </h3>
+          <p class="text-xs text-gray-500 line-clamp-2 mt-1 leading-relaxed hidden sm:block">
+            ${v.description || 'Corporate instructional and knowledge asset for CPF FeedTech operations.'}
+          </p>
+        </div>
+      </div>
+
+      <!-- Action & Favorite -->
+      <div class="flex items-center gap-3 shrink-0 self-end sm:self-center">
+        <button data-fav-btn="${v.id}" onclick="event.stopPropagation(); toggleFavorite(${v.id})" class="p-2 bg-slate-50 hover:bg-rose-50 rounded-full transition-colors ${favClass}" title="Save to favorites">
+          <span data-fav-icon="${v.id}" class="material-symbols-outlined text-lg">${favIcon}</span>
+        </button>
+        <button onclick="event.stopPropagation(); openVideoWatchPage(${v.id})" class="px-3.5 py-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">play_arrow</span>
+          <span>Watch</span>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
 function openCategoryDetail(catName) {
   state.selectedCategory = catName;
   navigateView('category-detail');
@@ -763,8 +836,11 @@ function openCategoryDetail(catName) {
       : Boolean(v.category && v.category.trim().toLowerCase() === lowCat);
   });
 
+  const layout = state.categoryDetailLayout || 'grid';
+
   if (grid) {
     if (filtered.length === 0) {
+      grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5';
       grid.innerHTML = `
         <div class="col-span-full py-16 text-center">
           <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-3">
@@ -774,7 +850,11 @@ function openCategoryDetail(catName) {
           <p class="text-xs text-gray-400 mt-1 max-w-sm mx-auto">There are currently no videos found under "${catName}" accessible to your profile.</p>
         </div>
       `;
+    } else if (layout === 'list') {
+      grid.className = 'space-y-3 flex flex-col';
+      grid.innerHTML = filtered.map(v => createVideoListItemHtml(v)).join('');
     } else {
+      grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5';
       grid.innerHTML = filtered.map(v => createVideoCardHtml(v)).join('');
     }
   }
@@ -800,35 +880,39 @@ async function loadDepartments() {
 
 function renderDepartmentList() {
   const container = document.getElementById('departmentListContainer');
-  if (!container) return;
+  const modalContainer = document.getElementById('departmentModalListContainer');
 
   const depts = state.departments || [];
-  if (depts.length === 0) {
-    container.innerHTML = `<div class="py-8 text-center text-xs text-gray-400">No departments configured yet.</div>`;
-    return;
-  }
+  const html = depts.length === 0 
+    ? `<div class="py-8 text-center text-xs text-gray-400 col-span-full">No departments configured yet.</div>`
+    : depts.map(d => `
+      <div class="p-3 bg-white border border-outline-variant rounded-xl flex items-center justify-between gap-3 hover:border-primary/40 transition-all shadow-2xs">
+        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+          <div class="w-8 h-8 rounded-lg bg-emerald-50 text-primary flex items-center justify-center font-bold shrink-0">
+            <span class="material-symbols-outlined text-base">corporate_fare</span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="font-bold text-gray-900 text-xs truncate">${d.name}</div>
+            <div class="text-[11px] text-gray-400 line-clamp-1">${d.description || 'Corporate organizational unit'}</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button onclick="openDepartmentMembersModal(${d.id})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors ${d.user_count > 0 ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-slate-100 text-gray-500 hover:bg-slate-200'}" title="View and manage members">
+            <span class="material-symbols-outlined text-xs">group</span>
+            <span>${d.user_count || 0} Members</span>
+          </button>
+          <button onclick="openEditDepartmentModal(${d.id})" class="p-1 text-gray-400 hover:text-primary rounded hover:bg-emerald-50 transition-colors" title="Edit Department">
+            <span class="material-symbols-outlined text-base">edit</span>
+          </button>
+          <button onclick="deleteDepartmentSubmit(${d.id}, '${d.name.replace(/'/g, "\\'")}')" class="p-1 text-gray-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors" title="Delete Department">
+            <span class="material-symbols-outlined text-base">delete</span>
+          </button>
+        </div>
+      </div>
+    `).join('');
 
-  container.innerHTML = depts.map(d => `
-    <div class="p-3 bg-white border border-outline-variant rounded-xl flex items-center justify-between gap-3 hover:border-primary/40 transition-all shadow-2xs">
-      <div class="flex items-center gap-2.5 min-w-0">
-        <div class="w-8 h-8 rounded-lg bg-emerald-50 text-primary flex items-center justify-center font-bold shrink-0">
-          <span class="material-symbols-outlined text-base">corporate_fare</span>
-        </div>
-        <div class="min-w-0">
-          <div class="font-bold text-gray-900 text-xs truncate">${d.name}</div>
-          <div class="text-[11px] text-gray-400 line-clamp-1">${d.description || 'Corporate organizational unit'}</div>
-        </div>
-      </div>
-      <div class="flex items-center gap-3 shrink-0">
-        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${d.user_count > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-gray-500'}">
-          ${d.user_count || 0} Members
-        </span>
-        <button onclick="deleteDepartmentSubmit(${d.id}, '${d.name.replace(/'/g, "\\'")}')" class="p-1 text-gray-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors" title="Delete Department">
-          <span class="material-symbols-outlined text-base">delete</span>
-        </button>
-      </div>
-    </div>
-  `).join('');
+  if (container) container.innerHTML = html;
+  if (modalContainer) modalContainer.innerHTML = html;
 }
 
 function populateDepartmentSelects() {
@@ -936,6 +1020,216 @@ async function deleteDepartmentSubmit(id, name) {
     }
   } catch (err) {
     showToast('Error deleting department', 'error');
+  }
+}
+
+// ---------------- DEPARTMENT EDITING & MEMBER MANAGEMENT ----------------
+
+function openEditDepartmentModal(deptId) {
+  const dept = (state.departments || []).find(d => d.id === deptId);
+  if (!dept) return;
+
+  const idEl = document.getElementById('editDeptId');
+  const nameEl = document.getElementById('editDeptName');
+  const descEl = document.getElementById('editDeptDesc');
+
+  if (idEl) idEl.value = dept.id;
+  if (nameEl) nameEl.value = dept.name;
+  if (descEl) descEl.value = dept.description || '';
+
+  const modal = document.getElementById('departmentEditModal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeEditDepartmentModal() {
+  const modal = document.getElementById('departmentEditModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function saveEditDepartmentSubmit() {
+  const deptId = document.getElementById('editDeptId')?.value;
+  const name = document.getElementById('editDeptName')?.value.trim();
+  const description = document.getElementById('editDeptDesc')?.value.trim();
+
+  if (!name) {
+    showToast('Department name is required', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/departments/${deptId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description })
+    });
+    const json = await res.json();
+    if (json.success) {
+      showToast('Department updated successfully', 'success');
+      closeEditDepartmentModal();
+      await loadDepartments();
+      if (typeof loadUsers === 'function') await loadUsers();
+      if (typeof renderUserTable === 'function') renderUserTable();
+    } else {
+      showToast(json.message || 'Failed to update department', 'error');
+    }
+  } catch (err) {
+    showToast('Error updating department', 'error');
+  }
+}
+
+let activeDeptForMembers = null;
+
+async function openDepartmentMembersModal(deptId) {
+  activeDeptForMembers = deptId;
+  const modal = document.getElementById('departmentMembersModal');
+  if (modal) modal.classList.remove('hidden');
+  await loadDepartmentMembers(deptId);
+}
+
+function closeDepartmentMembersModal() {
+  const modal = document.getElementById('departmentMembersModal');
+  if (modal) modal.classList.add('hidden');
+  activeDeptForMembers = null;
+}
+
+async function loadDepartmentMembers(deptId) {
+  try {
+    const res = await fetch(`/api/departments/${deptId}/members`);
+    const json = await res.json();
+    if (!json.success) return;
+
+    const dept = json.department;
+    const members = json.members || [];
+
+    const titleEl = document.getElementById('deptMembersModalTitle');
+    const subtitleEl = document.getElementById('deptMembersModalSubtitle');
+    if (titleEl) titleEl.textContent = `${dept.name} — Members (${members.length})`;
+    if (subtitleEl) subtitleEl.textContent = `${dept.description || 'Corporate organizational unit'} • Manage member assignments`;
+
+    // Populate Add Member Select (users not currently in this department)
+    const selectEl = document.getElementById('deptAddMemberSelect');
+    if (selectEl) {
+      const allUsers = state.users || [];
+      const memberIds = new Set(members.map(m => m.id));
+      const candidates = allUsers.filter(u => !memberIds.has(u.id));
+
+      selectEl.innerHTML = `<option value="">Select user to add to ${dept.name}...</option>` +
+        candidates.map(u => `<option value="${u.id}">${u.name} (${formatUserId(u.emp_id, u.id)} • Current: ${u.department})</option>`).join('');
+    }
+
+    // Render Members Table Body
+    const tbody = document.getElementById('deptMembersTableBody');
+    if (tbody) {
+      if (members.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-xs text-gray-400">No users currently assigned to ${dept.name}.</td></tr>`;
+      } else {
+        const otherDepts = (state.departments || []).filter(d => d.id !== dept.id);
+
+        tbody.innerHTML = members.map(m => `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-2.5 px-4 font-mono font-bold text-gray-500 text-[11px]">${formatUserId(m.emp_id, m.id)}</td>
+            <td class="py-2.5 px-4">
+              <div class="font-bold text-gray-900">${m.name}</div>
+              <div class="text-[10px] text-gray-400">${m.email}</div>
+            </td>
+            <td class="py-2.5 px-4">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.role === 'Admin' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700'}">${m.role}</span>
+            </td>
+            <td class="py-2.5 px-4 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <select onchange="moveMemberToAnotherDept(${m.id}, this.value)" class="text-[10px] border border-outline-variant rounded px-2 py-1 bg-white outline-none text-gray-600">
+                  <option value="">Move to...</option>
+                  ${otherDepts.map(od => `<option value="${od.name}">${od.name}</option>`).join('')}
+                </select>
+                <button onclick="removeMemberFromDepartment(${dept.id}, ${m.id}, '${m.name.replace(/'/g, "\\'")}')" class="px-2 py-1 text-[10px] font-bold text-rose-600 hover:bg-rose-50 rounded border border-rose-200 transition-colors" title="Remove from department">
+                  Remove
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      }
+    }
+  } catch (err) {
+    showToast('Failed to load department members', 'error');
+  }
+}
+
+async function submitAddMemberToDepartment() {
+  if (!activeDeptForMembers) return;
+  const select = document.getElementById('deptAddMemberSelect');
+  const userId = select ? select.value : '';
+  if (!userId) {
+    showToast('Please select a user to add', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/departments/${activeDeptForMembers}/members/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: parseInt(userId, 10) })
+    });
+    const json = await res.json();
+    if (json.success) {
+      showToast(json.message, 'success');
+      await loadDepartmentMembers(activeDeptForMembers);
+      await loadDepartments();
+      if (typeof loadUsers === 'function') await loadUsers();
+      if (typeof renderUserTable === 'function') renderUserTable();
+    } else {
+      showToast(json.message || 'Failed to add member', 'error');
+    }
+  } catch (err) {
+    showToast('Error adding member to department', 'error');
+  }
+}
+
+async function removeMemberFromDepartment(deptId, userId, userName) {
+  if (!confirm(`Are you sure you want to remove ${userName} from this department?`)) return;
+
+  try {
+    const res = await fetch(`/api/departments/${deptId}/members/remove`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId })
+    });
+    const json = await res.json();
+    if (json.success) {
+      showToast(json.message, 'info');
+      await loadDepartmentMembers(deptId);
+      await loadDepartments();
+      if (typeof loadUsers === 'function') await loadUsers();
+      if (typeof renderUserTable === 'function') renderUserTable();
+    } else {
+      showToast(json.message || 'Failed to remove member', 'error');
+    }
+  } catch (err) {
+    showToast('Error removing member', 'error');
+  }
+}
+
+async function moveMemberToAnotherDept(userId, targetDept) {
+  if (!targetDept) return;
+
+  try {
+    const res = await fetch(`/api/departments/${activeDeptForMembers}/members/move`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, target_department: targetDept })
+    });
+    const json = await res.json();
+    if (json.success) {
+      showToast(json.message, 'success');
+      if (activeDeptForMembers) await loadDepartmentMembers(activeDeptForMembers);
+      await loadDepartments();
+      if (typeof loadUsers === 'function') await loadUsers();
+      if (typeof renderUserTable === 'function') renderUserTable();
+    } else {
+      showToast(json.message || 'Failed to move user', 'error');
+    }
+  } catch (err) {
+    showToast('Error moving user to department', 'error');
   }
 }
 

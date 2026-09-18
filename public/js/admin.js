@@ -36,7 +36,7 @@ function renderUserTable() {
 
     return `
       <tr class="hover:bg-slate-50/80 transition-colors ${isInactive ? 'opacity-60 bg-slate-100/50' : ''}">
-        <td class="py-3.5 px-5 font-mono font-medium text-gray-500 text-[11px]">${u.emp_id || 'EMP-0000'}</td>
+        <td class="py-3.5 px-5 font-mono font-medium text-gray-500 text-[11px]">${formatUserId(u.emp_id, u.id)}</td>
         <td class="py-3.5 px-5">
           <div class="flex items-center gap-2.5">
             <div class="w-7 h-7 rounded-full text-white font-bold flex items-center justify-center text-[10px]" style="background-color: ${u.avatar_color || '#10b981'}">
@@ -161,7 +161,7 @@ function inspectUserVideoAccess(userId) {
   const listEl = document.getElementById('userAccessVideosList');
 
   if (titleEl) titleEl.textContent = `Check Video Access: ${user.name}`;
-  if (subtitleEl) subtitleEl.textContent = `${user.role} • ${user.department} • ${user.email} (${user.emp_id || 'ID-' + user.id})`;
+  if (subtitleEl) subtitleEl.textContent = `${user.role} • ${user.department} • ${user.email} (User ID: ${formatUserId(user.emp_id, user.id)})`;
 
   if (tagsListEl) {
     tagsListEl.innerHTML = `
@@ -410,7 +410,7 @@ function renderUploadPersonList(filter = '') {
             <div class="text-[10px] text-gray-400">${u.role || 'Staff'} • ${u.department || 'General'}</div>
           </div>
         </div>
-        <span class="text-[10px] font-mono text-gray-400">${u.emp_id || 'ID-' + u.id}</span>
+        <span class="text-[10px] font-mono text-gray-400">${formatUserId(u.emp_id, u.id)}</span>
       </label>
     `;
   }).join('');
@@ -687,9 +687,6 @@ function openEditDrawer(videoId) {
   }
   if (document.getElementById('editDrawerIsRecommended')) {
     document.getElementById('editDrawerIsRecommended').checked = (v.is_recommended === 1);
-  }
-  if (document.getElementById('editDrawerTagsContainer')) {
-    renderTagPicker('editDrawerTagsContainer', 'editDrawerTags', false);
   }
 
   // Populate department filter in drawer if empty
@@ -1174,7 +1171,7 @@ function generateMatrixHtml(matrixData) {
             <tr class="hover:bg-slate-50 transition-colors">
               <td class="py-3.5 px-4 align-top">
                 <div class="font-bold text-gray-900">${u.name}</div>
-                <div class="text-[10px] text-gray-400 font-mono mt-0.5">${u.emp_id} • ${u.email}</div>
+                <div class="text-[10px] text-gray-400 font-mono mt-0.5">${formatUserId(u.emp_id, u.id)} • ${u.email}</div>
               </td>
               <td class="py-3.5 px-4 align-top">
                 <span class="font-semibold text-gray-700">${u.department}</span>
@@ -1301,11 +1298,19 @@ function renderAuditLogs() {
     'VIDEO_UPLOAD': { icon: 'video_file', style: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
     'VIDEO_UPDATE': { icon: 'edit', style: 'bg-amber-50 text-amber-800 border-amber-200' },
     'VIDEO_DELETE': { icon: 'delete', style: 'bg-rose-50 text-rose-700 border-rose-200' },
+    'VIDEO_BATCH_IMPORT': { icon: 'upload_file', style: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
     'CATEGORY_CREATE': { icon: 'create_new_folder', style: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
     'CATEGORY_UPDATE': { icon: 'folder_open', style: 'bg-amber-50 text-amber-800 border-amber-200' },
     'CATEGORY_DELETE': { icon: 'folder_delete', style: 'bg-rose-50 text-rose-700 border-rose-200' },
+    'USER_CREATE': { icon: 'person_add', style: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
     'USER_UPDATE': { icon: 'manage_accounts', style: 'bg-purple-50 text-purple-700 border-purple-200' },
+    'USER_DELETE': { icon: 'person_remove', style: 'bg-rose-50 text-rose-700 border-rose-200' },
     'USER_STATUS_TOGGLE': { icon: 'toggle_on', style: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+    'DEPARTMENT_CREATE': { icon: 'corporate_fare', style: 'bg-teal-50 text-teal-800 border-teal-200' },
+    'DEPARTMENT_UPDATE': { icon: 'edit_note', style: 'bg-amber-50 text-amber-800 border-amber-200' },
+    'DEPARTMENT_DELETE': { icon: 'domain_disabled', style: 'bg-rose-50 text-rose-700 border-rose-200' },
+    'DEPARTMENT_MEMBER_ADD': { icon: 'group_add', style: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+    'DEPARTMENT_MEMBER_REMOVE': { icon: 'group_remove', style: 'bg-orange-50 text-orange-800 border-orange-200' },
     'TAG_UPDATE': { icon: 'sell', style: 'bg-cyan-50 text-cyan-800 border-cyan-200' }
   };
 
@@ -1820,6 +1825,298 @@ async function deleteEventPrompt(eventId) {
     }
   } catch (err) {
     showToast('Network error while deleting event', 'error');
+  }
+}
+
+// ==========================================
+// BULK VIDEO IMPORT & TEMPLATE EXPORT SYSTEM
+// ==========================================
+
+let parsedImportVideos = [];
+
+function downloadVideoTemplateCsv() {
+  const headers = [
+    'title',
+    'category',
+    'video_url',
+    'thumbnail_url',
+    'duration',
+    'access_mode',
+    'allowed_user_ids',
+    'excluded_user_ids',
+    'description',
+    'tags'
+  ];
+
+  const sampleRows = [
+    [
+      'Industrial Bioreactor Fermentation Protocol',
+      'Biotech',
+      '/sample.mp4',
+      '/thumbnails/vid-biotech-01.svg',
+      '14:25',
+      'public',
+      '',
+      '',
+      'Standard operating procedure for industrial fermentation and microbial strain cultivation',
+      '#biotech, #lab, #fermentation'
+    ],
+    [
+      'Swine Climate Control & Thermal Monitoring SOP',
+      'Swine',
+      '/sample.mp4',
+      '',
+      '18:10',
+      'include',
+      '1, 2, 7',
+      '',
+      'Optimizing climate-controlled barns and automated ventilation telemetry for swine nurseries',
+      '#swine, #ventilation, #farming'
+    ],
+    [
+      'Shrimp Biofloc RAS Water Quality Telemetry',
+      'Aquatic',
+      '/sample.mp4',
+      '',
+      '12:45',
+      'public',
+      '',
+      '',
+      'Real-time optical dissolved oxygen sensors and biofloc management in indoor aquaculture',
+      '#aquatic, #biofloc, #sensors'
+    ],
+    [
+      'Feed Mill Extruder Pellet Quality Control',
+      'Feed Mill Operations',
+      '/sample.mp4',
+      '',
+      '22:00',
+      'exclude',
+      '',
+      '5',
+      'High-pressure steam extrusion maintenance and pellet durability testing index',
+      '#feedmill, #extrusion, #maintenance'
+    ]
+  ];
+
+  const csvLines = [
+    headers.join(','),
+    ...sampleRows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+  ];
+
+  const csvContent = '\uFEFF' + csvLines.join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `FeedTech_Video_Import_Template_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast('Downloaded Video Import Template CSV', 'success');
+}
+
+function openImportVideosModal() {
+  const modal = document.getElementById('importVideosModal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  
+  parsedImportVideos = [];
+  const fileInput = document.getElementById('videoCsvFileInput');
+  if (fileInput) fileInput.value = '';
+
+  const preview = document.getElementById('importPreviewContainer');
+  if (preview) preview.classList.add('hidden');
+
+  const statsBadge = document.getElementById('importStatsBadge');
+  if (statsBadge) statsBadge.classList.add('hidden');
+
+  const btn = document.getElementById('btnStartBatchImport');
+  if (btn) btn.disabled = true;
+
+  const statusText = document.getElementById('importStatusText');
+  if (statusText) statusText.textContent = '';
+}
+
+function closeImportVideosModal() {
+  const modal = document.getElementById('importVideosModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function parseCsvLineValues(line) {
+  const values = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === ',' && !inQuotes) {
+      values.push(cur.trim());
+      cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  values.push(cur.trim());
+  return values;
+}
+
+function handleVideoCsvFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const text = e.target.result;
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      if (lines.length < 2) {
+        showToast('CSV file must contain a header row and at least 1 video entry', 'error');
+        return;
+      }
+
+      const headers = parseCsvLineValues(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+      const autoJpg = document.getElementById('importAutoJpgThumb')?.checked ?? true;
+
+      parsedImportVideos = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = parseCsvLineValues(lines[i]);
+        if (values.length === 0 || !values[0]) continue;
+
+        const row = {};
+        headers.forEach((h, idx) => {
+          row[h] = values[idx] !== undefined ? values[idx] : '';
+        });
+
+        const title = row.title || row.videotitle || row.name || '';
+        if (!title) continue;
+
+        let vUrl = row.video_url || row.videourl || row.url || '/sample.mp4';
+        let thumb = row.thumbnail_url || row.thumbnailurl || row.thumbnail || row.thumb || '';
+
+        // Auto map .mp4 to .jpg
+        if (autoJpg) {
+          if (!thumb && vUrl.toLowerCase().endsWith('.mp4')) {
+            thumb = vUrl.replace(/\.mp4$/i, '.jpg');
+          } else if (thumb.toLowerCase().endsWith('.mp4')) {
+            thumb = thumb.replace(/\.mp4$/i, '.jpg');
+          }
+        }
+
+        parsedImportVideos.push({
+          title,
+          category: row.category || 'Biotech',
+          video_url: vUrl,
+          thumbnail_url: thumb,
+          duration: row.duration || '12:00',
+          access_mode: (row.access_mode || row.accessmode || 'public').toLowerCase(),
+          allowed_user_ids: row.allowed_user_ids || row.alloweduserids || '',
+          excluded_user_ids: row.excluded_user_ids || row.excludeduserids || '',
+          description: row.description || '',
+          tags: row.tags || ''
+        });
+      }
+
+      if (parsedImportVideos.length === 0) {
+        showToast('No valid video rows found in CSV', 'error');
+        return;
+      }
+
+      // Render Preview
+      const countEl = document.getElementById('importParsedCount');
+      if (countEl) countEl.textContent = parsedImportVideos.length.toLocaleString();
+
+      const statsBadge = document.getElementById('importStatsBadge');
+      if (statsBadge) statsBadge.classList.remove('hidden');
+
+      const noticeEl = document.getElementById('importPreviewNotice');
+      if (noticeEl) {
+        noticeEl.textContent = parsedImportVideos.length > 50 
+          ? `Showing first 50 of ${parsedImportVideos.length.toLocaleString()} items`
+          : `Showing all ${parsedImportVideos.length} items`;
+      }
+
+      const tbody = document.getElementById('importPreviewTableBody');
+      if (tbody) {
+        const displayList = parsedImportVideos.slice(0, 50);
+        tbody.innerHTML = displayList.map((v, idx) => `
+          <tr class="hover:bg-slate-50">
+            <td class="py-2 px-3 font-semibold text-gray-400">${idx + 1}</td>
+            <td class="py-2 px-3 font-bold text-gray-900 truncate max-w-xs">${v.title}</td>
+            <td class="py-2 px-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold">${v.category}</span></td>
+            <td class="py-2 px-3 text-gray-500">${v.duration}</td>
+            <td class="py-2 px-3 uppercase text-[10px] font-bold text-gray-600">${v.access_mode}</td>
+            <td class="py-2 px-3 text-gray-400 truncate max-w-[150px]">${v.thumbnail_url || '(Default SVG)'}</td>
+          </tr>
+        `).join('');
+      }
+
+      const previewContainer = document.getElementById('importPreviewContainer');
+      if (previewContainer) previewContainer.classList.remove('hidden');
+
+      const btn = document.getElementById('btnStartBatchImport');
+      if (btn) btn.disabled = false;
+
+      showToast(`Successfully parsed ${parsedImportVideos.length} video records`, 'success');
+    } catch (err) {
+      showToast('Error reading CSV file: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function executeVideoBatchImport() {
+  if (!parsedImportVideos || parsedImportVideos.length === 0) {
+    showToast('Please select a valid CSV file first', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btnStartBatchImport');
+  const btnText = document.getElementById('btnStartBatchImportText');
+  const statusText = document.getElementById('importStatusText');
+
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = `Importing ${parsedImportVideos.length} videos...`;
+  if (statusText) statusText.textContent = 'Processing transactional batch import...';
+
+  try {
+    const res = await fetch('/api/videos/batch-import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videos: parsedImportVideos })
+    });
+
+    const json = await res.json();
+    if (json.success) {
+      showToast(`Batch Ingestion Complete: ${json.count} videos imported!`, 'success');
+      closeImportVideosModal();
+      
+      // Refresh video stores
+      if (typeof loadAllVideos === 'function') {
+        await loadAllVideos();
+      } else if (typeof loadVideos === 'function') {
+        await loadVideos();
+      }
+      if (typeof loadAccessibleVideos === 'function') {
+        await loadAccessibleVideos();
+      }
+    } else {
+      showToast(json.message || 'Batch import failed', 'error');
+      if (btn) btn.disabled = false;
+      if (btnText) btnText.textContent = 'Confirm & Import';
+      if (statusText) statusText.textContent = 'Failed: ' + (json.message || '');
+    }
+  } catch (err) {
+    showToast('Network error during batch import: ' + err.message, 'error');
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = 'Confirm & Import';
+    if (statusText) statusText.textContent = 'Network Error';
   }
 }
 

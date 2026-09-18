@@ -844,6 +844,19 @@ try {
   // Universal Role Enforcement: Strictly 'Admin' and 'User'
   db.exec(`UPDATE users SET role = 'Admin' WHERE is_admin = 1;`);
   db.exec(`UPDATE users SET role = 'User' WHERE is_admin = 0;`);
+
+  // User ID format to 4-digit auto-increment: 0001, 0002, 0003...
+  try {
+    const allUsers = db.prepare("SELECT id, emp_id FROM users ORDER BY id ASC").all();
+    allUsers.forEach((u) => {
+      if (!/^\d{4}$/.test(u.emp_id)) {
+        const formatted = String(u.id).padStart(4, '0');
+        try {
+          db.prepare("UPDATE users SET emp_id = ? WHERE id = ?").run(formatted, u.id);
+        } catch (ignore) {}
+      }
+    });
+  } catch (e) {}
 } catch (e) {}
 
 // Update videos with Person-Based Access sample configurations
@@ -1150,7 +1163,19 @@ app.post('/api/users', (req, res) => {
   }
 
   try {
-    const autoEmpId = emp_id || `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
+    let autoEmpId = (emp_id || '').trim();
+    if (!autoEmpId) {
+      const allUsers = db.prepare("SELECT emp_id, id FROM users").all();
+      let maxNum = 0;
+      allUsers.forEach(u => {
+        const num = parseInt((u.emp_id || '').replace(/\D/g, ''), 10);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+        if (u.id > maxNum) maxNum = u.id;
+      });
+      autoEmpId = String(maxNum + 1).padStart(4, '0');
+    } else if (/^\d+$/.test(autoEmpId)) {
+      autoEmpId = autoEmpId.padStart(4, '0');
+    }
     const colors = ['#10b981', '#2563eb', '#8b5cf6', '#d97706', '#db2777', '#059669'];
     const avatar_color = colors[Math.floor(Math.random() * colors.length)];
     const normalizedRole = (role === 'Admin' || is_admin) ? 'Admin' : 'User';
@@ -1253,6 +1278,26 @@ app.patch('/api/users/:id/toggle-status', (req, res) => {
   res.json({ success: true, message: `User status changed to ${nextStatus}`, data: { ...user, status: nextStatus } });
 });
 
+// Delete user account
+app.delete('/api/users/:id', (req, res) => {
+  const userId = req.params.id;
+  try {
+    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+
+    const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
+    const actorRole = (currentUser && (currentUser.is_admin === 1 || currentUser.role === 'Admin')) ? 'Admin' : 'User';
+    db.prepare("INSERT INTO audit_logs (actor_name, actor_role, actor_department, action, target, details) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(currentUser ? currentUser.name : 'Admin', actorRole, currentUser ? currentUser.department : 'Executive Board', 'USER_DELETE', user.name, `Deleted user profile [${user.emp_id || user.id}] ${user.name}`);
+
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // Get corporate departments (with user counts)
 app.get('/api/departments', (req, res) => {
   try {
@@ -1305,6 +1350,125 @@ app.delete('/api/departments/:id', (req, res) => {
       VALUES (?, ?, ?, ?, ?)
     `).run('Admin', 'System Administrator', 'DEPARTMENT_DELETE', old.name, `Deleted corporate department '${old.name}'`);
     res.json({ success: true, message: 'Department deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Update corporate department (name and description)
+app.put('/api/departments/:id', (req, res) => {
+  const deptId = req.params.id;
+  const { name, description } = req.body;
+  if (!name) return res.status(400).json({ success: false, message: 'Department name is required' });
+
+  try {
+    const oldDept = db.prepare("SELECT * FROM departments WHERE id = ?").get(deptId);
+    if (!oldDept) return res.status(404).json({ success: false, message: 'Department not found' });
+
+    const newName = name.trim();
+    const newDesc = (description || '').trim();
+
+    // Update department
+    db.prepare("UPDATE departments SET name = ?, description = ? WHERE id = ?").run(newName, newDesc, deptId);
+
+    // Cascade update to users table if name changed
+    if (oldDept.name !== newName) {
+      db.prepare("UPDATE users SET department = ? WHERE department = ?").run(newName, oldDept.name);
+    }
+
+    const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
+    const actorRole = (currentUser && (currentUser.is_admin === 1 || currentUser.role === 'Admin')) ? 'Admin' : 'User';
+    db.prepare("INSERT INTO audit_logs (actor_name, actor_role, actor_department, action, target, details) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(currentUser ? currentUser.name : 'Admin', actorRole, currentUser ? currentUser.department : 'Executive Board', 'DEPARTMENT_UPDATE', newName, `Updated department '${oldDept.name}' -> '${newName}'`);
+
+    res.json({ success: true, message: 'Department updated successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Get members of a specific department
+app.get('/api/departments/:id/members', (req, res) => {
+  try {
+    const dept = db.prepare("SELECT * FROM departments WHERE id = ?").get(req.params.id);
+    if (!dept) return res.status(404).json({ success: false, message: 'Department not found' });
+
+    const members = db.prepare("SELECT id, emp_id, name, email, role, permission_level, status, avatar_color FROM users WHERE department = ? ORDER BY name ASC").all(dept.name);
+    res.json({ success: true, department: dept, members });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Add user to department
+app.post('/api/departments/:id/members/add', (req, res) => {
+  const { user_id } = req.body;
+  if (!user_id) return res.status(400).json({ success: false, message: 'User ID is required' });
+
+  try {
+    const dept = db.prepare("SELECT * FROM departments WHERE id = ?").get(req.params.id);
+    if (!dept) return res.status(404).json({ success: false, message: 'Department not found' });
+
+    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(user_id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const prevDept = user.department;
+    db.prepare("UPDATE users SET department = ? WHERE id = ?").run(dept.name, user_id);
+
+    const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
+    const actorRole = (currentUser && (currentUser.is_admin === 1 || currentUser.role === 'Admin')) ? 'Admin' : 'User';
+    db.prepare("INSERT INTO audit_logs (actor_name, actor_role, actor_department, action, target, details) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(currentUser ? currentUser.name : 'Admin', actorRole, currentUser ? currentUser.department : 'Executive Board', 'DEPARTMENT_MEMBER_ADD', dept.name, `Assigned user ${user.name} to department '${dept.name}' (previously '${prevDept}')`);
+
+    res.json({ success: true, message: `Added ${user.name} to ${dept.name}` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Remove user from department (set department to 'General')
+app.post('/api/departments/:id/members/remove', (req, res) => {
+  const { user_id } = req.body;
+  if (!user_id) return res.status(400).json({ success: false, message: 'User ID is required' });
+
+  try {
+    const dept = db.prepare("SELECT * FROM departments WHERE id = ?").get(req.params.id);
+    if (!dept) return res.status(404).json({ success: false, message: 'Department not found' });
+
+    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(user_id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    db.prepare("UPDATE users SET department = 'General' WHERE id = ?").run(user_id);
+
+    const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
+    const actorRole = (currentUser && (currentUser.is_admin === 1 || currentUser.role === 'Admin')) ? 'Admin' : 'User';
+    db.prepare("INSERT INTO audit_logs (actor_name, actor_role, actor_department, action, target, details) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(currentUser ? currentUser.name : 'Admin', actorRole, currentUser ? currentUser.department : 'Executive Board', 'DEPARTMENT_MEMBER_REMOVE', dept.name, `Removed user ${user.name} from department '${dept.name}'`);
+
+    res.json({ success: true, message: `Removed ${user.name} from ${dept.name}` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Move user to another department
+app.post('/api/departments/:id/members/move', (req, res) => {
+  const { user_id, target_department } = req.body;
+  if (!user_id || !target_department) return res.status(400).json({ success: false, message: 'User ID and target department required' });
+
+  try {
+    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(user_id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const oldDept = user.department;
+    db.prepare("UPDATE users SET department = ? WHERE id = ?").run(target_department.trim(), user_id);
+
+    const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
+    const actorRole = (currentUser && (currentUser.is_admin === 1 || currentUser.role === 'Admin')) ? 'Admin' : 'User';
+    db.prepare("INSERT INTO audit_logs (actor_name, actor_role, actor_department, action, target, details) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(currentUser ? currentUser.name : 'Admin', actorRole, currentUser ? currentUser.department : 'Executive Board', 'DEPARTMENT_UPDATE', target_department, `Transferred ${user.name} from '${oldDept}' to '${target_department}'`);
+
+    res.json({ success: true, message: `Moved ${user.name} to ${target_department}` });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -1645,6 +1809,105 @@ app.get('/api/videos/:id', (req, res) => {
     access: evalResult,
     comments
   });
+});
+
+// Batch Import Videos (Supports 800+ items via transactional bulk execution)
+app.post('/api/videos/batch-import', (req, res) => {
+  const { videos } = req.body;
+  if (!Array.isArray(videos) || videos.length === 0) {
+    return res.status(400).json({ success: false, message: 'No video records provided for bulk import' });
+  }
+
+  const defaultSvgThumbs = [
+    '/thumbnails/vid-biotech-01.svg',
+    '/thumbnails/vid-swine-01.svg',
+    '/thumbnails/vid-feed-01.svg',
+    '/thumbnails/vid-aquatic-01.svg',
+    '/thumbnails/vid-dairy-01.svg',
+    '/thumbnails/vid-qc-01.svg'
+  ];
+
+  try {
+    const insertStmt = db.prepare(`
+      INSERT INTO videos (
+        video_id, title, description, department, category, content_type,
+        permission_level, duration, thumbnail_url, video_url, tags,
+        uploaded_by, allow_downloads, enable_comments, access_mode,
+        allowed_user_ids, excluded_user_ids, views
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    let importedCount = 0;
+    const catMap = {};
+    (db.prepare("SELECT name FROM categories").all() || []).forEach(c => { catMap[c.name.toLowerCase()] = c.name; });
+
+    db.exec("BEGIN TRANSACTION");
+    try {
+      for (let i = 0; i < videos.length; i++) {
+        const v = videos[i];
+        const title = (v.title || '').trim();
+        if (!title) continue;
+
+        const video_id = v.video_id || `VID-${Math.floor(8000 + Math.random() * 1999)}-${Date.now().toString().slice(-4)}${i}`;
+        
+        let category = (v.category || 'Biotech').trim();
+        if (catMap[category.toLowerCase()]) {
+          category = catMap[category.toLowerCase()];
+        }
+
+        const vUrl = (v.video_url || '').trim() || '/sample.mp4';
+        let thumb = (v.thumbnail_url || '').trim();
+
+        // Automatic mapping: If video is .mp4, map to .jpg
+        if (!thumb && vUrl) {
+          if (vUrl.toLowerCase().endsWith('.mp4')) {
+            thumb = vUrl.replace(/\.mp4$/i, '.jpg');
+          } else {
+            thumb = defaultSvgThumbs[i % defaultSvgThumbs.length];
+          }
+        } else if (thumb.toLowerCase().endsWith('.mp4')) {
+          thumb = thumb.replace(/\.mp4$/i, '.jpg');
+        } else if (!thumb) {
+          thumb = defaultSvgThumbs[i % defaultSvgThumbs.length];
+        }
+
+        const duration = (v.duration || '12:00').trim();
+        const views = parseInt(v.views, 10) || Math.floor(15 + Math.random() * 120);
+        const description = (v.description || `Corporate technical instructional asset under ${category} operations`).trim();
+        const tags = (v.tags || `#${category.toLowerCase()}`).trim();
+        const rawAccessMode = (v.access_mode || 'public').trim().toLowerCase();
+        const access_mode = ['public', 'include', 'exclude'].includes(rawAccessMode) ? rawAccessMode : 'public';
+        const allowed_user_ids = typeof v.allowed_user_ids === 'string' ? v.allowed_user_ids : JSON.stringify(v.allowed_user_ids || []);
+        const excluded_user_ids = typeof v.excluded_user_ids === 'string' ? v.excluded_user_ids : JSON.stringify(v.excluded_user_ids || []);
+        const department = (v.department || category).trim();
+        const content_type = (v.content_type || 'Standard Operations').trim();
+        const permission_level = (v.permission_level || 'Standard').trim();
+        const uploaded_by = (v.uploaded_by || 'Admin Bulk Import').trim();
+
+        insertStmt.run(
+          video_id, title, description, department, category, content_type,
+          permission_level, duration, thumb, vUrl, tags,
+          uploaded_by, 1, 1, access_mode,
+          allowed_user_ids, excluded_user_ids, views
+        );
+        importedCount++;
+      }
+      db.exec("COMMIT");
+    } catch (txErr) {
+      db.exec("ROLLBACK");
+      throw txErr;
+    }
+
+    // Record audit log
+    const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
+    const actorRole = (currentUser && (currentUser.is_admin === 1 || currentUser.role === 'Admin')) ? 'Admin' : 'User';
+    db.prepare("INSERT INTO audit_logs (actor_name, actor_role, actor_department, action, target, details) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(currentUser ? currentUser.name : 'System Admin', actorRole, currentUser ? currentUser.department : 'Executive Board', 'VIDEO_BATCH_IMPORT', `Bulk (${importedCount} videos)`, `Imported ${importedCount} video assets into video catalog via CSV batch ingestion`);
+
+    res.json({ success: true, message: `Successfully imported ${importedCount} videos`, count: importedCount });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Batch import error: ' + err.message });
+  }
 });
 
 // Create / Mock Upload Video (Admin Only)

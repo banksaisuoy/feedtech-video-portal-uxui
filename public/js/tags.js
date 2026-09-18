@@ -300,31 +300,6 @@ async function saveUserModalSubmit() {
   }
 }
 
-function exportUsersCSV() {
-  const headers = ['Employee ID', 'Name', 'Email', 'Department', 'Allowed Tags', 'Access Role', 'Status'];
-  const rows = state.users.map(u => [
-    `"${u.emp_id || ''}"`,
-    `"${u.name || ''}"`,
-    `"${u.email || ''}"`,
-    `"${u.department || ''}"`,
-    `"${u.allowed_tags || ''}"`,
-    `"${u.permission_level || ''}"`,
-    `"${u.status || ''}"`
-  ]);
-  const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement('a');
-  link.setAttribute('href', encodedUri);
-  link.setAttribute('download', `feedtech_users_${new Date().toISOString().slice(0, 10)}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  showToast('Users exported to CSV successfully', 'success');
-}
-
-function openImportExcelModal() {
-  showToast('Import Excel / CSV: Ready for bulk employee data ingestion', 'info');
-}
 
 async function toggleUserStatus(userId) {
   try {
@@ -341,9 +316,9 @@ async function toggleUserStatus(userId) {
 }
 
 function exportUsersCSV() {
-  let csv = 'Employee ID,Full Name,Email,Department,Role,Permission Level,Status\n';
-  state.users.forEach(u => {
-    csv += `"${u.emp_id || ''}","${u.name}","${u.email}","${u.department}","${u.role}","${u.permission_level}","${u.status}"\n`;
+  let csv = 'User ID,Full Name,Email,Department,Role,Permission Level,Status\n';
+  (state.users || []).forEach(u => {
+    csv += `"${formatUserId(u.emp_id, u.id)}","${u.name || ''}","${u.email || ''}","${u.department || ''}","${u.role || ''}","${u.permission_level || ''}","${u.status || ''}"\n`;
   });
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
@@ -580,7 +555,8 @@ function editTagPrompt(tagId) {
 }
 
 function closeTagModal() {
-  document.getElementById('tagModal').classList.add('hidden');
+  const el = document.getElementById('tagModal');
+  if (el) el.classList.add('hidden');
 }
 
 async function saveTagModalSubmit() {
