@@ -650,7 +650,7 @@ const countLogs = db.prepare("SELECT COUNT(*) as count FROM audit_logs").get();
 if (countLogs.count === 0) {
   const initialLogs = [
     { actor_name: 'Kittisak Tech (Admin)', actor_role: 'System Administrator', action: 'USER_ROLE_UPDATE', target: 'Alice Smith (EMP-1001)', details: 'Upgraded permission level to Highly Confidential for Biotech projects.' },
-    { actor_name: 'Maria Wong', actor_role: 'Senior Chemist', action: 'VIDEO_METADATA_EDIT', target: 'VID-8920', details: 'Updated lab safety compliance tags and duration.' },
+    { actor_name: 'Maria Wong', actor_role: 'Senior Chemist', action: 'VIDEO_METADATA_EDIT', target: 'VID-8920', details: 'Updated lab safety compliance policies and duration.' },
     { actor_name: 'Dr. Alice Smith', actor_role: 'Lead Scientist', action: 'VIDEO_UPLOAD', target: 'VID-8921', details: 'Uploaded Q3 Drone Survey Analysis with Highly Confidential classification.' },
     { actor_name: 'John Doe', actor_role: 'Facility Manager', action: 'PERMISSION_POLICY_CHECK', target: 'Operations Portal', details: 'Automated policy sync for Operations department members.' }
   ];
@@ -732,6 +732,12 @@ try {
   `);
   db.exec(`UPDATE audit_logs SET actor_department = 'Executive Board' WHERE (actor_name LIKE '%Admin%' OR actor_role = 'Admin') AND (actor_department IS NULL OR actor_department = '');`);
   db.exec(`UPDATE audit_logs SET actor_department = 'General' WHERE actor_department IS NULL OR actor_department = '';`);
+
+  // Clean up legacy TAG audit logs to PBAC Policy / Access Control equivalents
+  db.exec(`UPDATE audit_logs SET action = 'PBAC_POLICY_CREATE', details = REPLACE(details, 'security tag', 'PBAC policy rule') WHERE action = 'TAG_CREATE';`);
+  db.exec(`UPDATE audit_logs SET action = 'PBAC_POLICY_DELETE', details = REPLACE(details, 'security tag', 'PBAC policy rule') WHERE action = 'TAG_DELETE';`);
+  db.exec(`UPDATE audit_logs SET action = 'PBAC_POLICY_UPDATE', details = REPLACE(details, 'security tag', 'PBAC policy rule') WHERE action = 'TAG_UPDATE';`);
+  db.exec(`UPDATE audit_logs SET details = REPLACE(details, 'compliance tags and duration', 'compliance policies and duration') WHERE details LIKE '%compliance tags%';`);
 } catch (e) {}
 
 // Keep the demo catalog populated across every official category.
@@ -1670,7 +1676,7 @@ app.post('/api/tags', (req, res) => {
 
     const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
     db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
-      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'TAG_CREATE', formattedName, `Created security tag ${formattedName} with clearance [${clearance_level || 'Standard'}]`);
+      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'PBAC_POLICY_CREATE', formattedName, `Created security policy rule ${formattedName} with clearance [${clearance_level || 'Standard'}]`);
 
     const newTag = db.prepare("SELECT * FROM tags WHERE id = ?").get(result.lastInsertRowid);
     res.json({ success: true, message: 'Tag created successfully', data: newTag });
@@ -1701,7 +1707,7 @@ app.put('/api/tags/:id', (req, res) => {
 
     const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
     db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
-      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'TAG_UPDATE', formattedName, `Updated security tag clearance to [${clearance_level || existing.clearance_level}]`);
+      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'PBAC_POLICY_UPDATE', formattedName, `Updated security policy clearance to [${clearance_level || existing.clearance_level}]`);
 
     const updated = db.prepare("SELECT * FROM tags WHERE id = ?").get(tagId);
     res.json({ success: true, message: 'Tag updated successfully', data: updated });
@@ -1721,7 +1727,7 @@ app.delete('/api/tags/:id', (req, res) => {
 
     const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentSimulatedUserId);
     db.prepare("INSERT INTO audit_logs (actor_name, actor_role, action, target, details) VALUES (?, ?, ?, ?, ?)")
-      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'TAG_DELETE', existing.name, `Deleted security tag ${existing.name}`);
+      .run(currentUser ? currentUser.name : 'Admin', currentUser ? currentUser.role : 'Admin', 'PBAC_POLICY_DELETE', existing.name, `Deleted security policy rule ${existing.name}`);
 
     res.json({ success: true, message: 'Tag deleted successfully' });
   } catch (err) {
@@ -1949,7 +1955,7 @@ app.post('/api/videos', (req, res) => {
       duration || '10:00',
       thumbnail_url || defaultThumb,
       video_url || defaultVideo,
-      tags || '#feedtech, #internal',
+      tags || '',
       currentUser ? currentUser.name : 'Administrator',
       allow_downloads ? 1 : 0,
       enable_comments ? 1 : 0,

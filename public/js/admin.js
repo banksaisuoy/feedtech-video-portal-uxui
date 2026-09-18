@@ -278,7 +278,7 @@ function renderVideoManagementTable() {
       <td class="py-3 px-4">
         <div class="font-semibold text-gray-800 text-xs">${v.category || 'Uncategorized'}</div>
         <div class="text-[10px] text-gray-500 truncate max-w-[180px]">${v.content_type || 'Research & Whitepaper'}</div>
-        <div class="text-[10px] text-gray-400 truncate max-w-[180px]">${v.tags || ''}</div>
+        <div class="text-[10px] text-emerald-600 font-mono font-medium">${v.access_mode === 'include' ? '👥 Whitelist' : (v.access_mode === 'exclude' ? '⛔ Blacklist' : '🌐 Public Access')}</div>
       </td>
       <td class="py-3 px-4">${getPermissionBadgeMarkup(v)}</td>
       <td class="py-3 px-4 text-center whitespace-nowrap">
@@ -676,9 +676,6 @@ function openEditDrawer(videoId) {
   if (document.getElementById('editDrawerContentType')) {
     document.getElementById('editDrawerContentType').value = v.content_type || 'Research & Whitepaper';
   }
-  if (document.getElementById('editDrawerTags')) {
-    document.getElementById('editDrawerTags').value = v.tags || '';
-  }
   if (document.getElementById('editDrawerIsHidden')) {
     document.getElementById('editDrawerIsHidden').checked = (v.is_hidden === 1);
   }
@@ -749,7 +746,7 @@ async function saveEditDrawerChanges() {
   const department = document.getElementById('editDrawerDept')?.value || existingVideo?.department || 'General';
   const category = document.getElementById('editDrawerCategory')?.value || existingVideo?.category || '';
   const content_type = document.getElementById('editDrawerContentType')?.value || existingVideo?.content_type || 'Research & Whitepaper';
-  const tags = document.getElementById('editDrawerTags')?.value?.trim() || '';
+  const tags = '';
   const is_hidden = document.getElementById('editDrawerIsHidden')?.checked ? 1 : 0;
   const is_featured = document.getElementById('editDrawerIsFeatured')?.checked ? 1 : 0;
   const is_recommended = document.getElementById('editDrawerIsRecommended')?.checked ? 1 : 0;
@@ -1066,7 +1063,7 @@ async function submitUploadVideo() {
   const description = document.getElementById('uploadVideoDesc').value.trim();
   const content_type = document.getElementById('uploadVideoContentType')?.value || 'Research & Whitepaper';
   const duration = document.getElementById('uploadVideoDuration')?.value?.trim() || '10:00';
-  const tags = document.getElementById('uploadVideoTags').value.trim();
+  const tags = '';
   const thumbnail_url = document.getElementById('uploadThumbnailUrl')?.value.trim() || DOMAIN_THUMBNAIL_PRESETS.Default;
 
   let access_mode = 'public';
@@ -1311,7 +1308,13 @@ function renderAuditLogs() {
     'DEPARTMENT_DELETE': { icon: 'domain_disabled', style: 'bg-rose-50 text-rose-700 border-rose-200' },
     'DEPARTMENT_MEMBER_ADD': { icon: 'group_add', style: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
     'DEPARTMENT_MEMBER_REMOVE': { icon: 'group_remove', style: 'bg-orange-50 text-orange-800 border-orange-200' },
-    'TAG_UPDATE': { icon: 'sell', style: 'bg-cyan-50 text-cyan-800 border-cyan-200' }
+    'PBAC_POLICY_CREATE': { icon: 'security', style: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+    'PBAC_POLICY_UPDATE': { icon: 'policy', style: 'bg-amber-50 text-amber-800 border-amber-200' },
+    'PBAC_POLICY_DELETE': { icon: 'remove_moderator', style: 'bg-rose-50 text-rose-700 border-rose-200' },
+    'ACCESS_CONTROL_UPDATE': { icon: 'lock_reset', style: 'bg-purple-50 text-purple-700 border-purple-200' },
+    'TAG_UPDATE': { icon: 'policy', style: 'bg-cyan-50 text-cyan-800 border-cyan-200' },
+    'TAG_CREATE': { icon: 'security', style: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+    'TAG_DELETE': { icon: 'remove_moderator', style: 'bg-rose-50 text-rose-700 border-rose-200' }
   };
 
   tbody.innerHTML = state.auditLogs.map(l => {
@@ -1845,7 +1848,7 @@ function downloadVideoTemplateCsv() {
     'allowed_user_ids',
     'excluded_user_ids',
     'description',
-    'tags'
+    'content_type'
   ];
 
   const sampleRows = [
@@ -1859,7 +1862,7 @@ function downloadVideoTemplateCsv() {
       '',
       '',
       'Standard operating procedure for industrial fermentation and microbial strain cultivation',
-      '#biotech, #lab, #fermentation'
+      'Research & Whitepaper'
     ],
     [
       'Swine Climate Control & Thermal Monitoring SOP',
@@ -1871,7 +1874,7 @@ function downloadVideoTemplateCsv() {
       '1, 2, 7',
       '',
       'Optimizing climate-controlled barns and automated ventilation telemetry for swine nurseries',
-      '#swine, #ventilation, #farming'
+      'Standard Operating Procedure'
     ],
     [
       'Shrimp Biofloc RAS Water Quality Telemetry',
@@ -1883,7 +1886,7 @@ function downloadVideoTemplateCsv() {
       '',
       '',
       'Real-time optical dissolved oxygen sensors and biofloc management in indoor aquaculture',
-      '#aquatic, #biofloc, #sensors'
+      'Field Operation Guide'
     ],
     [
       'Feed Mill Extruder Pellet Quality Control',
@@ -1895,7 +1898,7 @@ function downloadVideoTemplateCsv() {
       '',
       '5',
       'High-pressure steam extrusion maintenance and pellet durability testing index',
-      '#feedmill, #extrusion, #maintenance'
+      'Quality Compliance'
     ]
   ];
 

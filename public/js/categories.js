@@ -97,7 +97,7 @@ async function loadDepartments() {
 }
 
 function populateCategorySelects() {
-  const selects = ['tagCategoryFilter', 'quickTagDept', 'modalTagDept', 'uploadVideoDept', 'uploadVideoCategory', 'editDrawerCategory', 'videoCatFilter'];
+  const selects = ['uploadVideoDept', 'uploadVideoCategory', 'editDrawerCategory', 'videoCatFilter'];
   if (!state.categories) return;
 
   selects.forEach(id => {
@@ -526,15 +526,15 @@ function renderAdminDeptTable() {
 
   // Render categories with personnel list
   grid.innerHTML = state.categories.map(c => {
-    // Determine personnel associated with this category based on department / tags
+    // Determine personnel associated with this category based on department
     const associatedUsers = state.users.filter(u => {
-      const uTags = (u.allowed_tags || '').toLowerCase();
       const catName = (c.name || '').toLowerCase();
-      return u.department.toLowerCase().includes(catName) || 
-             catName.includes(u.department.toLowerCase()) || 
-             uTags.includes(catName) ||
+      const uDept = (u.department || '').toLowerCase();
+      return uDept.includes(catName) || 
+             catName.includes(uDept) || 
              (u.is_admin === 1) ||
-             (u.department === 'Executive');
+             (u.is_executive_board === 1) ||
+             (u.department === 'Executive Board');
     });
 
     const userAvatars = associatedUsers.slice(0, 4).map(u => `
@@ -717,9 +717,9 @@ function renderMeetingsView(filter = 'all') {
   if (!grid) return;
 
   const meetingVideos = state.accessibleVideos.filter(v => {
-    const isMeeting = v.category.includes('Townhall') || v.category.includes('Meeting') || (v.tags && v.tags.includes('meeting')) || (v.title && v.title.toLowerCase().includes('townhall'));
+    const isMeeting = v.category.includes('Townhall') || v.category.includes('Meeting') || (v.content_type && v.content_type.toLowerCase().includes('townhall')) || (v.title && v.title.toLowerCase().includes('townhall'));
     if (filter === 'all') return isMeeting || true; // Show all relevant videos if no specific meetings
-    if (filter === 'Townhall') return v.category.includes('Townhall') || (v.tags && v.tags.includes('townhall'));
+    if (filter === 'Townhall') return v.category.includes('Townhall') || (v.content_type && v.content_type.toLowerCase().includes('townhall'));
     if (filter === 'R&D') return v.department === 'Biotech' || v.department === 'QC-Lab';
     if (filter === 'Operations') return v.department === 'Operations' || v.department === 'Swine';
     return true;

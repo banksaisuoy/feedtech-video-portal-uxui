@@ -1416,8 +1416,6 @@
             </div>
           </div>
 
-          <input type="hidden" id="uploadVideoTags" value="#general">
-
           <div class="pt-4 border-t border-outline-variant flex justify-end gap-3">
             <button onclick="navigateView('admin-videos')" class="px-4 py-2 border border-outline-variant text-gray-600 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
             <button onclick="submitUploadVideo()" class="px-5 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-emerald-800 transition-colors shadow-sm flex items-center gap-1.5">
@@ -1511,7 +1509,10 @@
               <option value="DEPARTMENT_DELETE">❌ Dept Delete</option>
               <option value="DEPARTMENT_MEMBER_ADD">👥 Member Assigned</option>
               <option value="DEPARTMENT_MEMBER_REMOVE">👋 Member Removed</option>
-              <option value="TAG_UPDATE">🏷️ Tag Update</option>
+              <option value="PBAC_POLICY_CREATE">🛡️ PBAC Policy Create</option>
+              <option value="PBAC_POLICY_UPDATE">🛡️ PBAC Policy Update</option>
+              <option value="PBAC_POLICY_DELETE">🛡️ PBAC Policy Delete</option>
+              <option value="ACCESS_CONTROL_UPDATE">🔐 Access Control Update</option>
             </select>
           </div>
           <div class="flex items-center gap-2 shrink-0">
@@ -1810,7 +1811,6 @@
       <div class="flex-1 overflow-y-auto p-6">
         <input type="hidden" id="editDrawerVideoId">
         <input type="hidden" id="editDrawerVideoUrl">
-        <input type="hidden" id="editDrawerTags" value="">
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
@@ -2031,7 +2031,6 @@
           </div>
         </div>
 
-        <input type="hidden" id="modalTags" value="">
         <input type="hidden" id="modalRole" value="Staff Member">
         <div>
           <label class="block font-bold text-gray-700 mb-1">Role <span class="text-rose-500">*</span></label>
@@ -2209,7 +2208,7 @@
           <input id="videoCsvFileInput" type="file" accept=".csv" class="hidden" onchange="handleVideoCsvFile(event)">
           <span class="material-symbols-outlined text-4xl text-primary mb-1">cloud_upload</span>
           <div class="font-bold text-gray-900 text-sm">Click to select or drag & drop CSV file here</div>
-          <div class="text-[11px] text-gray-500 mt-1">Supports standard CSV with headers (title, category, video_url, thumbnail_url, duration, access_mode, tags)</div>
+          <div class="text-[11px] text-gray-500 mt-1">Supports standard CSV with headers (title, category, video_url, thumbnail_url, duration, content_type, access_mode)</div>
           <div class="mt-3 flex items-center justify-center gap-2">
             <button type="button" onclick="event.stopPropagation(); downloadVideoTemplateCsv()" class="text-xs font-bold text-primary hover:underline flex items-center gap-1">
               <span class="material-symbols-outlined text-xs">download</span> Need template? Download CSV Template
@@ -2293,7 +2292,7 @@
           <b id="userAccessSummaryRate" class="text-emerald-800 ml-1">21 / 23 Videos Allowed</b>
         </div>
         <div id="userAccessTagsList" class="flex flex-wrap gap-1">
-          <!-- Tags -->
+          <!-- PBAC Policy Badges -->
         </div>
       </div>
 
