@@ -1843,84 +1843,13 @@ async function deleteEventPrompt(eventId) {
 let parsedImportVideos = [];
 
 function downloadVideoTemplateCsv() {
-  const headers = [
-    'title',
-    'category',
-    'video_url',
-    'thumbnail_url',
-    'duration',
-    'access_mode',
-    'allowed_user_ids',
-    'excluded_user_ids',
-    'description',
-    'content_type'
-  ];
-
-  const sampleRows = [
-    [
-      'Industrial Bioreactor Fermentation Protocol',
-      'Biotech',
-      '/sample.mp4',
-      '/thumbnails/vid-biotech-01.svg',
-      '14:25',
-      'public',
-      '',
-      '',
-      'Standard operating procedure for industrial fermentation and microbial strain cultivation',
-      'Research & Whitepaper'
-    ],
-    [
-      'Swine Climate Control & Thermal Monitoring SOP',
-      'Swine',
-      '/sample.mp4',
-      '',
-      '18:10',
-      'include',
-      '1, 2, 7',
-      '',
-      'Optimizing climate-controlled barns and automated ventilation telemetry for swine nurseries',
-      'Standard Operating Procedure'
-    ],
-    [
-      'Shrimp Biofloc RAS Water Quality Telemetry',
-      'Aquatic',
-      '/sample.mp4',
-      '',
-      '12:45',
-      'public',
-      '',
-      '',
-      'Real-time optical dissolved oxygen sensors and biofloc management in indoor aquaculture',
-      'Field Operation Guide'
-    ],
-    [
-      'Feed Mill Extruder Pellet Quality Control',
-      'Feed Mill Operations',
-      '/sample.mp4',
-      '',
-      '22:00',
-      'exclude',
-      '',
-      '5',
-      'High-pressure steam extrusion maintenance and pellet durability testing index',
-      'Quality Compliance'
-    ]
-  ];
-
-  const csvLines = [
-    headers.join(','),
-    ...sampleRows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
-  ];
-
-  const csvContent = '\uFEFF' + csvLines.join('\r\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `FeedTech_Video_Import_Template_${new Date().toISOString().slice(0, 10)}.csv`;
+  link.href = '/templates/FeedTech_Video_Import_Template.xlsx';
+  link.download = `FeedTech_Video_Import_Template.xlsx`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  showToast('Downloaded Video Import Template CSV', 'success');
+  showToast('Downloaded FeedTech Video Import Template (.xlsx)', 'success');
 }
 
 function openImportVideosModal() {
@@ -2002,7 +1931,7 @@ function handleVideoCsvFile(event) {
           row[h] = values[idx] !== undefined ? values[idx] : '';
         });
 
-        const title = row.title || row.videotitle || row.name || '';
+        const title = row.video_title || row.videotitle || row.title || row.name || '';
         if (!title) continue;
 
         let vUrl = row.video_url || row.videourl || row.url || '/sample.mp4';
@@ -2017,15 +1946,19 @@ function handleVideoCsvFile(event) {
           }
         }
 
+        const accessPolicy = (row.access_policy || row.accesspolicy || row.access_mode || row.accessmode || 'public').toLowerCase();
+        const allowedIds = row.allowed_personnel || row.allowedpersonnel || row.allowed_user_ids || row.alloweduserids || '';
+        const excludedIds = row.excluded_personnel || row.excludedpersonnel || row.excluded_user_ids || row.excludeduserids || '';
+
         parsedImportVideos.push({
           title,
           category: row.category || 'Biotech',
           video_url: vUrl,
           thumbnail_url: thumb,
           duration: row.duration || '12:00',
-          access_mode: (row.access_mode || row.accessmode || 'public').toLowerCase(),
-          allowed_user_ids: row.allowed_user_ids || row.alloweduserids || '',
-          excluded_user_ids: row.excluded_user_ids || row.excludeduserids || '',
+          access_mode: accessPolicy,
+          allowed_user_ids: allowedIds,
+          excluded_user_ids: excludedIds,
           description: row.description || '',
           content_type: row.content_type || row.contenttype || 'Research & Whitepaper'
         });

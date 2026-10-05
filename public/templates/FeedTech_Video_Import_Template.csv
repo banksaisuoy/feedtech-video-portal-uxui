@@ -1,0 +1,7 @@
+﻿video_title,category,video_url,description,access_policy,allowed_personnel,excluded_personnel
+Industrial Bioreactor Fermentation Protocol,Biotech,/sample.mp4,Standard operating procedure for industrial fermentation and microbial strain cultivation,Public,,
+Swine Climate Control & Automated Telemetry SOP,Swine,/sample.mp4,Optimizing climate-controlled barns and automated ventilation telemetry for swine nurseries,Include,"EMP-1001, EMP-1002, EMP-1003",
+Shrimp Biofloc RAS Water Quality Telemetry,Aquatic,/sample.mp4,Real-time optical dissolved oxygen sensors and biofloc management in indoor aquaculture,Public,,
+Feed Mill Extruder Pellet Durability Index Compliance,Raw Material,/sample.mp4,High-pressure steam extrusion maintenance and pellet durability testing index,Exclude,,EMP-1005
+Annual Animal Nutrition & Feed Formulation Townhall 2026,Nutrition,/sample.mp4,"Quarterly feed formulation trends, amino acid profiling, and sustainability milestones",Public,,
+Dairy Cold Chain & Milk Tank Microbial Safety SOP,Dairy,/sample.mp4,Automated Clean-in-Place (CIP) sanitation protocols for bulk milk tanks and chiller lines,Include,"EMP-1003, EMP-1004",

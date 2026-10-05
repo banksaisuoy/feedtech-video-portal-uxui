@@ -1,0 +1,9 @@
+﻿user_id,full_name,email,department,role,executive_board
+EMP-1001,Dr. Somchai Prasert,somchai.p@feedtech.corp,Biotech,User,Yes
+EMP-1002,Ananya Srisuk,ananya.s@feedtech.corp,Swine,User,No
+EMP-1003,Kittisak Tech,kittisak.t@feedtech.corp,Biotech,Admin,Yes
+EMP-1004,Maria Wong,maria.w@feedtech.corp,QC-Lab,User,No
+EMP-1005,David Miller,david.m@feedtech.corp,Raw Material,User,No
+EMP-1006,Nattaporn Chaiyarat,nattaporn.c@feedtech.corp,Poultry,User,No
+EMP-1007,Chen Wei,chen.w@feedtech.corp,China,User,No
+EMP-1008,Supaporn Boonmee,supaporn.b@feedtech.corp,Aquatic,User,No

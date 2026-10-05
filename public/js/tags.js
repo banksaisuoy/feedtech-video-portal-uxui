@@ -175,7 +175,13 @@ function exportUsersCSV() {
 }
 
 function openImportExcelModal() {
-  showToast('Excel Bulk Import: Ready for Feedtech XLSX template', 'info');
+  const link = document.createElement('a');
+  link.href = '/templates/FeedTech_User_Import_Template.xlsx';
+  link.download = 'FeedTech_User_Import_Template.xlsx';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast('Downloaded FeedTech User Import Template (.xlsx)', 'success');
 }
 
 // ---------------- BACKWARD COMPATIBILITY STUBS ----------------
